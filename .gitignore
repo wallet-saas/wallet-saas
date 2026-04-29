@@ -25,6 +25,12 @@ backend/config/apple-certs/*.pem
 *.swp
 *.swo
 
+# Claude Code
+.claude/
+
+# Local spec docs
+STAMPLY_SPECS_COMPLETES.md
+
 # OS
 .DS_Store
 Thumbs.db
