@@ -1,0 +1,39 @@
+{
+  "name": "wallet-saas-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start -p 3001",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^3.3.4",
+    "@stripe/stripe-js": "^2.2.0",
+    "@supabase/supabase-js": "^2.38.0",
+    "clsx": "^2.0.0",
+    "date-fns": "^3.0.6",
+    "jsqr": "^1.4.0",
+    "lucide-react": "^0.303.0",
+    "next": "^14.0.4",
+    "qrcode.react": "^3.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hook-form": "^7.49.2",
+    "recharts": "^2.10.3",
+    "tailwind-merge": "^2.2.0",
+    "tailwindcss": "^3.3.6",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.39",
+    "@types/react-dom": "^18.2.17",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "^14.0.4",
+    "postcss": "^8.4.32",
+    "typescript": "^5.3.2"
+  }
+}
