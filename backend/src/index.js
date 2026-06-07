@@ -45,6 +45,16 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/images', imagesRoutes);
 
+// Health check endpoint (used by Render)
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    version: '1.0.0',
+  });
+});
+
 // Route de test
 app.get('/', (req, res) => {
   res.json({
@@ -63,7 +73,8 @@ app.get('/', (req, res) => {
       offres: '/api/offres',
       analytics: '/api/analytics',
       subscription: '/api/subscription',
-      webhooks: '/api/webhooks'
+      webhooks: '/api/webhooks',
+      health: '/health',
     }
   });
 });
