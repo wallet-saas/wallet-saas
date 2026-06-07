@@ -120,3 +120,5 @@ git push -u origin main
 - Pour activer les push Android : ajoute `FCM_KEY_JSON` dans Render (contenu du JSON Firebase)
 - Pour iOS (APNS) : ajoute `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_BUNDLE_ID`, `APNS_KEY_PATH`
 - Sans ces variables, les notifications sont simulées (loggées en console)
+
+Force redeploy test
