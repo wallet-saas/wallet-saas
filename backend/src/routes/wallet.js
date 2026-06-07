@@ -10,20 +10,21 @@ const {
 const { setupWalletCard, updateWalletCard } = require('../controllers/walletSetupController');
 const googleWalletService = require('../services/googleWalletService');
 const authMiddleware = require('../middleware/authMiddleware');
+const { walletSetupValidation, handleValidationErrors } = require('../middleware/validation');
 
 /**
  * @route   POST /api/wallet/setup
  * @desc    Configurer la LoyaltyClass Google Wallet (onboarding commerçant)
  * @access  Private (nécessite token JWT commerçant)
  */
-router.post('/setup', authMiddleware, setupWalletCard);
+router.post('/setup', authMiddleware, walletSetupValidation, handleValidationErrors, setupWalletCard);
 
 /**
  * @route   PUT /api/wallet/setup
  * @desc    Mettre à jour la LoyaltyClass Google Wallet existante
  * @access  Private (nécessite token JWT commerçant)
  */
-router.put('/setup', authMiddleware, updateWalletCard);
+router.put('/setup', authMiddleware, walletSetupValidation, handleValidationErrors, updateWalletCard);
 
 /**
  * @route   POST /api/wallet/generate

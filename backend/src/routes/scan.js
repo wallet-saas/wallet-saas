@@ -2,13 +2,15 @@ const express = require('express');
 const router = express.Router();
 const { scanQR, getScanHistory } = require('../controllers/scanController');
 const authMiddleware = require('../middleware/authMiddleware');
+const { scanRateLimiter } = require('../middleware/rateLimiter');
+const { scanValidation, handleValidationErrors } = require('../middleware/validation');
 
 /**
  * @route   POST /api/scan
  * @desc    Scanner une carte QR et incrémenter les points de fidélité
  * @access  Private (JWT commerçant requis)
  */
-router.post('/', authMiddleware, scanQR);
+router.post('/', authMiddleware, scanRateLimiter, scanValidation, handleValidationErrors, scanQR);
 
 /**
  * @route   GET /api/scan/history
