@@ -20,6 +20,7 @@ CREATE TABLE commercants (
   longitude DECIMAL(11, 8),
   google_place_id VARCHAR(255),
   template_metier VARCHAR(50) DEFAULT 'restaurateur',
+  template_type VARCHAR(50),
   -- Modules activés (ON/OFF)
   module_fidelite BOOLEAN DEFAULT TRUE,
   module_avis_google BOOLEAN DEFAULT FALSE,

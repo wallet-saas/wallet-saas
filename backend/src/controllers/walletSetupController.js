@@ -9,25 +9,28 @@ const WALLET_TEMPLATES = {
   garagiste:   { label: 'Garagiste',   couleur: '#2C3E50', programme: 'Carte Fidélité Garage',       recompense: '1 vidange offerte à 5 points', points: 5  },
 };
 
+const TEMPLATE_LOGOS = {
+  boulangerie: 'https://placehold.co/200x200/D97706/ffffff?text=B',
+  coiffeur: 'https://placehold.co/200x200/7C3AED/ffffff?text=C',
+  restaurant: 'https://placehold.co/200x200/DC2626/ffffff?text=R',
+  kine: 'https://placehold.co/200x200/059669/ffffff?text=K',
+  garagiste: 'https://placehold.co/200x200/374151/ffffff?text=G',
+};
+
 /**
  * Détermine l'URL du logo final selon les règles de priorité.
- * Utilise le backend comme source de vérité pour les logos.
+ * Utilise des URLs externes (placehold.co) pour éviter les boucles de redirection.
  */
 function resolveLogo(template_type, logo_url_body, commercantId) {
-  const base = process.env.BACKEND_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
   // Si un logo custom a été uploadé, utiliser l'URL directement
   if (logo_url_body && logo_url_body.startsWith('http')) {
     return logo_url_body;
   }
-  // Si on a un commercantId, utiliser l'endpoint images qui gère les fallbacks
-  if (commercantId) {
-    return `${base}/api/images/${commercantId}`;
+  // Utiliser le logo du template ou un placeholder générique
+  if (template_type && TEMPLATE_LOGOS[template_type]) {
+    return TEMPLATE_LOGOS[template_type];
   }
-  // Fallback sur les templates statiques
-  if (template_type && WALLET_TEMPLATES[template_type]) {
-    return `${base}/logos/${template_type}.png`;
-  }
-  return `${base}/logo.png`;
+  return 'https://placehold.co/200x200/6366f1/ffffff?text=S';
 }
 
 /**
