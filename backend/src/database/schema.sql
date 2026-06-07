@@ -30,6 +30,13 @@ CREATE TABLE commercants (
   carte_couleur_primaire VARCHAR(7) DEFAULT '#1E40AF',
   carte_couleur_secondaire VARCHAR(7) DEFAULT '#FFFFFF',
   carte_logo_url TEXT,
+  carte_programme_nom VARCHAR(255),
+  carte_recompense_description TEXT,
+  -- Google Wallet
+  wallet_class_configured BOOLEAN DEFAULT FALSE,
+  -- Google Place
+  google_place_url TEXT,
+  qr_code_install_url TEXT,
   -- Abonnement
   stripe_customer_id VARCHAR(255),
   stripe_subscription_id VARCHAR(255),
@@ -52,12 +59,20 @@ CREATE TABLE commercants (
 CREATE TABLE cartes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   commercant_id UUID NOT NULL REFERENCES commercants(id) ON DELETE CASCADE,
-  pass_type VARCHAR(20) NOT NULL CHECK (pass_type IN ('apple', 'google')),
+  pass_type VARCHAR(20) NOT NULL DEFAULT 'universal' CHECK (pass_type IN ('apple', 'google', 'universal')),
   pass_serial_number VARCHAR(255) UNIQUE NOT NULL,
   pass_url TEXT,
   qr_code_url TEXT,
   design_json JSONB,
+  -- Points de fidélité
+  points INTEGER DEFAULT 0,
+  -- URLs Wallet
+  google_wallet_url TEXT,
+  apple_wallet_url TEXT,
+  -- Métadonnées
   actif BOOLEAN DEFAULT TRUE,
+  installed_at TIMESTAMPTZ,
+  last_visit_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -145,6 +160,28 @@ CREATE TABLE menus (
 );
 
 -- ============================================
+-- TABLE: offres (offres flash)
+-- ============================================
+CREATE TABLE offres (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  commercant_id UUID NOT NULL REFERENCES commercants(id) ON DELETE CASCADE,
+  titre VARCHAR(255) NOT NULL,
+  description TEXT,
+  code_promo VARCHAR(50),
+  reduction_pct NUMERIC(5,2),
+  reduction_montant NUMERIC(8,2),
+  date_debut TIMESTAMPTZ DEFAULT NOW(),
+  date_fin TIMESTAMPTZ,
+  actif BOOLEAN DEFAULT TRUE,
+  total_envoyes INTEGER DEFAULT 0,
+  total_utilises INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_offres_commercant ON offres(commercant_id);
+
+-- ============================================
 -- INDEX pour performance
 -- ============================================
 CREATE INDEX idx_cartes_commercant ON cartes(commercant_id);
@@ -182,3 +219,4 @@ ALTER TABLE visites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE avis ENABLE ROW LEVEL SECURITY;
 ALTER TABLE menus ENABLE ROW LEVEL SECURITY;
+ALTER TABLE offres ENABLE ROW LEVEL SECURITY;
