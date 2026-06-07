@@ -8,9 +8,10 @@ const {
   markOffreUsed
 } = require('../controllers/offresController');
 const authMiddleware = require('../middleware/authMiddleware');
+const { offreValidation, handleValidationErrors } = require('../middleware/validation');
 
 /** POST /api/offres/create — Créer une offre flash */
-router.post('/create', authMiddleware, createOffre);
+router.post('/create', authMiddleware, offreValidation, handleValidationErrors, createOffre);
 
 /** GET /api/offres/list — Liste des offres (?actif=true|false) */
 router.get('/list', authMiddleware, listOffres);
