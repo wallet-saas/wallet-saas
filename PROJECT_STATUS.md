@@ -26,6 +26,8 @@ Les clients installent la carte en 5 secondes via QR code, sans app à télécha
 - **Paiements** : Stripe (webhooks)
 - **Notifications** : Firebase FCM (simulation pour V1)
 - **Auth** : JWT + bcrypt
+- **Validation** : express-validator
+- **Sécurité** : Helmet, CORS, rate limiting
 
 ## Flux Complet (V1)
 
@@ -38,28 +40,32 @@ Les clients installent la carte en 5 secondes via QR code, sans app à télécha
 7. **À 10 points** → notification de récompense débloquée
 8. **Commerçant** peut envoyer des notifications push à ses clients
 
-## Fonctionnalités Implémentées
+## État des Features (testé en live le 7 juin 2026)
 
-### Côté Commerçant (Dashboard)
-- [x] Inscription / Connexion (JWT)
-- [x] Setup carte de fidélité (template métier : boulangerie, coiffeur, restaurant, kiné, garagiste)
-- [x] Génération de cartes Google Wallet (URL "Ajouter à Google Wallet")
-- [x] Scan QR en caisse (incrémentation points + rate limiting 30s)
-- [x] Analytics (cartes installées, visites, notifications)
-- [x] Gestion du profil (nom, téléphone, adresse)
-- [x] Historique des scans
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Auth (register/login/me) | ✅ | JWT 7 jours, bcrypt |
+| Google Wallet (setup → generate → URL) | ✅ | LoyaltyClass auto-créée |
+| Scan QR caisse | ✅ | Rate limiting 30s, points auto |
+| Notifications push | ✅ | Mode simulation (FCM prêt) |
+| Offres flash | ✅ | CRUD + envoi notif |
+| Analytics | ✅ | Charts + stats |
+| Menus | ✅ | CRUD complet |
+| Avis | ✅ | List + réponse IA |
+| Géolocalisation | ✅ | Stats + trigger |
+| Stripe checkout | ✅ | Code prêt, clés à configurer |
+| Subscription status | ⚠️ | Corrigé en local, pas déployé |
+| Images logo | ⚠️ | Corrigé en local, pas déployé |
 
-### Côté Client
-- [x] Page d'installation avec détection OS (Android/iOS/Desktop)
-- [x] Bouton "Ajouter à Google Wallet" (génère la carte en 1 clic)
-- [x] QR code personnel à montrer en caisse
-- [x] Suivi des points de fidélité
+## Sécurité
 
-### Système
-- [x] Google Wallet API (LoyaltyClass + save URLs)
-- [x] Notifications push (mode simulation, prêt pour FCM)
-- [x] Stripe (checkout + webhooks, prêt à configurer)
-- [x] RGPD (données anonymes par défaut)
+- ✅ JWT authentification (expiration 7 jours)
+- ✅ Rate limiting (login 5/min, register 3/10min, scan 30/min)
+- ✅ Validation des entrées (express-validator)
+- ✅ Helmet (headers HTTP sécurisés)
+- ✅ CORS configuré
+- ✅ RLS Supabase
+- ✅ Mots de passe forts requis (8+ chars, maj, min, chiffre)
 
 ## Ce qui reste à faire
 
@@ -67,6 +73,7 @@ Les clients installent la carte en 5 secondes via QR code, sans app à télécha
 1. **Supabase** : Exécuter les migrations SQL (voir SETUP.md)
 2. **Stripe** : Ajouter les clés API dans Render (voir SETUP.md)
 3. **FCM** : Ajouter la clé Firebase pour les notifications réelles
+4. **Render** : Vérifier que le déploiement a bien eu lieu
 
 ### Features V2 (prochaines étapes)
 - [ ] Module Avis Google (automatisation collecte + réponses IA)
@@ -87,8 +94,11 @@ cd backend && npm install && npm run dev
 # Frontend local  
 cd frontend && npm install && npm run dev
 
+# Tests API
+python3 test_api.py
+
 # Push vers GitHub (déclenche Render auto)
-git add . && git commit -m "..." && git push origin main
+git add . && git commit -m "..." && git push origin master
 ```
 
 ## Support
