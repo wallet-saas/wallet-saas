@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Build
+dist/
+build/
+.next/
+out/
+
+# Certificates & secret keys — DO NOT commit
+certs/
+backend/config/google-wallet-key.json
+backend/config/apple-certs/*.pem
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude Code
+.claude/
+
+# Local spec docs
+STAMPLY_SPECS_COMPLETES.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test
+coverage/
+
+.vercel
