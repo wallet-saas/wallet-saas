@@ -6,12 +6,12 @@ const { supabase } = require('../config/supabase');
  */
 const search = async (req, res) => {
   try {
-    const { q, ville, categorie, limit = 20 } = req.query;
+    const { q, categorie, limit = 20 } = req.query;
     const maxLimit = Math.min(parseInt(limit) || 20, 50);
 
     let query = supabase
       .from('commercants')
-      .select('id, nom_enseigne, adresse, ville, code_postal, template_type, carte_couleur_primaire, carte_programme_nom, points_recompense, wallet_class_configured')
+      .select('id, nom_enseigne, template_type, carte_couleur_primaire, carte_programme_nom, points_recompense, wallet_class_configured, subscription_status')
       .eq('wallet_class_configured', true)
       .eq('subscription_status', 'active')
       .order('nom_enseigne', { ascending: true })
@@ -19,10 +19,6 @@ const search = async (req, res) => {
 
     if (q && q.trim().length > 0) {
       query = query.ilike('nom_enseigne', `%${q.trim()}%`);
-    }
-
-    if (ville && ville.trim().length > 0) {
-      query = query.ilike('ville', `%${ville.trim()}%`);
     }
 
     if (categorie && categorie.trim().length > 0) {
