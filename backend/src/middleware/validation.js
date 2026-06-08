@@ -90,12 +90,10 @@ const scanValidation = [
 const notificationValidation = [
   body('titre')
     .trim()
-    .isLength({ min: 1, max: 100 }).withMessage('Titre: 1-100 caractères.')
-    .escape(),
+    .isLength({ min: 1, max: 100 }).withMessage('Titre: 1-100 caractères.'),
   body('message')
     .trim()
-    .isLength({ min: 1, max: 500 }).withMessage('Message: 1-500 caractères.')
-    .escape(),
+    .isLength({ min: 1, max: 500 }).withMessage('Message: 1-500 caractères.'),
   body('cible')
     .optional()
     .isIn(['tous', 'actifs', 'dormants']).withMessage('Cible invalide.'),
