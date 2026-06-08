@@ -2,8 +2,10 @@ const { supabase } = require('../config/supabase');
 const googleWalletService = require('../services/googleWalletService');
 const badgeService = require('../services/badgeService');
 const autoReviewService = require('../services/autoReviewService');
+const rewardService = require('../services/rewardService');
+const qrCodeService = require('../services/qrCodeService');
 
-// Rate limiting en mémoire : Map<pass_serial_number, timestamp_last_scan>
+// Rate limiting en mémoire : Map<carte_id, timestamp_last_scan>
 const scanRateLimit = new Map();
 const RATE_LIMIT_MS = 30 * 1000; // 30 secondes
 
@@ -14,42 +16,66 @@ const RATE_LIMIT_MS = 30 * 1000; // 30 secondes
  */
 const scanQR = async (req, res) => {
   try {
-    const { pass_serial_number } = req.body;
+    const { pass_serial_number, qr_string } = req.body;
     const { id: commercantId } = req.commercant;
 
-    if (!pass_serial_number) {
+    if (!pass_serial_number && !qr_string) {
       return res.status(400).json({
         success: false,
-        error: 'pass_serial_number requis.'
+        error: 'pass_serial_number ou qr_string requis.'
       });
     }
 
-    // --- Rate limiting ---
-    const now = Date.now();
-    const lastScan = scanRateLimit.get(pass_serial_number);
+    let carteId = null;
+    let passSerialNumber = pass_serial_number;
+    let qrType = 'static';
 
-    if (lastScan && now - lastScan < RATE_LIMIT_MS) {
-      const remainingSeconds = Math.ceil((RATE_LIMIT_MS - (now - lastScan)) / 1000);
-      return res.status(429).json({
-        success: false,
-        error: 'Déjà scanné récemment.',
-        retryAfterSeconds: remainingSeconds
-      });
+    // Si c'est un QR code dynamique, le vérifier d'abord
+    if (qr_string) {
+      const qrResult = qrCodeService.verifyDynamicQR(qr_string);
+      if (qrResult.valid) {
+        carteId = qrResult.carteId;
+        passSerialNumber = qrResult.passSerialNumber;
+        qrType = 'dynamic';
+      } else if (qrResult.expired && qrResult.carteId) {
+        // QR expiré mais on peut quand même identifier la carte
+        carteId = qrResult.carteId;
+        passSerialNumber = qrResult.passSerialNumber;
+        qrType = 'expired';
+      } else {
+        // Essayer comme QR statique (pass_serial_number direct)
+        passSerialNumber = qr_string;
+        qrType = 'static_fallback';
+      }
     }
 
     // --- Vérifier que la carte existe et appartient à ce commerçant ---
-    const { data: carte, error: carteError } = await supabase
-      .from('cartes')
-      .select('id, pass_serial_number, points, commercant_id, actif')
-      .eq('pass_serial_number', pass_serial_number)
-      .eq('commercant_id', commercantId)
-      .single();
+    let carte;
+    if (carteId) {
+      const { data, error } = await supabase
+        .from('cartes')
+        .select('id, pass_serial_number, points, commercant_id, actif')
+        .eq('id', carteId)
+        .eq('commercant_id', commercantId)
+        .single();
+      carte = data;
+      if (error) carte = null;
+    }
 
-    if (carteError || !carte) {
-      return res.status(404).json({
-        success: false,
-        error: 'Carte non reconnue.'
-      });
+    if (!carte) {
+      const { data, error } = await supabase
+        .from('cartes')
+        .select('id, pass_serial_number, points, commercant_id, actif')
+        .eq('pass_serial_number', passSerialNumber)
+        .eq('commercant_id', commercantId)
+        .single();
+      if (error || !data) {
+        return res.status(404).json({
+          success: false,
+          error: 'Carte non reconnue.'
+        });
+      }
+      carte = data;
     }
 
     if (!carte.actif) {
@@ -59,24 +85,51 @@ const scanQR = async (req, res) => {
       });
     }
 
-    // Récupérer le seuil de récompense du commerçant (défaut 10)
+    // --- Rate limiting (par carte_id) ---
+    const now = Date.now();
+    const lastScan = scanRateLimit.get(carte.id);
+    if (lastScan && now - lastScan < RATE_LIMIT_MS) {
+      const remainingSeconds = Math.ceil((RATE_LIMIT_MS - (now - lastScan)) / 1000);
+      return res.status(429).json({
+        success: false,
+        error: 'Déjà scanné récemment.',
+        retryAfterSeconds: remainingSeconds
+      });
+    }
+    scanRateLimit.set(carte.id, now);
+
+    // Nettoyage du Map si trop grand
+    if (scanRateLimit.size > 10000) {
+      for (const [key, ts] of scanRateLimit.entries()) {
+        if (now - ts > RATE_LIMIT_MS) scanRateLimit.delete(key);
+      }
+    }
+
+    // --- Calcul des points et récompenses ---
     const { data: commercant } = await supabase
       .from('commercants')
-      .select('points_recompense')
+      .select('points_recompense, reward_config')
       .eq('id', commercantId)
       .single();
-    const seuil = commercant?.points_recompense || 10;
 
-    // Logique de reset :
-    // - Si les points actuels >= seuil → le client a déjà eu sa récompense,
-    //   ce scan repart de 1 (nouveau cycle)
-    // - Sinon → incrément normal
-    const reset = carte.points >= seuil;
-    const newPoints = reset ? 1 : carte.points + 1;
-    const reward = !reset && newPoints === seuil; // vient juste d'atteindre le seuil
+    const rewardConfig = commercant?.reward_config || {};
+    const seuil = commercant?.points_recompense || 10;
     const now_iso = new Date().toISOString();
 
-    // --- Mise à jour des points + last_visit_at ---
+    // Logique de reset via config récompenses
+    const autoReset = rewardConfig.auto_reset !== false;
+    const maxNiveau = Math.max(
+      rewardConfig.visites_recompense_1 || 0,
+      rewardConfig.visites_recompense_2 || 0,
+      rewardConfig.visites_recompense_3 || 0,
+      seuil
+    );
+
+    const reset = autoReset && carte.points >= maxNiveau;
+    const newPoints = reset ? 1 : carte.points + 1;
+    const reward = !reset && newPoints === seuil;
+
+    // --- Mise à jour des points ---
     const { error: updateError } = await supabase
       .from('cartes')
       .update({
@@ -100,48 +153,57 @@ const scanQR = async (req, res) => {
       .insert([{
         commercant_id: commercantId,
         carte_id: carte.id,
-        client_id: null, // anonyme par défaut (RGPD friendly)
+        client_id: null,
         points_gagnes: 1,
-        source: 'scan'
+        source: qrType === 'dynamic' ? 'qr_dynamic' : 'scan'
       }]);
 
     if (visiteError) {
-      // Non bloquant : les points sont déjà crédités
       console.error('Erreur insertion visite (non bloquant):', visiteError);
     }
 
-    // --- Mettre à jour la carte Google Wallet (best-effort, non-bloquant) ---
-    googleWalletService.updateLoyaltyObjectPoints(pass_serial_number, newPoints);
+    // --- Mettre à jour la carte Google Wallet (best-effort) ---
+    googleWalletService.updateLoyaltyObjectPoints(carte.pass_serial_number, newPoints);
 
-    // --- Vérifier et attribuer des badges (non-bloquant) ---
+    // --- Vérifier et attribuer des badges ---
     const newBadges = await badgeService.checkAndAssignBadges(carte.id, commercantId, newPoints);
 
-    // --- Programmer la notification d'avis automatique (non-bloquant) ---
+    // --- Vérifier les récompenses (nouveau système configurable) ---
+    const newRewards = await rewardService.checkRewardUnlocked(
+      carte.id, commercantId, newPoints, null
+    );
+
+    // --- Programmer la notification d'avis automatique ---
     await autoReviewService.scheduleReviewNotification(carte.id, commercantId, newPoints);
 
-    // --- Enregistrer le timestamp du scan pour le rate limiting ---
-    scanRateLimit.set(pass_serial_number, now);
-
-    // Nettoyage léger du Map si trop grand
-    if (scanRateLimit.size > 10000) {
-      for (const [key, ts] of scanRateLimit.entries()) {
-        if (now - ts > RATE_LIMIT_MS) scanRateLimit.delete(key);
-      }
-    }
-
-    const message = reward
+    // --- Message de réponse ---
+    let message = reward
       ? `🎉 Récompense débloquée ! (${seuil} points atteints)`
       : reset
         ? `Nouveau cycle ! Points remis à 1.`
         : 'Visite enregistrée !';
 
+    if (newRewards && newRewards.length > 0) {
+      message = newRewards.map(r => `🎁 ${r.label}`).join(' | ');
+    }
+
     return res.status(200).json({
       success: true,
+      qr_type: qrType,
       points: newPoints,
       seuil,
       reward,
       reset,
+      qr_expired: qrType === 'expired',
       badges: newBadges.map((b) => ({ id: b.id, label: b.label, icon: b.icon })),
+      rewards: newRewards?.map(r => ({
+        niveau: r.niveau,
+        label: r.label,
+        action: r.action,
+        valeur: r.valeur,
+        code_promo: r.code_genere || null,
+        points_bonus: r.points_bonus,
+      })) || [],
       message
     });
 

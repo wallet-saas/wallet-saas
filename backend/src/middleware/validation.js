@@ -80,10 +80,16 @@ const walletSetupValidation = [
     .isInt({ min: 2, max: 100 }).withMessage('Seuil de récompense: 2-100.'),
 ];
 
-// Règles de validation pour le scan
+// Règles de validation pour le scan (QR statique ou dynamique)
 const scanValidation = [
   body('pass_serial_number')
-    .isUUID(4).withMessage('Numéro de série invalide (UUID v4 requis).'),
+    .optional()
+    .isString().withMessage('Numéro de série invalide.')
+    .isLength({ max: 255 }).withMessage('Numéro de série trop long.'),
+  body('qr_string')
+    .optional()
+    .isString().withMessage('QR string invalide.')
+    .isLength({ min: 10, max: 2000 }).withMessage('QR string invalide (taille).'),
 ];
 
 // Règles de validation pour les notifications

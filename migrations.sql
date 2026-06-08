@@ -211,5 +211,119 @@ BEGIN
 END $$;
 
 -- ============================================
+-- 8. TABLE: recompenses_debloquees
+-- Récompenses débloquées par les clients
+-- ============================================
+CREATE TABLE IF NOT EXISTS recompenses_debloquees (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  carte_id UUID NOT NULL REFERENCES cartes(id) ON DELETE CASCADE,
+  commercant_id UUID NOT NULL REFERENCES commercants(id) ON DELETE CASCADE,
+  boutique_id UUID REFERENCES boutiques(id) ON DELETE SET NULL,
+  niveau INTEGER NOT NULL DEFAULT 1,
+  type TEXT DEFAULT 'visites',
+  seuil INTEGER NOT NULL,
+  label TEXT NOT NULL,
+  action TEXT DEFAULT 'message',
+  valeur TEXT,
+  points_bonus INTEGER DEFAULT 0,
+  details JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_recompenses_carte ON recompenses_debloquees(carte_id);
+CREATE INDEX IF NOT EXISTS idx_recompenses_commercant ON recompenses_debloquees(commercant_id);
+
+-- RLS
+ALTER TABLE recompenses_debloquees ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Commercants view their rewards" ON recompenses_debloquees FOR SELECT USING (commercant_id = auth.uid());
+
+-- ============================================
+-- 9. TABLE: codes_promo
+-- Codes promo générés par les récompenses
+-- ============================================
+CREATE TABLE IF NOT EXISTS codes_promo (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  commercant_id UUID NOT NULL REFERENCES commercants(id) ON DELETE CASCADE,
+  carte_id UUID REFERENCES cartes(id) ON DELETE SET NULL,
+  code TEXT NOT NULL UNIQUE,
+  type TEXT DEFAULT 'fidelite',
+  description TEXT,
+  utilise BOOLEAN DEFAULT false,
+  date_utilisation TIMESTAMP WITH TIME ZONE,
+  date_expiration TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_codes_promo_commercant ON codes_promo(commercant_id);
+CREATE INDEX IF NOT EXISTS idx_codes_promo_code ON codes_promo(code);
+
+-- RLS
+ALTER TABLE codes_promo ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Commercants manage their promo codes" ON codes_promo FOR ALL USING (commercant_id = auth.uid());
+
+-- ============================================
+-- 10. TABLE: cadeaux
+-- Cadeaux à réclamer au comptoir
+-- ============================================
+CREATE TABLE IF NOT EXISTS cadeaux (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  commercant_id UUID NOT NULL REFERENCES commercants(id) ON DELETE CASCADE,
+  carte_id UUID NOT NULL REFERENCES cartes(id) ON DELETE CASCADE,
+  label TEXT NOT NULL,
+  description TEXT,
+  statut TEXT DEFAULT 'en_attente',
+  date_remise TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_cadeaux_commercant ON cadeaux(commercant_id);
+CREATE INDEX IF NOT EXISTS idx_cadeaux_statut ON cadeaux(statut) WHERE statut = 'en_attente';
+
+-- RLS
+ALTER TABLE cadeaux ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Commercants manage their gifts" ON cadeaux FOR ALL USING (commercant_id = auth.uid());
+
+-- ============================================
+-- 11. TABLE: offres_flash_reclamations
+-- Réclamations des offres flash
+-- ============================================
+CREATE TABLE IF NOT EXISTS offres_flash_reclamations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  offre_flash_id UUID NOT NULL REFERENCES offres_flash(id) ON DELETE CASCADE,
+  client_id UUID NOT NULL,
+  code_utilise TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(offre_flash_id, client_id)
+);
+
+-- ============================================
+-- 12. COLONNE: reward_config dans commercants
+-- Configuration des récompenses par commerçant
+-- ============================================
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'commercants' AND column_name = 'reward_config'
+  ) THEN
+    ALTER TABLE commercants ADD COLUMN reward_config JSONB DEFAULT '{}';
+  END IF;
+END $$;
+
+-- ============================================
+-- 13. COLONNE: qr_dynamic_enabled dans cartes
+-- Activer le QR code dynamique par carte
+-- ============================================
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'cartes' AND column_name = 'qr_dynamic_enabled'
+  ) THEN
+    ALTER TABLE cartes ADD COLUMN qr_dynamic_enabled BOOLEAN DEFAULT true;
+  END IF;
+END $$;
+
+-- ============================================
 -- FIN DES MIGRATIONS
 -- ============================================
