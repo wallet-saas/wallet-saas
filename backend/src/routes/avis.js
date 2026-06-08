@@ -12,10 +12,13 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 // --- Routes protégées (commerçant) ---
 
+/** GET /api/avis — Liste des avis reçus (filtres: source, note_min, note_max, repondu) */
+router.get('/', authMiddleware, listAvis);
+
 /** POST /api/avis/request — Déclencher une demande d'avis pour une carte */
 router.post('/request', authMiddleware, requestAvis);
 
-/** GET /api/avis/list — Liste des avis reçus (filtres: source, note_min, note_max, repondu) */
+/** GET /api/avis/list — Alias liste des avis */
 router.get('/list', authMiddleware, listAvis);
 
 /** POST /api/avis/suggest-response — Générer une réponse IA via Anthropic */

@@ -9,10 +9,16 @@ const {
 } = require('../controllers/menuController');
 const authMiddleware = require('../middleware/authMiddleware');
 
-/** POST /api/menus/create — Créer un plat/produit */
+/** POST /api/menus — Créer un plat/produit */
+router.post('/', authMiddleware, createMenu);
+
+/** POST /api/menus/create — Alias */
 router.post('/create', authMiddleware, createMenu);
 
-/** GET /api/menus/list — Liste des menus (?categorie=&disponible=true|false) */
+/** GET /api/menus — Liste des menus (?categorie=&disponible=true|false) */
+router.get('/', authMiddleware, listMenus);
+
+/** GET /api/menus/list — Alias */
 router.get('/list', authMiddleware, listMenus);
 
 /** PUT /api/menus/:id — Modifier un menu */

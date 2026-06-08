@@ -24,7 +24,12 @@ router.get('/:commercantId', async (req, res) => {
     }
 
     // Si le logo est une URL externe (http/https), rediriger
-    if (commercant.carte_logo_url && commercant.carte_logo_url.startsWith('http')) {
+    // MAIS ignorer les URLs qui pointent vers notre propre API (évite boucle infinie)
+    const selfUrl = req.protocol + '://' + req.get('host');
+    if (commercant.carte_logo_url
+        && commercant.carte_logo_url.startsWith('http')
+        && !commercant.carte_logo_url.startsWith(selfUrl)
+        && !commercant.carte_logo_url.startsWith('/api/')) {
       return res.redirect(302, commercant.carte_logo_url);
     }
 

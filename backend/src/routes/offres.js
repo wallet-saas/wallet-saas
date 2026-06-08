@@ -10,10 +10,16 @@ const {
 const authMiddleware = require('../middleware/authMiddleware');
 const { offreValidation, handleValidationErrors } = require('../middleware/validation');
 
-/** POST /api/offres/create — Créer une offre flash */
+/** POST /api/offres — Créer une offre flash */
+router.post('/', authMiddleware, offreValidation, handleValidationErrors, createOffre);
+
+/** POST /api/offres/create — Alias */
 router.post('/create', authMiddleware, offreValidation, handleValidationErrors, createOffre);
 
-/** GET /api/offres/list — Liste des offres (?actif=true|false) */
+/** GET /api/offres — Liste des offres (?actif=true|false) */
+router.get('/', authMiddleware, listOffres);
+
+/** GET /api/offres/list — Alias */
 router.get('/list', authMiddleware, listOffres);
 
 /** POST /api/offres/:id/send — Envoyer l'offre par notif push (?cible=tous|actifs|dormants) */
