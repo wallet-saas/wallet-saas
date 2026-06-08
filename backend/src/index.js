@@ -35,6 +35,7 @@ const healthRoutes = require('./routes/health');
 const badgesRoutes = require('./routes/badges');
 const autoReviewRoutes = require('./routes/autoReview');
 const boutiquesRoutes = require('./routes/boutiques');
+const offresFlashRoutes = require('./routes/offres-flash');
 
 app.use('/api/commercants', commercantsRoutes);
 app.use('/api/auth', authRoutes);
@@ -52,6 +53,7 @@ app.use('/api/health', healthRoutes);
 app.use('/api/badges', badgesRoutes);
 app.use('/api/auto-review', autoReviewRoutes);
 app.use('/api/boutiques', boutiquesRoutes);
+app.use('/api/offres-flash', offresFlashRoutes);
 
 // Health check endpoint (used by Render)
 app.get('/health', (req, res) => {
