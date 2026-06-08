@@ -1,0 +1,114 @@
+{
+  "name": "Stamply — Cartes de fidélité digitales",
+  "short_name": "Stamply",
+  "description": "Créez et gérez des cartes de fidélité Google Wallet pour votre commerce",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "fr",
+  "categories": ["business", "finance", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/dashboard.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Dashboard Stamply"
+    },
+    {
+      "src": "/screenshots/mobile.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Application mobile Stamply"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Scanner une carte",
+      "short_name": "Scan",
+      "description": "Scanner le QR code d'un client",
+      "url": "/dashboard/scan",
+      "icons": [{ "src": "/icons/scan.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Mes cartes",
+      "short_name": "Cartes",
+      "description": "Voir toutes les cartes générées",
+      "url": "/dashboard/cartes",
+      "icons": [{ "src": "/icons/card.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Analytics",
+      "short_name": "Stats",
+      "description": "Voir les statistiques",
+      "url": "/dashboard/analytics",
+      "icons": [{ "src": "/icons/chart.png", "sizes": "96x96" }]
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.stamply.app",
+      "id": "com.stamply.app"
+    },
+    {
+      "platform": "itunes",
+      "url": "https://apps.apple.com/app/stamply/id123456789"
+    }
+  ],
+  "prefer_related_applications": false
+}

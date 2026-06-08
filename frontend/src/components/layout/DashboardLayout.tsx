@@ -6,9 +6,11 @@ import { Spinner } from '@/components/ui/Spinner';
 import {
   LayoutDashboard, CreditCard, QrCode, Bell, Star,
   UtensilsCrossed, Tag, MapPin, BarChart3, Settings,
-  CreditCard as StripeCard, LogOut, ChevronLeft, Menu, X
+  CreditCard as StripeCard, LogOut, ChevronLeft, Menu, X,
+  Store, MessageSquare
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 
 type NavItem = {
   label: string;
@@ -27,6 +29,8 @@ const navItems: NavItem[] = [
   { label: 'Offres Flash', href: '/dashboard/offres', icon: Tag, module: 'module_offres' },
   { label: 'Géolocalisation', href: '/dashboard/geolocalisation', icon: MapPin, module: 'module_geoloc' },
   { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+  { label: 'Mes boutiques', href: '/dashboard/boutiques', icon: Store },
+  { label: 'Avis automatiques', href: '/dashboard/auto-review', icon: MessageSquare },
 ];
 
 const bottomItems = [
@@ -130,6 +134,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           {children}
         </div>
       </main>
+      <PWAInstallPrompt />
     </div>
   );
 }
