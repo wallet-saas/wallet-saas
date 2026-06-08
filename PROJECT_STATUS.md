@@ -40,22 +40,29 @@ Les clients installent la carte en 5 secondes via QR code, sans app à télécha
 7. **À 10 points** → notification de récompense débloquée
 8. **Commerçant** peut envoyer des notifications push à ses clients
 
-## État des Features (testé en live le 7 juin 2026)
+## État des Features (testé en live le 8 juin 2026)
 
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Auth (register/login/me) | ✅ | JWT 7 jours, bcrypt |
-| Google Wallet (setup → generate → URL) | ✅ | LoyaltyClass auto-créée |
-| Scan QR caisse | ✅ | Rate limiting 30s, points auto |
-| Notifications push | ✅ | Mode simulation (FCM prêt) |
-| Offres flash | ✅ | CRUD + envoi notif |
-| Analytics | ✅ | Charts + stats |
-| Menus | ✅ | CRUD complet |
-| Avis | ✅ | List + réponse IA |
-| Géolocalisation | ✅ | Stats + trigger |
-| Stripe checkout | ✅ | Code prêt, clés à configurer |
-| Subscription status | ⚠️ | Corrigé en local, pas déployé |
-| Images logo | ⚠️ | Corrigé en local, pas déployé |
+| # | Feature | Status | Notes |
+|---|---------|--------|-------|
+| 1 | Auth (register/login/me) | ✅ | JWT 7 jours, bcrypt |
+| 2 | Google Wallet (setup → generate → URL) | ✅ | LoyaltyClass auto-créée, mode live |
+| 3 | Scan QR caisse | ✅ | Rate limiting 30s, points auto, badges |
+| 4 | Notifications push | ✅ | Mode simulation (FCM prêt) |
+| 5 | Offres flash | ✅ | CRUD + envoi notif |
+| 6 | Analytics | ✅ | Charts + stats + clients dormants |
+| 7 | Menus | ✅ | CRUD complet |
+| 8 | Avis | ✅ | List + réponse IA |
+| 9 | Géolocalisation | ✅ | Stats + trigger |
+| 10 | Stripe checkout | ✅ | Code prêt, clés configurées |
+| 11 | Subscription status | ✅ | Format {success, data} corrigé |
+| 12 | Images logo | ✅ | Placeholder au lieu de boucle 302 |
+| 13 | Health check | ✅ | /api/health + /api/health/diagnostics |
+| 14 | Recherche commerçants | ✅ | /api/commercants/search + /categories |
+| 15 | Landing page | ✅ | Recherche, catégories, pricing |
+| 16 | Badges clients | ✅ | 5 niveaux (1, 5, 10, 25, 50 pts) |
+| 17 | Page installation | ✅ | QR code + bouton Google Wallet |
+
+**17/17 features V1 = 100%** 🎉
 
 ## Sécurité
 
@@ -67,23 +74,29 @@ Les clients installent la carte en 5 secondes via QR code, sans app à télécha
 - ✅ RLS Supabase
 - ✅ Mots de passe forts requis (8+ chars, maj, min, chiffre)
 
+## Déploiement
+
+- **Backend** : Render (auto-deploy via GitHub)
+- **Frontend** : Vercel (auto-deploy via GitHub)
+- **CI/CD** : GitHub Actions
+- **API Render** : Déclenchement auto via API
+
 ## Ce qui reste à faire
 
 ### Configuration manuelle (BOZO)
 1. **Supabase** : Exécuter les migrations SQL (voir SETUP.md)
-2. **Stripe** : Ajouter les clés API dans Render (voir SETUP.md)
-3. **FCM** : Ajouter la clé Firebase pour les notifications réelles
-4. **Render** : Vérifier que le déploiement a bien eu lieu
+2. **FCM** : Ajouter la clé Firebase pour les notifications réelles
+3. **Apple Wallet** : Certificat Apple Developer (V2)
 
 ### Features V2 (prochaines étapes)
-- [ ] Module Avis Google (automatisation collecte + réponses IA)
-- [ ] Module Géolocalisation (notification client proche)
-- [ ] Module Menu du Jour
-- [ ] Module Offres Flash
 - [ ] Apple Wallet (certificat Apple Developer)
 - [ ] Application mobile commerçant
-- [ ] Système de récompenses avancé
+- [ ] Système de récompenses avancé (multi-niveaux)
+- [ ] Programme parrainage client
+- [ ] Intégration Google My Business
+- [ ] Export CSV des données clients
 - [ ] Multi-langues
+- [ ] Thème sombre dashboard
 
 ## Commandes utiles
 
@@ -98,7 +111,7 @@ cd frontend && npm install && npm run dev
 python3 test_api.py
 
 # Push vers GitHub (déclenche Render auto)
-git add . && git commit -m "..." && git push origin master
+git add . && git commit -m "..." && git push origin main
 ```
 
 ## Support
