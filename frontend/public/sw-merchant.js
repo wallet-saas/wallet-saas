@@ -13,11 +13,11 @@ const API_CACHE = 'stamply-api-v1';
 
 // App shell files to cache immediately
 const SHELL_FILES = [
-  '/app',
-  '/app/dashboard',
-  '/app/scan',
-  '/app/boutiques',
-  '/app/analytics',
+  '/',
+  '//dashboard',
+  '//scan',
+  '//boutiques',
+  '//analytics',
   '/manifest-merchant.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
@@ -108,7 +108,7 @@ async function networkFirst(request, cacheName) {
 
     // For HTML pages, return the app shell
     if (request.headers.get('accept')?.includes('text/html')) {
-      return caches.match('/app');
+      return caches.match('/');
     }
 
     return new Response('Hors ligne', { status: 503, statusText: 'Service Unavailable' });
@@ -179,13 +179,13 @@ self.addEventListener('notificationclick', (event) => {
     clients.matchAll({ type: 'window' }).then((clientList) => {
       // Focus existing window
       for (const client of clientList) {
-        if (client.url.includes('/app') && 'focus' in client) {
+        if (client.url.includes('/') && 'focus' in client) {
           return client.focus();
         }
       }
       // Open new window
       if (clients.openWindow) {
-        return clients.openWindow('/app');
+        return clients.openWindow('/');
       }
     })
   );

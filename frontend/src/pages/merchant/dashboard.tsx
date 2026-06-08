@@ -119,25 +119,25 @@ export default function MobileDashboard() {
           <QuickAction
             icon="📷"
             label="Scanner QR"
-            onClick={() => router.push('/app/scan')}
+            onClick={() => router.push('/merchant/scan')}
             color="#6C63FF"
           />
           <QuickAction
             icon="🏪"
             label="Mes boutiques"
-            onClick={() => router.push('/app/boutiques')}
+            onClick={() => router.push('/merchant/boutiques')}
             color="#10B981"
           />
           <QuickAction
             icon="🎁"
             label="Récompenses"
-            onClick={() => router.push('/app/rewards')}
+            onClick={() => router.push('/merchant/rewards')}
             color="#F59E0B"
           />
           <QuickAction
             icon="📊"
             label="Statistiques"
-            onClick={() => router.push('/app/analytics')}
+            onClick={() => router.push('/merchant/analytics')}
             color="#EC4899"
           />
         </div>

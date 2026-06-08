@@ -20,7 +20,7 @@ export function usePWA() {
     }
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw-merchant.js', { scope: '/app/' })
+      navigator.serviceWorker.register('/sw-merchant.js', { scope: '/merchant/' })
         .then(reg => console.log('[PWA] SW registered:', reg.scope))
         .catch(err => console.log('[PWA] SW registration failed:', err));
     }

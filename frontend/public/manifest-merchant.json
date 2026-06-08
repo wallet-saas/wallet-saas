@@ -2,8 +2,8 @@
   "name": "Stamply — Commerçant",
   "short_name": "Stamply",
   "description": "Gérez votre programme de fidélité — Scan QR, suivez vos clients",
-  "start_url": "/app",
-  "scope": "/app/",
+  "start_url": "/",
+  "scope": "//",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#FFFFFF",
@@ -64,21 +64,21 @@
       "name": "Scanner un QR",
       "short_name": "Scan",
       "description": "Scanner le QR code d'un client",
-      "url": "/app/scan",
+      "url": "//scan",
       "icons": [{ "src": "/icons/scan.png", "sizes": "192x192" }]
     },
     {
       "name": "Mes boutiques",
       "short_name": "Boutiques",
       "description": "Gérer mes boutiques",
-      "url": "/app/boutiques",
+      "url": "//boutiques",
       "icons": [{ "src": "/icons/store.png", "sizes": "192x192" }]
     },
     {
       "name": "Statistiques",
       "short_name": "Stats",
       "description": "Voir les statistiques",
-      "url": "/app/analytics",
+      "url": "//analytics",
       "icons": [{ "src": "/icons/stats.png", "sizes": "192x192" }]
     }
   ],

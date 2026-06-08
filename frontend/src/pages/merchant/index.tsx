@@ -30,13 +30,13 @@ export default function AppInstall() {
     // Check if already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
-      router.replace('/app/dashboard');
+      router.replace('/merchant/dashboard');
       return;
     }
 
     // Register SW
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw-merchant.js', { scope: '/app/' })
+      navigator.serviceWorker.register('/sw-merchant.js', { scope: '/merchant/' })
         .catch(() => {});
     }
 
@@ -48,7 +48,7 @@ export default function AppInstall() {
 
     const installedHandler = () => {
       setIsInstalled(true);
-      router.replace('/app/dashboard');
+      router.replace('/merchant/dashboard');
     };
 
     window.addEventListener('beforeinstallprompt', handler);
@@ -66,12 +66,12 @@ export default function AppInstall() {
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
       setIsInstalled(true);
-      router.replace('/app/dashboard');
+      router.replace('/merchant/dashboard');
     }
   };
 
   const handleContinue = () => {
-    router.replace('/app/dashboard');
+    router.replace('/merchant/dashboard');
   };
 
   return (

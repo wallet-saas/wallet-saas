@@ -9,11 +9,11 @@ interface MobileLayoutProps {
 
 // Bottom nav items
 const navItems = [
-  { icon: '🏠', label: 'Accueil', href: '/app/dashboard' },
-  { icon: '📷', label: 'Scan', href: '/app/scan' },
-  { icon: '🏪', label: 'Boutiques', href: '/app/boutiques' },
-  { icon: '📊', label: 'Stats', href: '/app/analytics' },
-  { icon: '⚙️', label: 'Config', href: '/app/config' },
+  { icon: '🏠', label: 'Accueil', href: '/merchant/dashboard' },
+  { icon: '📷', label: 'Scan', href: '/merchant/scan' },
+  { icon: '🏪', label: 'Boutiques', href: '/merchant/boutiques' },
+  { icon: '📊', label: 'Stats', href: '/merchant/analytics' },
+  { icon: '⚙️', label: 'Config', href: '/merchant/config' },
 ];
 
 export function MobileLayout({ children, title = 'Stamply' }: MobileLayoutProps) {
@@ -121,7 +121,7 @@ export function MobileLayout({ children, title = 'Stamply' }: MobileLayoutProps)
       }}>
         {navItems.map((item) => {
           const isActive = currentPath === item.href ||
-            (item.href !== '/app/dashboard' && currentPath.startsWith(item.href));
+            (item.href !== '/merchant/dashboard' && currentPath.startsWith(item.href));
 
           return (
             <button
