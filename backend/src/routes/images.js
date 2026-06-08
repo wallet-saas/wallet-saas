@@ -51,9 +51,11 @@ router.get('/:commercantId', async (req, res) => {
       garagiste: 'https://placehold.co/200x200/374151/ffffff?text=G',
     };
 
-    const logoUrl = commercant.carte_logo_url
-      || templateLogos[commercant.template_metier]
-      || 'https://placehold.co/200x200/6366f1/ffffff?text=S';
+    // IGNORER le carte_logo_url s'il pointe vers notre propre API (évite boucle)
+    // Priorité : logo custom (si externe) → logo template → placeholder générique
+    const logoUrl = isSelfUrl
+      ? (templateLogos[commercant.template_metier] || 'https://placehold.co/200x200/6366f1/ffffff?text=S')
+      : (commercant.carte_logo_url || templateLogos[commercant.template_metier] || 'https://placehold.co/200x200/6366f1/ffffff?text=S');
 
     res.json({
       success: true,
