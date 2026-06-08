@@ -26,15 +26,20 @@ router.get('/:commercantId', async (req, res) => {
     // Si le logo est une URL externe (http/https), rediriger
     // MAIS ignorer les URLs qui pointent vers notre propre API (évite boucle infinie)
     const selfUrl = req.protocol + '://' + req.get('host');
-    const isSelfUrl = commercant.carte_logo_url
-      && (commercant.carte_logo_url.startsWith(selfUrl)
-        || commercant.carte_logo_url.startsWith('/api/')
-        || commercant.carte_logo_url.includes('stamply-backend'));
-    console.log('[images] carte_logo_url=' + commercant.carte_logo_url + ' | selfUrl=' + selfUrl + ' | isSelf=' + isSelfUrl);
-    if (commercant.carte_logo_url
-        && commercant.carte_logo_url.startsWith('http')
-        && !isSelfUrl) {
-      return res.redirect(302, commercant.carte_logo_url);
+    const logo = commercant.carte_logo_url || '';
+    const isSelfUrl = logo && (
+      logo.startsWith(selfUrl)
+      || logo.startsWith('/api/')
+      || logo.includes('stamply-backend')
+      || logo.includes('render.com')
+      || logo.includes('localhost')
+      || logo.includes('127.0.0.1')
+      || logo.includes('/api/images/')
+      || logo.includes('/wallet/')
+    );
+    console.log('[images] logo=' + logo + ' | selfUrl=' + selfUrl + ' | isSelf=' + isSelfUrl);
+    if (logo.startsWith('http') && !isSelfUrl) {
+      return res.redirect(302, logo);
     }
 
     // Sinon, retourner les infos du logo en JSON (le frontend utilisera le template par défaut)

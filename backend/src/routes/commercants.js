@@ -1,9 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const commercantsController = require('../controllers/commercantsController');
+const searchController = require('../controllers/commercantsSearchController');
 const authMiddleware = require('../middleware/authMiddleware');
 
-// Public
+// Public — recherche et listing (AVANT /:id pour éviter le wildcard)
+router.get('/search', searchController.search);
+router.get('/categories', searchController.categories);
 router.get('/', commercantsController.getAllCommercants);
 router.post('/', commercantsController.createCommercant);
 
