@@ -32,6 +32,7 @@ const analyticsRoutes = require('./routes/analytics');
 const subscriptionRoutes = require('./routes/subscription');
 const imagesRoutes = require('./routes/images');
 const healthRoutes = require('./routes/health');
+const badgesRoutes = require('./routes/badges');
 
 app.use('/api/commercants', commercantsRoutes);
 app.use('/api/auth', authRoutes);
@@ -46,6 +47,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/images', imagesRoutes);
 app.use('/api/health', healthRoutes);
+app.use('/api/badges', badgesRoutes);
 
 // Health check endpoint (used by Render)
 app.get('/health', (req, res) => {

@@ -1,5 +1,6 @@
 const { supabase } = require('../config/supabase');
 const googleWalletService = require('../services/googleWalletService');
+const badgeService = require('../services/badgeService');
 
 // Rate limiting en mémoire : Map<pass_serial_number, timestamp_last_scan>
 const scanRateLimit = new Map();
@@ -111,6 +112,9 @@ const scanQR = async (req, res) => {
     // --- Mettre à jour la carte Google Wallet (best-effort, non-bloquant) ---
     googleWalletService.updateLoyaltyObjectPoints(pass_serial_number, newPoints);
 
+    // --- Vérifier et attribuer des badges (non-bloquant) ---
+    const newBadges = await badgeService.checkAndAssignBadges(carte.id, commercantId, newPoints);
+
     // --- Enregistrer le timestamp du scan pour le rate limiting ---
     scanRateLimit.set(pass_serial_number, now);
 
@@ -133,6 +137,7 @@ const scanQR = async (req, res) => {
       seuil,
       reward,
       reset,
+      badges: newBadges.map((b) => ({ id: b.id, label: b.label, icon: b.icon })),
       message
     });
 
