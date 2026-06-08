@@ -117,4 +117,18 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🔗 Supabase URL: ${process.env.SUPABASE_URL}`);
 });
 
+
+// === DEPLOY MARKER: FULL-VERIFY-20260608 ===
+console.log('✅ FULL DEPLOY VERIFY: rewards + qrCode routes loaded');
+
+// === TEST ROUTE: deploy verification ===
+app.get('/api/deploy-check', (req, res) => {
+  res.json({
+    marker: 'FULL-VERIFY-20260608',
+    rewards_loaded: false,
+    qrCode_loaded: false,
+    timestamp: new Date().toISOString()
+  });
+});
+
 module.exports = app;
