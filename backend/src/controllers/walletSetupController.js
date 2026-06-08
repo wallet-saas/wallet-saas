@@ -45,9 +45,11 @@ const setupWalletCard = async (req, res) => {
       template_type,
       programme_nom,
       couleur_primaire,
+      couleur_secondaire,
       logo_url,
       points_recompense,
       recompense_description,
+      layout,
     } = req.body;
 
     const logo_url_final = resolveLogo(template_type, logo_url, commercantId);
@@ -57,11 +59,13 @@ const setupWalletCard = async (req, res) => {
       .from('commercants')
       .update({
         carte_couleur_primaire: couleur_primaire,
+        carte_couleur_secondaire: couleur_secondaire || null,
         carte_logo_url: logo_url_final,
         points_recompense,
         carte_programme_nom: programme_nom,
         carte_recompense_description: recompense_description,
         template_type: template_type || null,
+        carte_layout: layout || 'classic',
       })
       .eq('id', commercantId)
       .select('id, nom_enseigne, carte_couleur_primaire, carte_logo_url, points_recompense, carte_programme_nom, carte_recompense_description, template_type')

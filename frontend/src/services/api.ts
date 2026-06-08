@@ -498,9 +498,11 @@ export interface WalletSetupData {
   template_type?: string;
   programme_nom: string;
   couleur_primaire: string;
+  couleur_secondaire?: string;
   logo_url?: string;
   points_recompense: number;
   recompense_description: string;
+  layout?: 'classic' | 'modern' | 'minimal';
 }
 
 export { ApiError };
