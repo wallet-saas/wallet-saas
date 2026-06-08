@@ -11,9 +11,8 @@ const search = async (req, res) => {
 
     let query = supabase
       .from('commercants')
-      .select('id, nom_enseigne, template_type, carte_couleur_primaire, carte_programme_nom, points_recompense, wallet_class_configured, subscription_status')
+      .select('id, nom_enseigne, template_type, carte_couleur_primaire, carte_programme_nom, points_recompense')
       .eq('wallet_class_configured', true)
-      .eq('subscription_status', 'active')
       .order('nom_enseigne', { ascending: true })
       .limit(maxLimit);
 
@@ -53,7 +52,6 @@ const categories = async (req, res) => {
       .from('commercants')
       .select('template_type')
       .eq('wallet_class_configured', true)
-      .eq('subscription_status', 'active')
       .not('template_type', 'is', null);
 
     if (error) {
