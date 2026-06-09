@@ -12,14 +12,10 @@ const registerValidation = [
     .normalizeEmail()
     .isLength({ max: 255 }).withMessage('Email trop long (max 255 caractères).'),
   body('password')
-    .isLength({ min: 8, max: 128 }).withMessage('Le mot de passe doit contenir entre 8 et 128 caractères.')
-    .matches(/[A-Z]/).withMessage('Le mot de passe doit contenir au moins une majuscule.')
-    .matches(/[a-z]/).withMessage('Le mot de passe doit contenir au moins une minuscule.')
-    .matches(/[0-9]/).withMessage('Le mot de passe doit contenir au moins un chiffre.'),
+    .isLength({ min: 6, max: 128 }).withMessage('Le mot de passe doit contenir au moins 6 caractères.'),
   body('nom_enseigne')
     .trim()
-    .isLength({ min: 2, max: 255 }).withMessage('Le nom d\'enseigne doit contenir entre 2 et 255 caractères.')
-    .escape(),
+    .isLength({ min: 2, max: 255 }).withMessage('Le nom d\'enseigne doit contenir entre 2 et 255 caractères.'),
   body('siret')
     .optional()
     .matches(/^\d{14}$/).withMessage('Le SIRET doit contenir exactement 14 chiffres.'),
@@ -29,16 +25,14 @@ const registerValidation = [
   body('adresse')
     .optional()
     .trim()
-    .isLength({ max: 500 }).withMessage('Adresse trop longue.')
-    .escape(),
+    .isLength({ max: 500 }).withMessage('Adresse trop longue.'),
   body('code_postal')
     .optional()
     .matches(/^\d{5}$/).withMessage('Code postal invalide (5 chiffres requis).'),
   body('ville')
     .optional()
     .trim()
-    .isLength({ max: 100 }).withMessage('Nom de ville trop long.')
-    .escape(),
+    .isLength({ max: 100 }).withMessage('Nom de ville trop long.'),
 ];
 
 // Règles de validation pour le login
@@ -59,13 +53,11 @@ const walletSetupValidation = [
   body('carte_programme_nom')
     .optional()
     .trim()
-    .isLength({ min: 2, max: 100 }).withMessage('Nom du programme: 2-100 caractères.')
-    .escape(),
+    .isLength({ min: 2, max: 100 }).withMessage('Nom du programme: 2-100 caractères.'),
   body('carte_recompense_description')
     .optional()
     .trim()
-    .isLength({ max: 500 }).withMessage('Description trop longue.')
-    .escape(),
+    .isLength({ max: 500 }).withMessage('Description trop longue.'),
   body('carte_couleur_primaire')
     .optional()
     .matches(/^#[0-9A-Fa-f]{6}$/).withMessage('Couleur invalide (format #RRGGBB).'),
@@ -109,13 +101,11 @@ const notificationValidation = [
 const offreValidation = [
   body('titre')
     .trim()
-    .isLength({ min: 2, max: 255 }).withMessage('Titre: 2-255 caractères.')
-    .escape(),
+    .isLength({ min: 2, max: 255 }).withMessage('Titre: 2-255 caractères.'),
   body('description')
     .optional()
     .trim()
-    .isLength({ max: 1000 }).withMessage('Description trop longue.')
-    .escape(),
+    .isLength({ max: 1000 }).withMessage('Description trop longue.'),
   body('reduction_pct')
     .optional()
     .isFloat({ min: 0.1, max: 100 }).withMessage('Réduction: 0.1-100%.'),
