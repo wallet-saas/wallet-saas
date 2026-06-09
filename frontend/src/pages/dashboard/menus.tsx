@@ -14,6 +14,7 @@ import { PageSpinner } from '@/components/ui/Spinner';
 import { menusApi, type Menu } from '@/services/api';
 import { commercantApi } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/components/ui/Toast';
 import { formatEuro } from '@/utils/format';
 import { Plus, Pencil, Trash2, UtensilsCrossed, ChevronDown, ChevronRight, Settings, Send, Bell, Check } from 'lucide-react';
 
@@ -31,6 +32,7 @@ const defaultCategories = ['Entrées', 'Plats', 'Desserts', 'Boissons', 'Snacks'
 
 export default function MenusPage() {
   const { commercant, refreshUser } = useAuth();
+  const { show: toast } = useToast();
   const [parCategorie, setParCategorie] = useState<Record<string, Menu[]>>({});
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
@@ -41,7 +43,6 @@ export default function MenusPage() {
   const [pushingMenu, setPushingMenu] = useState(false);
   const [pushResult, setPushResult] = useState<{ success?: boolean; message?: string } | null>(null);
 
-  // Settings
   const [moduleEnabled, setModuleEnabled] = useState(true);
   const [categories, setCategories] = useState('Entrées,Plats,Desserts,Boissons');
   const [devise, setDevise] = useState('EUR');
@@ -55,11 +56,11 @@ export default function MenusPage() {
   useEffect(() => {
     if (commercant) {
       setModuleEnabled(commercant.module_menu_jour ?? true);
-      const cats: string | string[] = commercant.menu_categories || '';
-      if (typeof cats === 'string') {
-        try { setCategories(JSON.parse(cats).join(',')); } catch { setCategories(cats); }
-      } else {
-        setCategories(cats.join(','));
+      const catsRaw = commercant.menu_categories;
+      if (typeof catsRaw === 'string') {
+        try { setCategories(JSON.parse(catsRaw).join(',')); } catch { setCategories(catsRaw); }
+      } else if (Array.isArray(catsRaw)) {
+        setCategories(catsRaw.join(','));
       }
       setDevise(commercant.menu_devise ?? 'EUR');
       setAfficherPrix(commercant.menu_afficher_prix ?? true);
@@ -92,20 +93,20 @@ export default function MenusPage() {
       }
       setModal({ open: false });
       fetchMenus();
-    } catch (e: any) { alert(e?.message); }
+    } catch (e: any) { toast(e?.message || 'Erreur', 'error'); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Supprimer ce plat ?')) return;
     setDeleting(id);
     try { await menusApi.delete(id); fetchMenus(); }
-    catch (e: any) { alert(e?.message); }
+    catch (e: any) { toast(e?.message || 'Erreur', 'error'); }
     finally { setDeleting(null); }
   };
 
   const handleToggle = async (menu: Menu) => {
     try { await menusApi.toggle(menu.id); fetchMenus(); }
-    catch (e: any) { alert(e?.message); }
+    catch (e: any) { toast(e?.message || 'Erreur', 'error'); }
   };
 
   const handleSaveSettings = async () => {
@@ -118,8 +119,8 @@ export default function MenusPage() {
         menu_afficher_prix: afficherPrix,
       });
       await refreshUser();
-      alert('Paramètres enregistrés !');
-    } catch (e: any) { alert(e?.message || 'Erreur'); }
+      toast('Paramètres enregistrés');
+    } catch (e: any) { toast(e?.message || 'Erreur', 'error'); }
     finally { setSaving(false); }
   };
 
@@ -167,7 +168,6 @@ export default function MenusPage() {
         </div>
       </div>
 
-      {/* Module toggle */}
       <div className={`flex items-center gap-4 px-5 py-4 rounded-xl border mb-6 ${moduleEnabled ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100'}`}>
         <UtensilsCrossed className={`h-5 w-5 ${moduleEnabled ? 'text-green-600' : 'text-gray-400'}`} />
         <div className="flex-1">
@@ -177,7 +177,6 @@ export default function MenusPage() {
         <Toggle checked={moduleEnabled} onChange={setModuleEnabled} />
       </div>
 
-      {/* Push result */}
       {pushResult && (
         <div className={`flex items-center gap-2 px-4 py-3 rounded-xl mb-4 ${pushResult.success ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'}`}>
           {pushResult.success ? <Check className="h-4 w-4 text-green-600" /> : <Pencil className="h-4 w-4 text-red-500" />}
@@ -185,7 +184,6 @@ export default function MenusPage() {
         </div>
       )}
 
-      {/* Tabs */}
       <div className="flex gap-2 mb-6">
         {([
           { id: 'menu', label: 'Mon Menu', icon: UtensilsCrossed },
@@ -256,7 +254,6 @@ export default function MenusPage() {
                 <CardHeader><CardTitle>Catégories</CardTitle></CardHeader>
                 <CardBody className="space-y-4">
                   <Textarea label="Catégories (séparées par des virgules)" placeholder="Entrées, Plats, Desserts, Boissons" rows={3} value={categories} onChange={e => setCategories(e.target.value)} />
-                  <p className="text-xs text-gray-400 -mt-2">Personnalisez les catégories de votre menu</p>
                   <div className="flex flex-wrap gap-2">
                     {categories.split(',').map(c => c.trim()).filter(Boolean).map(c => (
                       <Badge key={c} variant="blue">{c}</Badge>

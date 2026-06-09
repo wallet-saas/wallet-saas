@@ -7,16 +7,17 @@ import { Input, Textarea } from '@/components/ui/Input';
 import { PageSpinner } from '@/components/ui/Spinner';
 import { commercantApi } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/components/ui/Toast';
 import { CardPreview } from '@/components/CardPreview';
 import { Store, Palette, Eye, Save, Settings, CreditCard } from 'lucide-react';
 
 export default function ParametresPage() {
   const { commercant, refreshUser } = useAuth();
+  const { show: toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'commerce' | 'carte'>('commerce');
 
-  // Commerce fields
   const [nomEnseigne, setNomEnseigne] = useState('');
   const [telephone, setTelephone] = useState('');
   const [adresse, setAdresse] = useState('');
@@ -24,7 +25,6 @@ export default function ParametresPage() {
   const [codePostal, setCodePostal] = useState('');
   const [email, setEmail] = useState('');
 
-  // Card fields
   const [couleur, setCouleur] = useState('#6366f1');
   const [couleurSecondaire, setCouleurSecondaire] = useState('#764ba2');
   const [programmeNom, setProgrammeNom] = useState('');
@@ -67,8 +67,8 @@ export default function ParametresPage() {
         code_postal: codePostal,
       });
       await refreshUser();
-      alert('Informations enregistrées !');
-    } catch (e: any) { alert(e?.message || 'Erreur'); }
+      toast('Informations enregistrées');
+    } catch (e: any) { toast(e?.message || 'Erreur', 'error'); }
     finally { setSaving(false); }
   };
 
@@ -87,8 +87,8 @@ export default function ParametresPage() {
         carte_logo_url: logoUrl,
       });
       await refreshUser();
-      alert('Carte mise à jour !');
-    } catch (e: any) { alert(e?.message || 'Erreur'); }
+      toast('Carte mise à jour');
+    } catch (e: any) { toast(e?.message || 'Erreur', 'error'); }
     finally { setSaving(false); }
   };
 
@@ -103,7 +103,6 @@ export default function ParametresPage() {
         <p className="page-subtitle">Gérez vos informations et personnalisez votre carte</p>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-2 mb-6">
         {([
           { id: 'commerce', label: 'Mon commerce', icon: Store },
@@ -129,7 +128,7 @@ export default function ParametresPage() {
               <Input label="Nom de l'enseigne" value={nomEnseigne} onChange={e => setNomEnseigne(e.target.value)} />
               <div className="grid grid-cols-2 gap-4">
                 <Input label="Téléphone" value={telephone} onChange={e => setTelephone(e.target.value)} />
-                <Input label="Email" value={email} disabled hint="Pour modifier votre email, contactez le support" />
+                <Input label="Email" value={email} disabled />
               </div>
               <Input label="Adresse" value={adresse} onChange={e => setAdresse(e.target.value)} />
               <div className="grid grid-cols-2 gap-4">
@@ -146,7 +145,6 @@ export default function ParametresPage() {
 
       {activeTab === 'carte' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Preview */}
           <div>
             <Card>
               <CardHeader>
@@ -172,7 +170,6 @@ export default function ParametresPage() {
             </Card>
           </div>
 
-          {/* Settings */}
           <div className="space-y-6">
             <Card>
               <CardHeader>

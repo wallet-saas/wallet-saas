@@ -14,6 +14,7 @@ import { PageSpinner } from '@/components/ui/Spinner';
 import { notificationsApi, type Notification, type NotifStats } from '@/services/api';
 import { commercantApi } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/components/ui/Toast';
 import { formatDateTime, formatPercent, formatNumber } from '@/utils/format';
 import { Bell, Send, Users, Eye, TrendingUp, CheckCircle, AlertCircle, Settings, Zap } from 'lucide-react';
 
@@ -31,7 +32,8 @@ const cibleOptions = [
 ];
 
 export default function NotificationsPage() {
-  const { commercant, refreshUser, updateCommercant } = useAuth();
+  const { commercant, refreshUser } = useAuth();
+  const { show: toast } = useToast();
   const [history, setHistory] = useState<Notification[]>([]);
   const [stats, setStats] = useState<NotifStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,7 +46,6 @@ export default function NotificationsPage() {
     defaultValues: { cible: 'tous' },
   });
 
-  // Settings state
   const [moduleEnabled, setModuleEnabled] = useState(true);
   const [maxPerDay, setMaxPerDay] = useState(3);
   const [heureDebut, setHeureDebut] = useState(8);
@@ -77,10 +78,7 @@ export default function NotificationsPage() {
     setSendResult(null);
     try {
       const res = await notificationsApi.send(data.titre, data.message, data.cible);
-      setSendResult({
-        success: true,
-        message: `Envoyé à ${res.totalEnvoyes} client(s)${res.simulation ? ' (mode simulation)' : ''}`,
-      });
+      setSendResult({ success: true, message: `Envoyé à ${res.totalEnvoyes} client(s)${res.simulation ? ' (mode simulation)' : ''}` });
       reset();
       fetchData();
     } catch (e: any) {
@@ -99,9 +97,9 @@ export default function NotificationsPage() {
         notif_template_defaut: templateDefaut,
       });
       await refreshUser();
-      alert('Paramètres enregistrés !');
+      toast('Paramètres enregistrés');
     } catch (e: any) {
-      alert(e?.message || 'Erreur');
+      toast(e?.message || 'Erreur', 'error');
     } finally { setSaving(false); }
   };
 
@@ -126,7 +124,6 @@ export default function NotificationsPage() {
 
       {loading ? <PageSpinner /> : (
         <div className="space-y-6">
-          {/* Module toggle */}
           <div className={`flex items-center gap-4 px-5 py-4 rounded-xl border ${moduleEnabled ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100'}`}>
             <Bell className={`h-5 w-5 ${moduleEnabled ? 'text-green-600' : 'text-gray-400'}`} />
             <div className="flex-1">
@@ -136,7 +133,6 @@ export default function NotificationsPage() {
             <Toggle checked={moduleEnabled} onChange={setModuleEnabled} />
           </div>
 
-          {/* Tabs */}
           <div className="flex gap-2">
             {([
               { id: 'send', label: 'Envoyer', icon: Send },
@@ -153,7 +149,6 @@ export default function NotificationsPage() {
             ))}
           </div>
 
-          {/* Send tab */}
           {activeTab === 'send' && (
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
               <div className="lg:col-span-3">
@@ -169,7 +164,6 @@ export default function NotificationsPage() {
                         <p className={`text-sm ${sendResult.success ? 'text-green-700' : 'text-red-600'}`}>{sendResult.message}</p>
                       </div>
                     )}
-
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                       <Input label="Titre" placeholder="Offre spéciale ce weekend !" error={errors.titre?.message} {...register('titre')} />
                       <Textarea label="Message" placeholder="Profitez de -20% sur toute la carte…" rows={4} error={errors.message?.message} {...register('message')} />
@@ -190,7 +184,6 @@ export default function NotificationsPage() {
                   </CardBody>
                 </Card>
               </div>
-
               <div className="lg:col-span-2">
                 <Card>
                   <CardHeader><CardTitle>Statistiques</CardTitle></CardHeader>
@@ -205,7 +198,6 @@ export default function NotificationsPage() {
             </div>
           )}
 
-          {/* History tab */}
           {activeTab === 'history' && (
             <Card>
               <CardHeader><CardTitle>Historique des envois</CardTitle></CardHeader>
@@ -245,20 +237,16 @@ export default function NotificationsPage() {
             </Card>
           )}
 
-          {/* Settings tab */}
           {activeTab === 'settings' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader><CardTitle>Limites anti-spam</CardTitle></CardHeader>
                 <CardBody className="space-y-4">
-                  <Input label="Max notifications par client par jour" type="number" min={1} max={20} value={maxPerDay} onChange={e => setMaxPerDay(Number(e.target.value))} hint="Au-delà, le client ne recevra plus de notif jusqu'au lendemain" />
+                  <Input label="Max notifications par client par jour" type="number" min={1} max={20} value={maxPerDay} onChange={e => setMaxPerDay(Number(e.target.value))} />
                   <div className="grid grid-cols-2 gap-4">
-                    <Input label="Ne pas envoyer avant (h)" type="number" min={0} max={23} value={heureDebut} onChange={e => setHeureDebut(Number(e.target.value))} hint="Heure de début d'envoi" />
-                    <Input label="Ne pas envoyer après (h)" type="number" min={0} max={23} value={heureFin} onChange={e => setHeureFin(Number(e.target.value))} hint="Heure de fin d'envoi" />
+                    <Input label="Ne pas envoyer avant (h)" type="number" min={0} max={23} value={heureDebut} onChange={e => setHeureDebut(Number(e.target.value))} />
+                    <Input label="Ne pas envoyer après (h)" type="number" min={0} max={23} value={heureFin} onChange={e => setHeureFin(Number(e.target.value))} />
                   </div>
-                  <p className="text-xs text-gray-400 bg-gray-50 rounded-lg p-3">
-                    💡 Les notifications seront uniquement envoyées entre {heureDebut}h et {heureFin}h. En dehors de ces heures, elles seront mises en file d'attente.
-                  </p>
                 </CardBody>
               </Card>
 
@@ -266,10 +254,6 @@ export default function NotificationsPage() {
                 <CardHeader><CardTitle>Template par défaut</CardTitle></CardHeader>
                 <CardBody className="space-y-4">
                   <Textarea label="Message pré-rempli" placeholder="Bonjour ! Nouvelle offre spéciale…" rows={6} value={templateDefaut} onChange={e => setTemplateDefaut(e.target.value)} />
-                  <p className="text-xs text-gray-400 -mt-2">Utilisez ce modèle pour vos envois rapides. Laissez vide pour désactiver.</p>
-                  <p className="text-xs text-gray-400 bg-gray-50 rounded-lg p-3">
-                    💡 Ce template sera proposé comme texte pré-rempli lors de l'envoi d'une notification. Personnalisez-le à votre image.
-                  </p>
                 </CardBody>
               </Card>
 

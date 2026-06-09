@@ -12,6 +12,7 @@ import { PageSpinner } from '@/components/ui/Spinner';
 import { avisApi, type Avis } from '@/services/api';
 import { commercantApi } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/components/ui/Toast';
 import { formatDate } from '@/utils/format';
 import { Star, MessageSquare, Send, Sparkles, CheckCircle, Filter, Settings, AlertTriangle } from 'lucide-react';
 
@@ -28,6 +29,7 @@ function Stars({ note, size = 'sm' }: { note: number; size?: 'sm' | 'md' }) {
 
 export default function AvisPage() {
   const { commercant, refreshUser } = useAuth();
+  const { show: toast } = useToast();
   const [avis, setAvis] = useState<Avis[]>([]);
   const [total, setTotal] = useState(0);
   const [moyenne, setMoyenne] = useState(0);
@@ -79,7 +81,7 @@ export default function AvisPage() {
     try {
       const { reponse_suggeree } = await avisApi.suggestResponse(modal.avis.id);
       setModal(m => ({ ...m, reponse: reponse_suggeree, aiLoading: false }));
-    } catch (e: any) { alert(e?.message); setModal(m => ({ ...m, aiLoading: false })); }
+    } catch (e: any) { toast(e?.message || 'Erreur IA', 'error'); setModal(m => ({ ...m, aiLoading: false })); }
   };
 
   const handleSend = async () => {
@@ -89,7 +91,7 @@ export default function AvisPage() {
       await avisApi.sendResponse(modal.avis.id, modal.reponse);
       setModal({ open: false });
       fetchAvis(filterNote);
-    } catch (e: any) { alert(e?.message); setModal(m => ({ ...m, sending: false })); }
+    } catch (e: any) { toast(e?.message || 'Erreur envoi', 'error'); setModal(m => ({ ...m, sending: false })); }
   };
 
   const handleSaveSettings = async () => {
@@ -103,8 +105,8 @@ export default function AvisPage() {
         avis_reponse_auto: reponseAuto,
       });
       await refreshUser();
-      alert('Paramètres enregistrés !');
-    } catch (e: any) { alert(e?.message || 'Erreur'); }
+      toast('Paramètres enregistrés');
+    } catch (e: any) { toast(e?.message || 'Erreur', 'error'); }
     finally { setSaving(false); }
   };
 
@@ -120,7 +122,6 @@ export default function AvisPage() {
         <p className="page-subtitle">Gérez et répondez aux avis clients</p>
       </div>
 
-      {/* Module toggle */}
       <div className={`flex items-center gap-4 px-5 py-4 rounded-xl border mb-6 ${moduleEnabled ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100'}`}>
         <Star className={`h-5 w-5 ${moduleEnabled ? 'text-green-600' : 'text-gray-400'}`} />
         <div className="flex-1">
@@ -130,7 +131,6 @@ export default function AvisPage() {
         <Toggle checked={moduleEnabled} onChange={setModuleEnabled} />
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-2 mb-6">
         {([
           { id: 'avis', label: 'Avis reçus', icon: MessageSquare },
@@ -202,8 +202,8 @@ export default function AvisPage() {
               <Card>
                 <CardHeader><CardTitle>Collecte des avis</CardTitle></CardHeader>
                 <CardBody className="space-y-4">
-                  <Input label="URL de votre fiche Google" placeholder="https://g.page/mon-commerce" value={googlePlaceUrl} onChange={e => setGooglePlaceUrl(e.target.value)} hint="Lien vers votre fiche Google — les clients seront redirigés ici pour laisser un avis" />
-                  <Input label="Seuil de réponse automatique (étoiles)" type="number" min={1} max={5} value={seuilReponse} onChange={e => setSeuilReponse(Number(e.target.value))} hint="Répondre automatiquement aux avis avec note égale ou inférieure à ce seuil" />
+                  <Input label="URL de votre fiche Google" placeholder="https://g.page/mon-commerce" value={googlePlaceUrl} onChange={e => setGooglePlaceUrl(e.target.value)} />
+                  <Input label="Seuil de réponse automatique (étoiles)" type="number" min={1} max={5} value={seuilReponse} onChange={e => setSeuilReponse(Number(e.target.value))} />
                 </CardBody>
               </Card>
 
@@ -218,7 +218,6 @@ export default function AvisPage() {
                     <Toggle checked={reponseAuto} onChange={setReponseAuto} />
                   </div>
                   <Textarea label="Template de réponse" placeholder="Merci pour votre avis ! Nous prenons en compte vos retours…" rows={5} value={templateAuto} onChange={e => setTemplateAuto(e.target.value)} />
-                  <p className="text-xs text-gray-400 -mt-2">Template utilisé pour les réponses automatiques. Personnalisez-le à votre image.</p>
                 </CardBody>
               </Card>
 

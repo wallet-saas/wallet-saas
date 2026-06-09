@@ -143,16 +143,32 @@ exports.updateCommercant = async (req, res) => {
     if (payload.delai_avis_minutes !== undefined) { payload.delai_notif_avis_minutes = payload.delai_avis_minutes; delete payload.delai_avis_minutes; }
     if (payload.points_requis_recompense !== undefined) { payload.points_recompense = payload.points_requis_recompense; delete payload.points_requis_recompense; }
 
-    const { data, error } = await supabase
+    // Retry logic: if Supabase complains about unknown columns, strip them and retry
+    let result = await supabase
       .from('commercants')
       .update(payload)
       .eq('id', req.commercant.id)
       .select('id, email, nom_enseigne, telephone, adresse, ville, code_postal, carte_couleur_primaire, carte_couleur_secondaire, carte_logo_url, points_par_visite, points_recompense, module_avis_google, module_geolocalisation, module_menu_jour, module_offres_flash, delai_notif_avis_minutes, rayon_geoloc_metres, latitude, longitude, google_place_url, abonnement_statut, created_at')
       .single();
 
-    if (error) throw error;
+    // If error is about unknown columns, strip them and retry
+    if (result.error && result.error.message && result.error.message.includes('does not exist')) {
+      const missingCol = result.error.message.match(/column "([^"]+)"/);
+      if (missingCol && missingCol[1]) {
+        console.warn(`[updateCommercant] Column ${missingCol[1]} not found, retrying without it`);
+        delete payload[missingCol[1]];
+        result = await supabase
+          .from('commercants')
+          .update(payload)
+          .eq('id', req.commercant.id)
+          .select('id, email, nom_enseigne, telephone, adresse, ville, code_postal, carte_couleur_primaire, carte_couleur_secondaire, carte_logo_url, points_par_visite, points_recompense, module_avis_google, module_geolocalisation, module_menu_jour, module_offres_flash, delai_notif_avis_minutes, rayon_geoloc_metres, latitude, longitude, google_place_url, abonnement_statut, created_at')
+          .single();
+      }
+    }
 
-    res.json({ success: true, data: { commercant: data } });
+    if (result.error) throw result.error;
+
+    res.json({ success: true, data: { commercant: result.data } });
   } catch (error) {
     console.error('Erreur updateCommercant:', error);
     res.status(500).json({ success: false, error: error.message });

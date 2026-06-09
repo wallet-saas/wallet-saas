@@ -2,6 +2,7 @@ import App, { AppContext, AppInitialProps } from 'next/app';
 import type { AppProps } from 'next/app';
 import React from 'react';
 import '@/styles/globals.css';
+import { ToastProvider } from '@/components/ui/Toast';
 
 interface ErrorBoundaryState { error: Error | null }
 
@@ -40,13 +41,13 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, Error
 export default function MyApp({ Component, pageProps }: AppProps) {
   return (
     <ErrorBoundary>
-      <Component {...pageProps} />
+      <ToastProvider>
+        <Component {...pageProps} />
+      </ToastProvider>
     </ErrorBoundary>
   );
 }
 
-// Disable automatic static optimization for all pages.
-// Required for Railway: pages using useRouter() crash during SSG.
 MyApp.getInitialProps = async (ctx: AppContext): Promise<AppInitialProps> => {
   return App.getInitialProps(ctx);
 };

@@ -14,6 +14,7 @@ import { PageSpinner } from '@/components/ui/Spinner';
 import { offresApi, type Offre } from '@/services/api';
 import { commercantApi } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/components/ui/Toast';
 import { formatDate } from '@/utils/format';
 import { Plus, Send, Tag, Percent, Euro, Calendar, BarChart2, Settings, Bell, Zap } from 'lucide-react';
 
@@ -36,6 +37,7 @@ const cibleOptions = [
 
 export default function OffresPage() {
   const { commercant, refreshUser } = useAuth();
+  const { show: toast } = useToast();
   const [offres, setOffres] = useState<Offre[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<{ open: boolean }>({ open: false });
@@ -46,7 +48,6 @@ export default function OffresPage() {
   const [activeTab, setActiveTab] = useState<'offres' | 'settings'>('offres');
   const [saving, setSaving] = useState(false);
 
-  // Settings
   const [moduleEnabled, setModuleEnabled] = useState(true);
   const [dureeDefaut, setDureeDefaut] = useState(7);
   const [limiteClient, setLimiteClient] = useState(1);
@@ -78,20 +79,20 @@ export default function OffresPage() {
     try {
       await offresApi.create(data as any);
       setModal({ open: false }); reset(); fetchOffres();
-    } catch (e: any) { alert(e?.message); }
+    } catch (e: any) { toast(e?.message || 'Erreur', 'error'); }
   };
 
   const handleSend = async () => {
     if (!sendModal.offre) return;
     setSending(true);
     try { await offresApi.send(sendModal.offre.id, sendCible); setSendModal({ open: false }); fetchOffres(); }
-    catch (e: any) { alert(e?.message); }
+    catch (e: any) { toast(e?.message || 'Erreur', 'error'); }
     finally { setSending(false); }
   };
 
   const handleStats = async (offre: Offre) => {
     try { const stats = await offresApi.stats(offre.id); setStatsModal({ open: true, offre, stats }); }
-    catch (e: any) { alert(e?.message); }
+    catch (e: any) { toast(e?.message || 'Erreur', 'error'); }
   };
 
   const handleSaveSettings = async () => {
@@ -105,8 +106,8 @@ export default function OffresPage() {
         offres_code_auto: codeAuto,
       });
       await refreshUser();
-      alert('Paramètres enregistrés !');
-    } catch (e: any) { alert(e?.message || 'Erreur'); }
+      toast('Paramètres enregistrés');
+    } catch (e: any) { toast(e?.message || 'Erreur', 'error'); }
     finally { setSaving(false); }
   };
 
@@ -129,7 +130,6 @@ export default function OffresPage() {
         </div>
       </div>
 
-      {/* Module toggle */}
       <div className={`flex items-center gap-4 px-5 py-4 rounded-xl border mb-6 ${moduleEnabled ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100'}`}>
         <Tag className={`h-5 w-5 ${moduleEnabled ? 'text-green-600' : 'text-gray-400'}`} />
         <div className="flex-1">
@@ -139,7 +139,6 @@ export default function OffresPage() {
         <Toggle checked={moduleEnabled} onChange={setModuleEnabled} />
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-2 mb-6">
         {([
           { id: 'offres', label: 'Mes offres', icon: Tag },
@@ -188,8 +187,8 @@ export default function OffresPage() {
               <Card>
                 <CardHeader><CardTitle>Réglages par défaut</CardTitle></CardHeader>
                 <CardBody className="space-y-4">
-                  <Input label="Durée par défaut (jours)" type="number" min={1} max={90} value={dureeDefaut} onChange={e => setDureeDefaut(Number(e.target.value))} hint="Durée appliquée automatiquement à chaque nouvelle offre" />
-                  <Input label="Limite par client par mois" type="number" min={1} max={20} value={limiteClient} onChange={e => setLimiteClient(Number(e.target.value))} hint="Nombre max de offres qu'un client peut recevoir par mois" />
+                  <Input label="Durée par défaut (jours)" type="number" min={1} max={90} value={dureeDefaut} onChange={e => setDureeDefaut(Number(e.target.value))} />
+                  <Input label="Limite par client par mois" type="number" min={1} max={20} value={limiteClient} onChange={e => setLimiteClient(Number(e.target.value))} />
                 </CardBody>
               </Card>
 

@@ -9,6 +9,7 @@ import { PageSpinner } from '@/components/ui/Spinner';
 import { autoReviewApi, type Avis } from '@/services/api';
 import { commercantApi } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/components/ui/Toast';
 import { Star, MessageSquare, Settings, AlertTriangle, CheckCircle, Clock, Save, Bell } from 'lucide-react';
 
 function Stars({ note }: { note: number }) {
@@ -23,16 +24,16 @@ function Stars({ note }: { note: number }) {
 
 export default function AutoReviewPage() {
   const { commercant, refreshUser } = useAuth();
-  const [settings, setSettings] = useState({
-    module_avis_google: false,
-    delai_notif_avis_minutes: 60,
-    google_place_url: '',
-    google_place_id: '',
-  });
+  const { show: toast } = useToast();
   const [feedback, setFeedback] = useState<Avis[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'settings' | 'feedback'>('settings');
+
+  // Core settings
+  const [moduleEnabled, setModuleEnabled] = useState(false);
+  const [delaiMinutes, setDelaiMinutes] = useState(60);
+  const [googlePlaceUrl, setGooglePlaceUrl] = useState('');
 
   // Extended settings
   const [autoMessage, setAutoMessage] = useState('');
@@ -41,12 +42,9 @@ export default function AutoReviewPage() {
 
   useEffect(() => {
     if (commercant) {
-      setSettings({
-        module_avis_google: commercant.module_avis_google ?? false,
-        delai_notif_avis_minutes: commercant.delai_notif_avis_minutes ?? 60,
-        google_place_url: commercant.google_place_url ?? '',
-        google_place_id: '',
-      });
+      setModuleEnabled(commercant.module_avis_google ?? false);
+      setDelaiMinutes(commercant.delai_notif_avis_minutes ?? 60);
+      setGooglePlaceUrl(commercant.google_place_url ?? '');
       setAutoMessage(commercant.auto_review_message ?? '');
       setSeuilEtoiles(commercant.auto_review_seuil_etoiles ?? 4);
       setAlerteEmail(commercant.auto_review_alerte_email ?? false);
@@ -56,16 +54,7 @@ export default function AutoReviewPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [settingsRes, feedbackRes] = await Promise.all([
-        autoReviewApi.settings(),
-        autoReviewApi.feedback(20),
-      ]);
-      setSettings({
-        module_avis_google: settingsRes.module_avis_google ?? false,
-        delai_notif_avis_minutes: settingsRes.delai_notif_avis_minutes ?? 60,
-        google_place_url: settingsRes.google_place_url ?? '',
-        google_place_id: settingsRes.google_place_id ?? '',
-      });
+      const feedbackRes = await autoReviewApi.feedback(20);
       setFeedback(feedbackRes.data || []);
     } catch (e) { console.error('Erreur chargement:', e); }
     finally { setLoading(false); }
@@ -76,25 +65,19 @@ export default function AutoReviewPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Save via auto-review API for core settings
-      await autoReviewApi.updateSettings({
-        module_avis_google: settings.module_avis_google,
-        delai_notif_avis_minutes: settings.delai_notif_avis_minutes,
-        google_place_url: settings.google_place_url || undefined,
-      });
-      // Save extended settings via commercants API
+      // Save all settings via commercants API (single source of truth)
       await commercantApi.update({
-        module_avis_google: settings.module_avis_google,
-        delai_notif_avis_minutes: settings.delai_notif_avis_minutes,
-        google_place_url: settings.google_place_url,
+        module_avis_google: moduleEnabled,
+        delai_notif_avis_minutes: delaiMinutes,
+        google_place_url: googlePlaceUrl,
         auto_review_message: autoMessage,
         auto_review_seuil_etoiles: seuilEtoiles,
         auto_review_alerte_email: alerteEmail,
       });
       await refreshUser();
-      alert('Paramètres enregistrés !');
+      toast('Paramètres enregistrés');
     } catch (err: any) {
-      alert(err.message || 'Erreur');
+      toast(err.message || 'Erreur', 'error');
     } finally { setSaving(false); }
   };
 
@@ -109,17 +92,15 @@ export default function AutoReviewPage() {
         <p className="page-subtitle">Configurez les demandes d'avis après chaque visite</p>
       </div>
 
-      {/* Module toggle */}
-      <div className={`flex items-center gap-4 px-5 py-4 rounded-xl border mb-6 ${settings.module_avis_google ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100'}`}>
-        <Bell className={`h-5 w-5 ${settings.module_avis_google ? 'text-green-600' : 'text-gray-400'}`} />
+      <div className={`flex items-center gap-4 px-5 py-4 rounded-xl border mb-6 ${moduleEnabled ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100'}`}>
+        <Bell className={`h-5 w-5 ${moduleEnabled ? 'text-green-600' : 'text-gray-400'}`} />
         <div className="flex-1">
           <p className="text-sm font-medium text-gray-900">Module avis automatiques</p>
-          <p className="text-xs text-gray-500">{settings.module_avis_google ? 'Activé — les clients reçoivent une demande d\'avis après chaque visite' : 'Désactivé — activez pour collecter automatiquement les avis'}</p>
+          <p className="text-xs text-gray-500">{moduleEnabled ? 'Activé — les clients reçoivent une demande d\'avis après chaque visite' : 'Désactivé — activez pour collecter automatiquement les avis'}</p>
         </div>
-        <Toggle checked={settings.module_avis_google} onChange={(v) => setSettings(s => ({ ...s, module_avis_google: v }))} />
+        <Toggle checked={moduleEnabled} onChange={setModuleEnabled} />
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-2 mb-6">
         {([
           { id: 'settings', label: 'Paramétrage', icon: Settings },
@@ -140,9 +121,9 @@ export default function AutoReviewPage() {
           <Card>
             <CardHeader><CardTitle>Collecte des avis</CardTitle></CardHeader>
             <CardBody className="space-y-4">
-              <Input label="Délai avant notification (minutes)" type="number" min={0} value={settings.delai_notif_avis_minutes} onChange={e => setSettings(s => ({ ...s, delai_notif_avis_minutes: Number(e.target.value) }))} hint="Délai après le scan avant d'envoyer la demande (0 = immédiat)" />
-              <Input label="URL de votre fiche Google" placeholder="https://g.page/mon-commerce" value={settings.google_place_url} onChange={e => setSettings(s => ({ ...s, google_place_url: e.target.value }))} hint="Les clients avec une bonne note seront redirigés ici" />
-              <Input label="Seuil étoiles pour Google" type="number" min={1} max={5} value={seuilEtoiles} onChange={e => setSeuilEtoiles(Number(e.target.value))} hint={`Clients avec ${seuilEtoiles}+ étoiles → Google | Moins → feedback privé`} />
+              <Input label="Délai avant notification (minutes)" type="number" min={0} value={delaiMinutes} onChange={e => setDelaiMinutes(Number(e.target.value))} />
+              <Input label="URL de votre fiche Google" placeholder="https://g.page/mon-commerce" value={googlePlaceUrl} onChange={e => setGooglePlaceUrl(e.target.value)} />
+              <Input label="Seuil étoiles pour Google" type="number" min={1} max={5} value={seuilEtoiles} onChange={e => setSeuilEtoiles(Number(e.target.value))} />
             </CardBody>
           </Card>
 
@@ -150,7 +131,6 @@ export default function AutoReviewPage() {
             <CardHeader><CardTitle>Message et alertes</CardTitle></CardHeader>
             <CardBody className="space-y-4">
               <Textarea label="Message personnalisé" placeholder="Merci pour votre visite ! Donnez-nous votre avis…" rows={4} value={autoMessage} onChange={e => setAutoMessage(e.target.value)} />
-              <p className="text-xs text-gray-400 -mt-2">Message envoyé dans la notification d'avis</p>
               <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100">
                 <div>
                   <p className="text-sm font-medium text-gray-900">Alerte email avis négatifs</p>
@@ -166,7 +146,7 @@ export default function AutoReviewPage() {
               <p className="font-medium mb-2">💡 Comment ça marche ?</p>
               <ol className="list-decimal list-inside space-y-1 text-xs">
                 <li>Un client scanne son QR code en caisse</li>
-                <li>Après le délai configuré ({settings.delai_notif_avis_minutes} min), il reçoit une notification</li>
+                <li>Après le délai configuré ({delaiMinutes} min), il reçoit une notification</li>
                 <li>Il donne une note ({seuilEtoiles}+ étoiles → Google | Moins → feedback privé)</li>
                 <li>Vous pouvez répondre aux avis directement depuis la page Avis Google</li>
               </ol>

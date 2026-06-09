@@ -9,10 +9,12 @@ import { Toggle } from '@/components/ui/Toggle';
 import { boutiquesApi, type Boutique } from '@/services/api';
 import { commercantApi } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/components/ui/Toast';
 import { Store, Plus, Edit3, Trash2, Star, Settings, Info, Check } from 'lucide-react';
 
 export default function BoutiquesPage() {
   const { commercant, refreshUser } = useAuth();
+  const { show: toast } = useToast();
   const [boutiques, setBoutiques] = useState<Boutique[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -26,7 +28,6 @@ export default function BoutiquesPage() {
   const [stats, setStats] = useState<Record<string, any>>({});
   const [activeTab, setActiveTab] = useState<'list' | 'settings'>('list');
 
-  // Module toggle
   const [moduleEnabled, setModuleEnabled] = useState(false);
   const [savingModule, setSavingModule] = useState(false);
 
@@ -58,7 +59,7 @@ export default function BoutiquesPage() {
       if (editing) { await boutiquesApi.update(editing.id, form); }
       else { await boutiquesApi.create(form); }
       setShowForm(false); setEditing(null); resetForm(); await loadBoutiques();
-    } catch (err: any) { alert(err.message || 'Erreur'); }
+    } catch (err: any) { toast(err.message || 'Erreur', 'error'); }
     finally { setSaving(false); }
   };
 
@@ -77,7 +78,7 @@ export default function BoutiquesPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Désactiver cette boutique ?')) return;
     try { await boutiquesApi.delete(id); await loadBoutiques(); }
-    catch (err: any) { alert(err.message || 'Erreur'); }
+    catch (err: any) { toast(err.message || 'Erreur', 'error'); }
   };
 
   const handleSetDefault = async (id: string) => {
@@ -85,8 +86,8 @@ export default function BoutiquesPage() {
     try {
       await commercantApi.update({ boutique_defaut_id: id });
       await refreshUser();
-      alert('Boutique principale mise à jour !');
-    } catch (err: any) { alert(err.message); }
+      toast('Boutique principale mise à jour');
+    } catch (err: any) { toast(err.message || 'Erreur', 'error'); }
     finally { setSavingModule(false); }
   };
 
@@ -96,7 +97,7 @@ export default function BoutiquesPage() {
       await commercantApi.update({ module_boutiques: val });
       setModuleEnabled(val);
       await refreshUser();
-    } catch (err: any) { alert(err.message); }
+    } catch (err: any) { toast(err.message || 'Erreur', 'error'); }
     finally { setSavingModule(false); }
   };
 
@@ -128,7 +129,6 @@ export default function BoutiquesPage() {
         </div>
       </div>
 
-      {/* Module toggle */}
       <div className={`flex items-center gap-4 px-5 py-4 rounded-xl border mb-6 ${moduleEnabled ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100'}`}>
         <Store className={`h-5 w-5 ${moduleEnabled ? 'text-green-600' : 'text-gray-400'}`} />
         <div className="flex-1">
@@ -138,7 +138,6 @@ export default function BoutiquesPage() {
         <Toggle checked={moduleEnabled} onChange={handleToggleModule} disabled={savingModule} />
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-2 mb-6">
         {([
           { id: 'list', label: 'Mes boutiques', icon: Store },
@@ -219,14 +218,6 @@ export default function BoutiquesPage() {
                 </div>
                 <Toggle checked={moduleEnabled} onChange={handleToggleModule} disabled={savingModule} />
               </div>
-              <div className="bg-blue-50 rounded-xl p-4 text-sm text-blue-700">
-                <p className="font-medium mb-1">💡 Fonctionnement</p>
-                <ul className="list-disc list-inside space-y-1 text-xs">
-                  <li>Chaque boutique a sa propre carte de fidélité et ses couleurs</li>
-                  <li>La boutique "Principale" est utilisée par défaut pour les nouvelles cartes</li>
-                  <li>Vous pouvez définir quelle boutique est principale</li>
-                </ul>
-              </div>
             </CardBody>
           </Card>
 
@@ -254,7 +245,6 @@ export default function BoutiquesPage() {
         </div>
       )}
 
-      {/* Form modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
@@ -277,7 +267,7 @@ export default function BoutiquesPage() {
                 <input type="checkbox" id="module_avis" checked={form.module_avis_google} onChange={e => setForm({ ...form, module_avis_google: e.target.checked })} className="rounded" />
                 <label htmlFor="module_avis" className="text-sm font-medium text-gray-700">Activer les avis Google automatiques</label>
               </div>
-              <div className="gap-3">
+              <div className="flex gap-3">
                 <Button type="submit" loading={saving}>{editing ? 'Enregistrer' : 'Créer'}</Button>
                 <Button type="button" variant="secondary" onClick={() => { setShowForm(false); setEditing(null); }}>Annuler</Button>
               </div>
