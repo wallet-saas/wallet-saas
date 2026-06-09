@@ -81,15 +81,20 @@ const setupWalletCard = async (req, res) => {
       .select('id, nom_enseigne, carte_couleur_primaire, carte_logo_url, points_recompense, carte_programme_nom, carte_recompense_description, template_type')
       .single();
 
-    // Si erreur (colonne inconnue), réessayer sans les champs optionnels
-    if (updateResult.error && updateResult.error.code === '42703') {
-      console.warn('[walletSetup] Colonne optionnelle manquante, retry sans champs optionnels');
-      updateResult = await supabase
-        .from('commercants')
-        .update(updateData)
-        .eq('id', commercantId)
-        .select('id, nom_enseigne, carte_couleur_primaire, carte_logo_url, points_recompense, carte_programme_nom, carte_recompense_description, template_type')
-        .single();
+    // Si erreur (colonne inconnue ou autre), réessayer sans les champs optionnels
+    if (updateResult.error) {
+      const errCode = updateResult.error.code || '';
+      const errMsg = updateResult.error.message || '';
+      console.warn('[walletSetup] Erreur update (code=' + errCode + '):', errMsg);
+      if (errCode === '42703' || errMsg.includes('column') || errMsg.includes('does not exist')) {
+        console.warn('[walletSetup] Colonne optionnelle manquante, retry sans champs optionnels');
+        updateResult = await supabase
+          .from('commercants')
+          .update(updateData)
+          .eq('id', commercantId)
+          .select('id, nom_enseigne, carte_couleur_primaire, carte_logo_url, points_recompense, carte_programme_nom, carte_recompense_description, template_type')
+          .single();
+      }
     }
 
     const { data: updatedCommercant, error: updateError } = updateResult;
@@ -166,14 +171,19 @@ const updateWalletCard = async (req, res) => {
       .select('id, nom_enseigne, carte_couleur_primaire, carte_logo_url, points_recompense, carte_programme_nom, carte_recompense_description, template_type')
       .single();
 
-    if (updateResult.error && updateResult.error.code === '42703') {
-      console.warn('[walletSetup] Colonne optionnelle manquante (PUT), retry sans champs optionnels');
-      updateResult = await supabase
-        .from('commercants')
-        .update(updateData)
-        .eq('id', commercantId)
-        .select('id, nom_enseigne, carte_couleur_primaire, carte_logo_url, points_recompense, carte_programme_nom, carte_recompense_description, template_type')
-        .single();
+    if (updateResult.error) {
+      const errCode = updateResult.error.code || '';
+      const errMsg = updateResult.error.message || '';
+      console.warn('[walletSetup] Erreur update PUT (code=' + errCode + '):', errMsg);
+      if (errCode === '42703' || errMsg.includes('column') || errMsg.includes('does not exist')) {
+        console.warn('[walletSetup] Colonne optionnelle manquante (PUT), retry sans champs optionnels');
+        updateResult = await supabase
+          .from('commercants')
+          .update(updateData)
+          .eq('id', commercantId)
+          .select('id, nom_enseigne, carte_couleur_primaire, carte_logo_url, points_recompense, carte_programme_nom, carte_recompense_description, template_type')
+          .single();
+      }
     }
 
     const { data: updatedCommercant, error: updateError } = updateResult;
