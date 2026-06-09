@@ -24,6 +24,8 @@ function normalizeCommercant(c: Commercant): Commercant {
     module_geoloc: c.module_geolocalisation !== undefined ? !!c.module_geolocalisation : !!c.module_geoloc,
     module_menus: c.module_menu_jour !== undefined ? !!c.module_menu_jour : !!c.module_menus,
     module_offres: c.module_offres_flash !== undefined ? !!c.module_offres_flash : !!c.module_offres,
+    module_notifications: c.module_notifications !== undefined ? !!c.module_notifications : !!c.module_notifications,
+    module_boutiques: c.module_boutiques !== undefined ? !!c.module_boutiques : !!c.module_boutiques,
     // Points reward threshold
     points_requis_recompense: c.points_recompense !== undefined ? c.points_recompense : c.points_requis_recompense,
     // Avis delay

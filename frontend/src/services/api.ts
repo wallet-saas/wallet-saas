@@ -234,11 +234,42 @@ export interface Commercant {
   module_geolocalisation?: boolean;
   module_menu_jour?: boolean;
   module_offres_flash?: boolean;
+  module_notifications?: boolean;
+  module_boutiques?: boolean;
   // Aliases used in frontend
   module_avis?: boolean;
   module_geoloc?: boolean;
   module_menus?: boolean;
   module_offres?: boolean;
+  module_fidelite?: boolean;
+  // Notifications settings
+  notif_max_par_jour?: number;
+  notif_heure_debut?: number;
+  notif_heure_fin?: number;
+  notif_template_defaut?: string;
+  // Avis settings
+  avis_seuil_reponse?: number;
+  avis_template_auto?: string;
+  avis_reponse_auto?: boolean;
+  // Menus settings
+  menu_categories?: string;
+  menu_devise?: string;
+  menu_afficher_prix?: boolean;
+  // Offres settings
+  offres_duree_defaut?: number;
+  offres_limite_client?: number;
+  offres_notif_auto?: boolean;
+  offres_code_auto?: boolean;
+  // Geoloc settings
+  geoloc_message?: string;
+  geoloc_heure_debut?: number;
+  geoloc_heure_fin?: number;
+  // Auto-review settings
+  auto_review_message?: string;
+  auto_review_seuil_etoiles?: number;
+  auto_review_alerte_email?: boolean;
+  // Boutiques settings
+  boutique_defaut_id?: string;
   // Geoloc & Avis
   google_place_id?: string;
   google_place_url?: string;
@@ -247,6 +278,10 @@ export interface Commercant {
   delai_avis_minutes?: number;
   latitude?: number;
   longitude?: number;
+  // Card layout
+  carte_layout?: string;
+  texte_perso_bas_carte?: string;
+  style_texte?: string;
   // Subscription — backend column name
   abonnement_statut?: string;
   statut_abonnement?: string;

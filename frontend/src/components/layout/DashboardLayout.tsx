@@ -16,20 +16,20 @@ type NavItem = {
   label: string;
   href: string;
   icon: React.ElementType;
-  module?: 'module_avis' | 'module_menus' | 'module_offres' | 'module_geoloc';
+  module?: 'module_avis' | 'module_menus' | 'module_offres' | 'module_geoloc' | 'module_notifications' | 'module_boutiques';
 };
 
 const navItems: NavItem[] = [
   { label: 'Vue d\'ensemble', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Cartes', href: '/dashboard/cartes', icon: CreditCard },
   { label: 'Scan QR', href: '/dashboard/scan', icon: QrCode },
-  { label: 'Notifications', href: '/dashboard/notifications', icon: Bell },
+  { label: 'Notifications', href: '/dashboard/notifications', icon: Bell, module: 'module_notifications' },
   { label: 'Avis Google', href: '/dashboard/avis', icon: Star, module: 'module_avis' },
   { label: 'Menus', href: '/dashboard/menus', icon: UtensilsCrossed, module: 'module_menus' },
   { label: 'Offres Flash', href: '/dashboard/offres', icon: Tag, module: 'module_offres' },
   { label: 'Géolocalisation', href: '/dashboard/geolocalisation', icon: MapPin, module: 'module_geoloc' },
   { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-  { label: 'Mes boutiques', href: '/dashboard/boutiques', icon: Store },
+  { label: 'Mes boutiques', href: '/dashboard/boutiques', icon: Store, module: 'module_boutiques' },
   { label: 'Avis automatiques', href: '/dashboard/auto-review', icon: MessageSquare },
 ];
 

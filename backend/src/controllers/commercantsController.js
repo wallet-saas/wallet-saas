@@ -31,7 +31,7 @@ exports.getCommercantById = async (req, res) => {
 
     const { data, error } = await supabase
       .from('commercants')
-      .select('id, email, nom_enseigne, telephone, adresse, ville, code_postal, template_metier, module_fidelite, module_avis_google, module_geolocalisation, module_menu_jour, module_offres_flash, abonnement_statut, created_at')
+      .select('id, email, nom_enseigne, telephone, adresse, ville, code_postal, template_metier, template_type, module_fidelite, module_avis_google, module_geolocalisation, module_menu_jour, module_offres_flash, module_notifications, abonnement_statut, wallet_class_configured, carte_programme_nom, carte_recompense_description, carte_couleur_primaire, carte_couleur_secondaire, carte_logo_url, points_recompense, points_par_visite')
       .eq('id', id)
       .single();
 
@@ -63,7 +63,7 @@ exports.getMe = async (req, res) => {
     const { id } = req.commercant;
     const { data, error } = await supabase
       .from('commercants')
-      .select('id, email, nom_enseigne, telephone, adresse, ville, code_postal, template_metier, template_type, module_fidelite, module_avis_google, module_geolocalisation, module_menu_jour, module_offres_flash, abonnement_statut, wallet_class_configured, carte_programme_nom, carte_recompense_description, carte_couleur_primaire, carte_couleur_secondaire, carte_logo_url, points_recompense, points_par_visite, delai_notif_avis_minutes, rayon_geoloc_metres, qr_code_install_url, created_at')
+      .select('id, email, nom_enseigne, telephone, adresse, ville, code_postal, template_metier, template_type, module_fidelite, module_avis_google, module_geolocalisation, module_menu_jour, module_offres_flash, module_notifications, notif_max_par_jour, notif_heure_debut, notif_heure_fin, notif_template_defaut, avis_seuil_reponse, avis_template_auto, avis_reponse_auto, menu_categories, menu_devise, menu_afficher_prix, offres_duree_defaut, offres_limite_client, offres_notif_auto, offres_code_auto, geoloc_message, geoloc_heure_debut, geoloc_heure_fin, auto_review_message, auto_review_seuil_etoiles, auto_review_alerte_email, module_boutiques, boutique_defaut_id, abonnement_statut, wallet_class_configured, carte_programme_nom, carte_recompense_description, carte_couleur_primaire, carte_couleur_secondaire, carte_logo_url, carte_layout, texte_perso_bas_carte, style_texte, points_recompense, points_par_visite, delai_notif_avis_minutes, rayon_geoloc_metres, qr_code_install_url, created_at')
       .eq('id', id)
       .single();
 
@@ -107,6 +107,20 @@ exports.updateCommercant = async (req, res) => {
       'delai_notif_avis_minutes', 'delai_avis_minutes',
       'rayon_geoloc_metres', 'latitude', 'longitude',
       'google_place_url',
+      // 🔔 Notifications
+      'module_notifications', 'notif_max_par_jour', 'notif_heure_debut', 'notif_heure_fin', 'notif_template_defaut',
+      // ⭐ Avis
+      'avis_seuil_reponse', 'avis_template_auto', 'avis_reponse_auto',
+      // 🍽️ Menus
+      'menu_categories', 'menu_devise', 'menu_afficher_prix',
+      // 🏷️ Offres
+      'offres_duree_defaut', 'offres_limite_client', 'offres_notif_auto', 'offres_code_auto',
+      // 📍 Géolocalisation
+      'geoloc_message', 'geoloc_heure_debut', 'geoloc_heure_fin',
+      // 🤖 Auto-review
+      'auto_review_message', 'auto_review_seuil_etoiles', 'auto_review_alerte_email',
+      // 🏪 Boutiques
+      'module_boutiques', 'boutique_defaut_id',
     ];
 
     // Build payload with only allowed fields, mapping aliases to backend names
