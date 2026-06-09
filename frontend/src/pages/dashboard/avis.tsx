@@ -217,7 +217,8 @@ export default function AvisPage() {
                     </div>
                     <Toggle checked={reponseAuto} onChange={setReponseAuto} />
                   </div>
-                  <Textarea label="Template de réponse" placeholder="Merci pour votre avis ! Nous prenons en compte vos retours…" rows={5} value={templateAuto} onChange={e => setTemplateAuto(e.target.value)} hint="Template utilisé pour les réponses automatiques. Personnalisez-le à votre image." />
+                  <Textarea label="Template de réponse" placeholder="Merci pour votre avis ! Nous prenons en compte vos retours…" rows={5} value={templateAuto} onChange={e => setTemplateAuto(e.target.value)} />
+                  <p className="text-xs text-gray-400 -mt-2">Template utilisé pour les réponses automatiques. Personnalisez-le à votre image.</p>
                 </CardBody>
               </Card>
 

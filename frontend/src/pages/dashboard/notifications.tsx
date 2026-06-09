@@ -265,7 +265,8 @@ export default function NotificationsPage() {
               <Card>
                 <CardHeader><CardTitle>Template par défaut</CardTitle></CardHeader>
                 <CardBody className="space-y-4">
-                  <Textarea label="Message pré-rempli" placeholder="Bonjour ! Nouvelle offre spéciale…" rows={6} value={templateDefaut} onChange={e => setTemplateDefaut(e.target.value)} hint="Utilisez ce modèle pour vos envois rapides. Laissez vide pour désactiver." />
+                  <Textarea label="Message pré-rempli" placeholder="Bonjour ! Nouvelle offre spéciale…" rows={6} value={templateDefaut} onChange={e => setTemplateDefaut(e.target.value)} />
+                  <p className="text-xs text-gray-400 -mt-2">Utilisez ce modèle pour vos envois rapides. Laissez vide pour désactiver.</p>
                   <p className="text-xs text-gray-400 bg-gray-50 rounded-lg p-3">
                     💡 Ce template sera proposé comme texte pré-rempli lors de l'envoi d'une notification. Personnalisez-le à votre image.
                   </p>

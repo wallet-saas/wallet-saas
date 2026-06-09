@@ -61,7 +61,10 @@ export default function ParametresPage() {
     try {
       await commercantApi.update({
         nom_enseigne: nomEnseigne,
-        telephone, adresse, ville, code_postal,
+        telephone,
+        adresse,
+        ville,
+        code_postal: codePostal,
       });
       await refreshUser();
       alert('Informations enregistrées !');

@@ -55,10 +55,10 @@ export default function MenusPage() {
   useEffect(() => {
     if (commercant) {
       setModuleEnabled(commercant.module_menu_jour ?? true);
-      const cats = commercant.menu_categories;
+      const cats: string | string[] = commercant.menu_categories || '';
       if (typeof cats === 'string') {
         try { setCategories(JSON.parse(cats).join(',')); } catch { setCategories(cats); }
-      } else if (Array.isArray(cats)) {
+      } else {
         setCategories(cats.join(','));
       }
       setDevise(commercant.menu_devise ?? 'EUR');
@@ -255,7 +255,8 @@ export default function MenusPage() {
               <Card>
                 <CardHeader><CardTitle>Catégories</CardTitle></CardHeader>
                 <CardBody className="space-y-4">
-                  <Textarea label="Catégories (séparées par des virgules)" placeholder="Entrées, Plats, Desserts, Boissons" rows={3} value={categories} onChange={e => setCategories(e.target.value)} hint="Personnalisez les catégories de votre menu" />
+                  <Textarea label="Catégories (séparées par des virgules)" placeholder="Entrées, Plats, Desserts, Boissons" rows={3} value={categories} onChange={e => setCategories(e.target.value)} />
+                  <p className="text-xs text-gray-400 -mt-2">Personnalisez les catégories de votre menu</p>
                   <div className="flex flex-wrap gap-2">
                     {categories.split(',').map(c => c.trim()).filter(Boolean).map(c => (
                       <Badge key={c} variant="blue">{c}</Badge>

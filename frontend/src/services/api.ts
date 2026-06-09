@@ -252,7 +252,7 @@ export interface Commercant {
   avis_template_auto?: string;
   avis_reponse_auto?: boolean;
   // Menus settings
-  menu_categories?: string;
+  menu_categories?: string | string[];
   menu_devise?: string;
   menu_afficher_prix?: boolean;
   // Offres settings
