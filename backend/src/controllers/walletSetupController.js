@@ -2,11 +2,11 @@ const { supabase } = require('../config/supabase');
 const googleWalletService = require('../services/googleWalletService');
 
 const WALLET_TEMPLATES = {
-  boulangerie: { label: 'Boulangerie', couleur: '#8B4513', programme: 'Carte Fidélité Boulangerie', recompense: '1 pain offert à 10 points', points: 10 },
-  coiffeur:    { label: 'Coiffeur',    couleur: '#9B59B6', programme: 'Carte Fidélité Salon',        recompense: '1 coupe offerte à 5 points',   points: 5  },
-  restaurant:  { label: 'Restaurant',  couleur: '#E74C3C', programme: 'Carte Fidélité Restaurant',   recompense: '1 dessert offert à 10 points', points: 10 },
-  kine:        { label: 'Kiné',        couleur: '#3498DB', programme: 'Carte Fidélité Cabinet',      recompense: '1 séance offerte à 10 points', points: 10 },
-  garagiste:   { label: 'Garagiste',   couleur: '#2C3E50', programme: 'Carte Fidélité Garage',       recompense: '1 vidange offerte à 5 points', points: 5  },
+  boulangerie: { label: 'Boulangerie', couleur: '#8B4513', programme: 'Carte Fidelite Boulangerie', recompense: '1 pain offert a 10 points', points: 10 },
+  coiffeur:    { label: 'Coiffeur',    couleur: '#9B59B6', programme: 'Carte Fidelite Salon',        recompense: '1 coupe offerte a 5 points',   points: 5  },
+  restaurant:  { label: 'Restaurant',  couleur: '#E74C3C', programme: 'Carte Fidelite Restaurant',   recompense: '1 dessert offert a 10 points', points: 10 },
+  kine:        { label: 'Kine',        couleur: '#3498DB', programme: 'Carte Fidelite Cabinet',      recompense: '1 seance offerte a 10 points', points: 10 },
+  garagiste:   { label: 'Garagiste',   couleur: '#2C3E50', programme: 'Carte Fidelite Garage',       recompense: '1 vidange offerte a 5 points', points: 5  },
 };
 
 const TEMPLATE_LOGOS = {
@@ -18,15 +18,13 @@ const TEMPLATE_LOGOS = {
 };
 
 /**
- * Détermine l'URL du logo final selon les règles de priorité.
- * Utilise des URLs externes (placehold.co) pour éviter les boucles de redirection.
+ * Determine l'URL du logo final selon les regles de priorite.
+ * Utilise des URLs externes (placehold.co) pour eviter les boucles de redirection.
  */
 function resolveLogo(template_type, logo_url_body, commercantId) {
-  // Si un logo custom a été uploadé, utiliser l'URL directement
   if (logo_url_body && logo_url_body.startsWith('http')) {
     return logo_url_body;
   }
-  // Utiliser le logo du template ou un placeholder générique
   if (template_type && TEMPLATE_LOGOS[template_type]) {
     return TEMPLATE_LOGOS[template_type];
   }
@@ -34,9 +32,8 @@ function resolveLogo(template_type, logo_url_body, commercantId) {
 }
 
 /**
- * Configurer la carte de fidélité Google Wallet (première fois)
+ * Configurer la carte de fidelite Google Wallet (premiere fois)
  * POST /api/wallet/setup
- * Protégé par authMiddleware
  */
 const setupWalletCard = async (req, res) => {
   try {
@@ -54,9 +51,8 @@ const setupWalletCard = async (req, res) => {
 
     const logo_url_final = resolveLogo(template_type, logo_url, commercantId);
 
-    // Mettre à jour les infos carte dans Supabase
-    // Champs de base (toujours présents)
-    const updateData: any = {
+    // Champs de base (toujours presents)
+    const updateData = {
       carte_couleur_primaire: couleur_primaire,
       carte_couleur_secondaire: couleur_secondaire || null,
       carte_logo_url: logo_url_final,
@@ -66,9 +62,8 @@ const setupWalletCard = async (req, res) => {
       template_type: template_type || null,
     };
 
-    // Champs optionnels — peuvent ne pas exister si le SQL n'a pas été exécuté
-    // On les essaie un par un pour ne pas bloquer si la colonne manque
-    const optionalFields: Record<string, any> = {};
+    // Champs optionnels — peuvent ne pas exister si le SQL n'a pas ete execute
+    const optionalFields = {};
     if (layout) optionalFields.carte_layout = layout;
     if (req.body.texte_perso_bas_carte) optionalFields.texte_perso_bas_carte = req.body.texte_perso_bas_carte;
     if (req.body.style_texte) optionalFields.style_texte = req.body.style_texte;
@@ -81,7 +76,7 @@ const setupWalletCard = async (req, res) => {
       .select('id, nom_enseigne, carte_couleur_primaire, carte_logo_url, points_recompense, carte_programme_nom, carte_recompense_description, template_type')
       .single();
 
-    // Si erreur (colonne inconnue ou autre), réessayer sans les champs optionnels
+    // Si erreur (colonne inconnue ou autre), reessayer sans les champs optionnels
     if (updateResult.error) {
       const errCode = updateResult.error.code || '';
       const errMsg = updateResult.error.message || '';
@@ -100,22 +95,21 @@ const setupWalletCard = async (req, res) => {
     const { data: updatedCommercant, error: updateError } = updateResult;
 
     if (updateError || !updatedCommercant) {
-      console.error('[walletSetup] Erreur mise à jour Supabase:', updateError);
-      return res.status(500).json({ success: false, error: 'Erreur lors de la mise à jour des informations.' });
+      console.error('[walletSetup] Erreur mise a jour Supabase:', updateError);
+      return res.status(500).json({ success: false, error: 'Erreur lors de la mise a jour des informations.' });
     }
 
-    // Créer / mettre à jour la LoyaltyClass Google Wallet
+    // Creer / mettre a jour la LoyaltyClass Google Wallet
     await googleWalletService.upsertLoyaltyClass(updatedCommercant);
 
-    // Marquer la classe comme configurée
+    // Marquer la classe comme configuree
     const { error: flagError } = await supabase
       .from('commercants')
       .update({ wallet_class_configured: true })
       .eq('id', commercantId);
 
     if (flagError) {
-      console.error('[walletSetup] Erreur mise à jour wallet_class_configured:', flagError);
-      // Non bloquant : la classe est créée, on continue
+      console.error('[walletSetup] Erreur mise a jour wallet_class_configured:', flagError);
     }
 
     return res.status(200).json({
@@ -129,9 +123,8 @@ const setupWalletCard = async (req, res) => {
 };
 
 /**
- * Mettre à jour la carte de fidélité Google Wallet existante
+ * Mettre a jour la carte de fidelite Google Wallet existante
  * PUT /api/wallet/setup
- * Protégé par authMiddleware
  */
 const updateWalletCard = async (req, res) => {
   try {
@@ -149,7 +142,7 @@ const updateWalletCard = async (req, res) => {
 
     const logo_url_final = resolveLogo(template_type, logo_url, commercantId);
 
-    const updateData: any = {
+    const updateData = {
       carte_couleur_primaire: couleur_primaire,
       carte_couleur_secondaire: couleur_secondaire || null,
       carte_logo_url: logo_url_final,
@@ -159,7 +152,7 @@ const updateWalletCard = async (req, res) => {
       template_type: template_type || null,
     };
 
-    const optionalFields: Record<string, any> = {};
+    const optionalFields = {};
     if (layout) optionalFields.carte_layout = layout;
     if (req.body.texte_perso_bas_carte) optionalFields.texte_perso_bas_carte = req.body.texte_perso_bas_carte;
     if (req.body.style_texte) optionalFields.style_texte = req.body.style_texte;
@@ -189,11 +182,11 @@ const updateWalletCard = async (req, res) => {
     const { data: updatedCommercant, error: updateError } = updateResult;
 
     if (updateError || !updatedCommercant) {
-      console.error('[walletSetup] Erreur mise à jour Supabase (PUT):', updateError);
-      return res.status(500).json({ success: false, error: 'Erreur lors de la mise à jour des informations.' });
+      console.error('[walletSetup] Erreur mise a jour Supabase (PUT):', updateError);
+      return res.status(500).json({ success: false, error: 'Erreur lors de la mise a jour des informations.' });
     }
 
-    // Mettre à jour la LoyaltyClass existante (upsert gère create vs update)
+    // Mettre a jour la LoyaltyClass existante
     await googleWalletService.upsertLoyaltyClass(updatedCommercant);
 
     return res.status(200).json({
@@ -202,7 +195,7 @@ const updateWalletCard = async (req, res) => {
     });
   } catch (error) {
     console.error('[walletSetup] Erreur updateWalletCard:', error);
-    return res.status(500).json({ success: false, error: error.message || 'Erreur lors de la mise à jour de la carte.' });
+    return res.status(500).json({ success: false, error: error.message || 'Erreur lors de la mise a jour de la carte.' });
   }
 };
 
