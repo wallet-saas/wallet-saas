@@ -175,7 +175,17 @@ export default function MenusPage() {
           <p className="text-sm font-medium text-gray-900">Module Menu du Jour</p>
           <p className="text-xs text-gray-500">{moduleEnabled ? 'Activé — vos clients peuvent voir votre menu' : 'Désactivé — le menu est masqué'}</p>
         </div>
-        <Toggle checked={moduleEnabled} onChange={setModuleEnabled} />
+        <Toggle checked={moduleEnabled} onChange={async (val) => {
+          const prev = moduleEnabled;
+          setModuleEnabled(val);
+          try {
+            await commercantApi.update({ module_menu_jour: val });
+            await refreshUser();
+          } catch (e: any) {
+            setModuleEnabled(prev);
+            toast(e?.message || 'Erreur lors de la sauvegarde', 'error');
+          }
+        }} />
       </div>
 
       {pushResult && (

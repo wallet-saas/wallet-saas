@@ -5,6 +5,31 @@ const { supabase } = require('../config/supabase');
 // This avoids "column does not exist" errors from Supabase's schema cache.
 let existingColumns = null;
 
+// Columns that should exist — will be auto-created if missing (on Render with DATABASE_URL)
+const REQUIRED_COLUMNS = [
+  { name: 'carte_layout', type: 'TEXT', default: "'classic'" },
+];
+
+async function ensureColumns() {
+  if (!process.env.DATABASE_URL) return;
+  try {
+    const { Client } = require('pg');
+    const client = new Client({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+    await client.connect();
+    for (const col of REQUIRED_COLUMNS) {
+      try {
+        await client.query(`ALTER TABLE commercants ADD COLUMN IF NOT EXISTS ${col.name} ${col.type} DEFAULT ${col.default};`);
+        console.log(`[commercantsController] Ensured column: ${col.name}`);
+      } catch (e) {
+        console.warn(`[commercantsController] Could not add column ${col.name}: ${e.message}`);
+      }
+    }
+    await client.end();
+  } catch (e) {
+    console.warn('[commercantsController] ensureColumns failed:', e.message);
+  }
+}
+
 async function detectExistingColumns() {
   try {
     const { data, error } = await supabase.from('commercants').select('*').limit(1).single();
@@ -23,7 +48,7 @@ async function detectExistingColumns() {
       'geoloc_message', 'geoloc_heure_debut', 'geoloc_heure_fin',
       'auto_review_message', 'auto_review_seuil_etoiles', 'auto_review_alerte_email',
       'module_boutiques', 'boutique_defaut_id',
-      'texte_perso_bas_carte', 'style_texte',
+      'texte_perso_bas_carte', 'style_texte', 'carte_layout',
     ];
     const missing = expected.filter(c => !existingColumns.has(c));
     if (missing.length > 0) {
@@ -37,10 +62,11 @@ async function detectExistingColumns() {
 }
 
 // Run detection on module load
-detectExistingColumns();
-
-// Re-detect every 60 seconds in case columns are added externally
-setInterval(detectExistingColumns, 60000);
+ensureColumns().then(() => {
+  detectExistingColumns();
+  // Re-detect every 60 seconds in case columns are added externally
+  setInterval(detectExistingColumns, 60000);
+});
 
 function filterExisting(payload) {
   if (!existingColumns) return payload;

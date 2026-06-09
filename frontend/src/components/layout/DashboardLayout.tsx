@@ -147,11 +147,8 @@ interface SidebarContentProps {
 }
 
 function SidebarContent({ router, commercant, onLogout, onClose }: SidebarContentProps) {
-  // Only show module-gated nav items when the module is enabled
-  const visibleNavItems = navItems.filter(item => {
-    if (!item.module) return true;
-    return !!commercant?.[item.module];
-  });
+  // All nav items are visible; disabled modules show as locked/greyed out
+  const visibleNavItems = navItems;
 
   return (
     <>
@@ -183,20 +180,30 @@ function SidebarContent({ router, commercant, onLogout, onClose }: SidebarConten
         <div className="px-3 space-y-0.5">
           {visibleNavItems.map((item) => {
             const active = router.pathname === item.href;
+            const isDisabled = item.module && !commercant?.[item.module];
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={isDisabled ? '#' : item.href}
+                onClick={(e) => {
+                  if (isDisabled) {
+                    e.preventDefault();
+                    return;
+                  }
+                  onClose?.();
+                }}
                 className={cn(
                   'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                  active
-                    ? 'bg-primary-50 text-primary-700'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  isDisabled && 'opacity-40 cursor-not-allowed',
+                  active && !isDisabled && 'bg-primary-50 text-primary-700',
+                  !active && !isDisabled && 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
+                  active && isDisabled && 'bg-gray-50 text-gray-400',
                 )}
-                onClick={onClose}
+                title={isDisabled ? `${item.label} — module désactivé` : undefined}
               >
-                <item.icon className={cn('h-4 w-4 flex-shrink-0', active ? 'text-primary-600' : 'text-gray-400')} />
+                <item.icon className={cn('h-4 w-4 flex-shrink-0', active ? 'text-primary-600' : isDisabled ? 'text-gray-300' : 'text-gray-400')} />
                 {item.label}
+                {isDisabled && <span className="ml-auto text-[10px] text-gray-300 font-normal">🔒</span>}
               </Link>
             );
           })}

@@ -128,7 +128,19 @@ export default function AvisPage() {
           <p className="text-sm font-medium text-gray-900">Module Avis Google</p>
           <p className="text-xs text-gray-500">{moduleEnabled ? 'Activé — les avis sont collectés et analysés' : 'Désactivé — activez pour collecter les avis'}</p>
         </div>
-        <Toggle checked={moduleEnabled} onChange={setModuleEnabled} />
+        <Toggle
+          checked={moduleEnabled}
+          onChange={async (val: boolean) => {
+            setModuleEnabled(val);
+            try {
+              await commercantApi.update({ module_avis_google: val });
+              await refreshUser();
+            } catch (e: any) {
+              setModuleEnabled(!val);
+              toast(e?.message || 'Erreur lors de la mise à jour du module', 'error');
+            }
+          }}
+        />
       </div>
 
       <div className="flex gap-2 mb-6">

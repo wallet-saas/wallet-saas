@@ -98,7 +98,17 @@ export default function AutoReviewPage() {
           <p className="text-sm font-medium text-gray-900">Module avis automatiques</p>
           <p className="text-xs text-gray-500">{moduleEnabled ? 'Activé — les clients reçoivent une demande d\'avis après chaque visite' : 'Désactivé — activez pour collecter automatiquement les avis'}</p>
         </div>
-        <Toggle checked={moduleEnabled} onChange={setModuleEnabled} />
+        <Toggle checked={moduleEnabled} onChange={async (val) => {
+          const prev = moduleEnabled;
+          setModuleEnabled(val);
+          try {
+            await commercantApi.update({ module_avis_google: val });
+            await refreshUser();
+          } catch (e: any) {
+            setModuleEnabled(prev);
+            toast(e?.message || 'Erreur lors de la sauvegarde', 'error');
+          }
+        }} />
       </div>
 
       <div className="flex gap-2 mb-6">

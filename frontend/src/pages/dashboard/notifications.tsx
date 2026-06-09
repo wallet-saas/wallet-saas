@@ -131,7 +131,17 @@ export default function NotificationsPage() {
               <p className="text-sm font-medium text-gray-900">Module notifications push</p>
               <p className="text-xs text-gray-500">{moduleEnabled ? 'Activé — vos clients reçoivent des notifications' : 'Désactivé — aucune notification ne sera envoyée'}</p>
             </div>
-            <Toggle checked={moduleEnabled} onChange={setModuleEnabled} />
+            <Toggle checked={moduleEnabled} onChange={async (val) => {
+              const prev = moduleEnabled;
+              setModuleEnabled(val);
+              try {
+                await commercantApi.update({ module_notifications: val });
+                await refreshUser();
+              } catch (e: any) {
+                setModuleEnabled(prev);
+                toast(e?.message || 'Erreur lors de la sauvegarde', 'error');
+              }
+            }} />
           </div>
 
           <div className="flex gap-2">
