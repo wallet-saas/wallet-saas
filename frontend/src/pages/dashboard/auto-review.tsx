@@ -10,7 +10,12 @@ import { autoReviewApi, type Avis } from '@/services/api';
 import { Star, MessageSquare, Settings, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 
 export default function AutoReviewPage() {
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState<{
+    module_avis_google: boolean;
+    delai_notif_avis_minutes: number;
+    google_place_url: string;
+    google_place_id: string;
+  }>({
     module_avis_google: false,
     delai_notif_avis_minutes: 60,
     google_place_url: '',
@@ -29,7 +34,12 @@ export default function AutoReviewPage() {
         autoReviewApi.settings(),
         autoReviewApi.feedback(20),
       ]);
-      setSettings(settingsRes);
+      setSettings({
+        module_avis_google: settingsRes.module_avis_google ?? false,
+        delai_notif_avis_minutes: settingsRes.delai_notif_avis_minutes ?? 60,
+        google_place_url: settingsRes.google_place_url ?? '',
+        google_place_id: settingsRes.google_place_id ?? '',
+      });
       setFeedback(feedbackRes.data || []);
     } catch (e) {
       console.error('Erreur chargement:', e);
@@ -41,7 +51,11 @@ export default function AutoReviewPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await autoReviewApi.updateSettings(settings);
+      await autoReviewApi.updateSettings({
+        ...settings,
+        google_place_url: settings.google_place_url || undefined,
+        google_place_id: settings.google_place_id || undefined,
+      });
       alert('Paramètres enregistrés !');
     } catch (err: any) {
       alert(err.message || 'Erreur');
@@ -107,7 +121,7 @@ export default function AutoReviewPage() {
                 <Input
                   label="URL de votre fiche Google"
                   placeholder="https://g.page/mon-commerce"
-                  value={settings.google_place_url}
+                  value={settings.google_place_url || ''}
                   onChange={(e) => setSettings({ ...settings, google_place_url: e.target.value })}
                   hint="Lien vers votre fiche Google — les clients avec 4+ étoiles seront redirigés ici"
                 />
