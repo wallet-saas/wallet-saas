@@ -116,24 +116,15 @@ const register = async (req, res) => {
       { expiresIn: '7d' } // Token valide 7 jours
     );
 
-    // Retourner les données (sans le mot de passe)
+    // Return all commercant fields (SELECT was used in insert), minus password
+    const responseData = { ...newCommercant };
+    delete responseData.password;
+
     res.status(201).json({
       success: true,
       message: 'Compte créé avec succès !',
       data: {
-        commercant: {
-          id: newCommercant.id,
-          email: newCommercant.email,
-          nom_enseigne: newCommercant.nom_enseigne,
-          telephone: newCommercant.telephone,
-          adresse: newCommercant.adresse,
-          ville: newCommercant.ville,
-          code_postal: newCommercant.code_postal,
-          template_metier: newCommercant.template_metier,
-          abonnement_statut: newCommercant.abonnement_statut,
-          wallet_class_configured: newCommercant.wallet_class_configured ?? null,
-          created_at: newCommercant.created_at
-        },
+        commercant: responseData,
         token
       }
     });
@@ -206,30 +197,11 @@ const login = async (req, res) => {
     );
     console.log('[LOGIN] ⑧ JWT généré — début:', token.substring(0, 20) + '...');
 
-    const responseData = {
-      id: commercant.id,
-      email: commercant.email,
-      nom_enseigne: commercant.nom_enseigne,
-      telephone: commercant.telephone,
-      adresse: commercant.adresse,
-      ville: commercant.ville,
-      code_postal: commercant.code_postal,
-      template_metier: commercant.template_metier,
-      module_fidelite: commercant.module_fidelite,
-      module_avis_google: commercant.module_avis_google,
-      module_geolocalisation: commercant.module_geolocalisation,
-      module_menu_jour: commercant.module_menu_jour,
-      module_offres_flash: commercant.module_offres_flash,
-      abonnement_statut: commercant.abonnement_statut,
-      wallet_class_configured: commercant.wallet_class_configured ?? null,
-      carte_programme_nom: commercant.carte_programme_nom ?? null,
-      carte_recompense_description: commercant.carte_recompense_description ?? null,
-      template_type: commercant.template_type ?? null,
-      created_at: commercant.created_at
-    };
+    // Return all commercant fields (SELECT * was used), minus password
+    const responseData = { ...commercant };
+    delete responseData.password;
     console.log('[LOGIN] ⑨ Réponse envoyée — abonnement_statut:', responseData.abonnement_statut);
 
-    // Retourner les données (sans le mot de passe)
     res.status(200).json({
       success: true,
       message: 'Connexion réussie !',
@@ -253,26 +225,13 @@ const login = async (req, res) => {
  */
 const getMe = async (req, res) => {
   try {
-    // req.commercant est ajouté par le middleware authMiddleware
     const { id } = req.commercant;
 
-    // Récupérer les infos depuis Supabase (sans le mot de passe)
+    // Use SELECT * to automatically include all columns (new columns added via
+    // Supabase Dashboard are picked up without code changes). Exclude password.
     const { data: commercant, error } = await supabase
       .from('commercants')
-      .select(`
-        id, email, nom_enseigne, telephone, adresse, ville, code_postal,
-        template_metier, template_type,
-        module_fidelite, module_avis_google, module_geolocalisation, module_menu_jour, module_offres_flash,
-        carte_couleur_primaire, carte_couleur_secondaire, carte_logo_url,
-        carte_programme_nom, carte_recompense_description,
-        abonnement_statut, abonnement_debut, abonnement_fin,
-        wallet_class_configured,
-        delai_notif_avis_minutes, rayon_geoloc_metres,
-        points_par_visite, points_recompense,
-        latitude, longitude,
-        google_place_url, qr_code_install_url,
-        created_at
-      `)
+      .select('*')
       .eq('id', id)
       .single();
 
@@ -282,6 +241,9 @@ const getMe = async (req, res) => {
         error: 'Commerçant introuvable.'
       });
     }
+
+    // Remove password from response
+    delete commercant.password;
 
     res.status(200).json({
       success: true,
