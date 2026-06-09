@@ -11,22 +11,28 @@ const REQUIRED_COLUMNS = [
 ];
 
 async function ensureColumns() {
-  if (!process.env.DATABASE_URL) return;
+  const hasDbUrl = !!process.env.DATABASE_URL;
+  console.log(`[commercantsController] ensureColumns: DATABASE_URL=${hasDbUrl ? 'set' : 'NOT SET'}`);
+  if (!hasDbUrl) {
+    console.warn('[commercantsController] Skipping ensureColumns — no DATABASE_URL');
+    return;
+  }
   try {
     const { Client } = require('pg');
     const client = new Client({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
     await client.connect();
+    console.log('[commercantsController] Connected to PostgreSQL');
     for (const col of REQUIRED_COLUMNS) {
       try {
         await client.query(`ALTER TABLE commercants ADD COLUMN IF NOT EXISTS ${col.name} ${col.type} DEFAULT ${col.default};`);
-        console.log(`[commercantsController] Ensured column: ${col.name}`);
+        console.log(`[commercantsController] ✅ Ensured column: ${col.name}`);
       } catch (e) {
-        console.warn(`[commercantsController] Could not add column ${col.name}: ${e.message}`);
+        console.warn(`[commercantsController] ❌ Could not add column ${col.name}: ${e.message}`);
       }
     }
     await client.end();
   } catch (e) {
-    console.warn('[commercantsController] ensureColumns failed:', e.message);
+    console.error('[commercantsController] ensureColumns FAILED:', e.message);
   }
 }
 
