@@ -51,6 +51,7 @@ export default function NotificationsPage() {
   const [heureDebut, setHeureDebut] = useState(8);
   const [heureFin, setHeureFin] = useState(22);
   const [templateDefaut, setTemplateDefaut] = useState('');
+  const [modeSimulation, setModeSimulation] = useState(false);
 
   useEffect(() => {
     if (commercant) {
@@ -254,6 +255,19 @@ export default function NotificationsPage() {
                 <CardHeader><CardTitle>Template par défaut</CardTitle></CardHeader>
                 <CardBody className="space-y-4">
                   <Textarea label="Message pré-rempli" placeholder="Bonjour ! Nouvelle offre spéciale…" rows={6} value={templateDefaut} onChange={e => setTemplateDefaut(e.target.value)} />
+                </CardBody>
+              </Card>
+
+              <Card>
+                <CardHeader><CardTitle>Mode simulation</CardTitle></CardHeader>
+                <CardBody className="space-y-4">
+                  <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Activer le mode simulation</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Les notifications ne seront pas réellement envoyées — utile pour tester</p>
+                    </div>
+                    <Toggle checked={modeSimulation} onChange={setModeSimulation} />
+                  </div>
                 </CardBody>
               </Card>
 

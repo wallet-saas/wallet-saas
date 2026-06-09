@@ -25,6 +25,7 @@ const schema = z.object({
   categorie: z.string().optional(),
   image_url: z.string().url('URL invalide').optional().or(z.literal('')),
   disponible: z.boolean().default(true),
+  menu_du_jour: z.boolean().default(false),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -78,9 +79,9 @@ export default function MenusPage() {
 
   useEffect(() => { fetchMenus(); }, []);
 
-  const openCreate = () => { reset({ disponible: true }); setModal({ open: true }); };
+  const openCreate = () => { reset({ disponible: true, menu_du_jour: false }); setModal({ open: true }); };
   const openEdit = (menu: Menu) => {
-    reset({ titre: menu.titre, description: menu.description || '', prix: (menu.prix?.toString() || '') as unknown as number, categorie: menu.categorie || '', image_url: menu.image_url || '', disponible: menu.disponible });
+    reset({ titre: menu.titre, description: menu.description || '', prix: (menu.prix?.toString() || '') as unknown as number, categorie: menu.categorie || '', image_url: menu.image_url || '', disponible: menu.disponible, menu_du_jour: !!(menu as any).menu_du_jour });
     setModal({ open: true, menu });
   };
 
@@ -302,7 +303,10 @@ export default function MenusPage() {
           </div>
           <Input label="Image URL" placeholder="https://…" error={errors.image_url?.message} {...register('image_url')} />
           <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-            <Toggle checked={watch('disponible')} onChange={v => setValue('disponible', v)} label="Disponible" />
+            <div className="flex items-center gap-4">
+              <Toggle checked={watch('disponible')} onChange={v => setValue('disponible', v)} label="Disponible" />
+              <Toggle checked={watch('menu_du_jour')} onChange={v => setValue('menu_du_jour', v)} label="⭐ Menu du jour" />
+            </div>
             <div className="flex gap-2">
               <Button variant="secondary" type="button" onClick={() => setModal({ open: false })}>Annuler</Button>
               <Button type="submit" loading={isSubmitting}>{modal.menu ? 'Enregistrer' : 'Ajouter'}</Button>
