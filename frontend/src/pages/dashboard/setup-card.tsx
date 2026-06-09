@@ -7,19 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/hooks/useAuth';
 import { walletApi, type WalletSetupData } from '@/services/api';
-import { AlertCircle, CheckCircle, Palette, Star, Sparkles, Eye } from 'lucide-react';
-
-// ─── Templates (suggestions only, not forced) ─────────────────────────────────
-
-const WALLET_TEMPLATES = [
-  { id: 'boulangerie', label: 'Boulangerie',  emoji: '🍞', couleur: '#8B4513', programme: 'Carte Fidélité Boulangerie', recompense: '1 pain offert à 10 points',    points: 10 },
-  { id: 'coiffeur',    label: 'Coiffeur',     emoji: '✂️', couleur: '#9B59B6', programme: 'Carte Fidélité Salon',        recompense: '1 coupe offerte à 5 points',   points: 5  },
-  { id: 'restaurant',  label: 'Restaurant',   emoji: '🍽️', couleur: '#E74C3C', programme: 'Carte Fidélité Restaurant',   recompense: '1 dessert offert à 10 points', points: 10 },
-  { id: 'kine',        label: 'Kiné',         emoji: '💆', couleur: '#3498DB', programme: 'Carte Fidélité Cabinet',      recompense: '1 séance offerte à 10 points', points: 10 },
-  { id: 'garagiste',   label: 'Garagiste',    emoji: '🚗', couleur: '#2C3E50', programme: 'Carte Fidélité Garage',       recompense: '1 vidange offerte à 5 points', points: 5  },
-] as const;
-
-type TemplateId = typeof WALLET_TEMPLATES[number]['id'];
+import { AlertCircle, CheckCircle, Palette, Eye } from 'lucide-react';
 
 // ─── Card Preview ──────────────────────────────────────────────────────────────
 
@@ -31,12 +19,13 @@ interface CardPreviewProps {
   pointsRecompense: number;
   recompenseDescription: string;
   layout: 'classic' | 'modern' | 'minimal';
+  texteBasCarte: string;
 }
 
-function CardPreview({ couleur, couleurSecondaire, programme, logoUrl, pointsRecompense, recompenseDescription, layout }: CardPreviewProps) {
+function CardPreview({ couleur, couleurSecondaire, programme, logoUrl, pointsRecompense, recompenseDescription, layout, texteBasCarte }: CardPreviewProps) {
   if (layout === 'modern') {
     return (
-      <div className="relative rounded-3xl overflow-hidden shadow-2xl" style={{ minHeight: '180px' }}>
+      <div className="relative rounded-3xl overflow-hidden shadow-2xl" style={{ minHeight: '200px' }}>
         <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${couleur} 0%, ${couleurSecondaire} 100%)` }} />
         <div className="absolute inset-0 opacity-10">
           <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white" />
@@ -64,6 +53,9 @@ function CardPreview({ couleur, couleurSecondaire, programme, logoUrl, pointsRec
           </div>
           <p className="font-bold text-lg leading-tight mb-1">{programme || 'Nom du programme'}</p>
           <p className="text-sm text-white/80">{recompenseDescription || 'Récompense à débloquer'}</p>
+          {texteBasCarte && (
+            <p className="text-xs text-white/60 mt-3 border-t border-white/20 pt-2">{texteBasCarte}</p>
+          )}
         </div>
       </div>
     );
@@ -71,7 +63,7 @@ function CardPreview({ couleur, couleurSecondaire, programme, logoUrl, pointsRec
 
   if (layout === 'minimal') {
     return (
-      <div className="relative rounded-2xl overflow-hidden shadow-xl border border-gray-100" style={{ minHeight: '160px', background: couleur }}>
+      <div className="relative rounded-2xl overflow-hidden shadow-xl border border-gray-100" style={{ minHeight: '180px', background: couleur }}>
         <div className="p-5 text-white">
           <div className="flex items-center gap-3 mb-4">
             {logoUrl ? (
@@ -91,6 +83,9 @@ function CardPreview({ couleur, couleurSecondaire, programme, logoUrl, pointsRec
             </div>
             <span className="text-xs text-white/70">{pointsRecompense} pts</span>
           </div>
+          {texteBasCarte && (
+            <p className="text-xs text-white/50 mt-2">{texteBasCarte}</p>
+          )}
         </div>
       </div>
     );
@@ -102,7 +97,7 @@ function CardPreview({ couleur, couleurSecondaire, programme, logoUrl, pointsRec
       className="relative rounded-2xl p-5 text-white shadow-lg overflow-hidden"
       style={{
         background: `linear-gradient(135deg, ${couleur} 0%, ${couleur}cc 100%)`,
-        minHeight: '140px',
+        minHeight: '160px',
       }}
     >
       <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full opacity-20" style={{ background: 'white' }} />
@@ -123,6 +118,9 @@ function CardPreview({ couleur, couleurSecondaire, programme, logoUrl, pointsRec
       <div className="relative mt-2 flex items-center gap-2">
         <span className="text-xs text-white/60">{pointsRecompense} points</span>
       </div>
+      {texteBasCarte && (
+        <p className="relative text-xs text-white/50 mt-2 border-t border-white/20 pt-2">{texteBasCarte}</p>
+      )}
     </div>
   );
 }
@@ -133,7 +131,6 @@ export default function SetupCardPage() {
   const router = useRouter();
   const { refreshUser } = useAuth();
 
-  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId | null>(null);
   const [programmenom, setProgrammeNom] = useState('');
   const [couleur, setCouleur] = useState('#6366f1');
   const [couleurSecondaire, setCouleurSecondaire] = useState('#764ba2');
@@ -142,21 +139,12 @@ export default function SetupCardPage() {
   const [recompenseDescription, setRecompenseDescription] = useState('');
   const [layout, setLayout] = useState<'classic' | 'modern' | 'minimal'>('classic');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [texteBasCarte, setTexteBasCarte] = useState('');
+  const [styleTexte, setStyleTexte] = useState<'normal' | 'gras' | 'italique'>('normal');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState('');
-
-  const applyTemplate = (id: TemplateId) => {
-    const tpl = WALLET_TEMPLATES.find((t) => t.id === id);
-    if (!tpl) return;
-    setSelectedTemplate(id);
-    setProgrammeNom(tpl.programme);
-    setCouleur(tpl.couleur);
-    setPointsRecompense(tpl.points);
-    setRecompenseDescription(tpl.recompense);
-    setErrors({});
-  };
 
   const validate = (): boolean => {
     const next: Record<string, string> = {};
@@ -173,7 +161,6 @@ export default function SetupCardPage() {
     if (!validate()) return;
 
     const payload: WalletSetupData = {
-      template_type: selectedTemplate ?? undefined,
       programme_nom: programmenom.trim(),
       couleur_primaire: couleur,
       couleur_secondaire: couleurSecondaire,
@@ -181,6 +168,8 @@ export default function SetupCardPage() {
       points_recompense: pointsRecompense,
       recompense_description: recompenseDescription.trim(),
       layout,
+      texte_perso_bas_carte: texteBasCarte.trim() || undefined,
+      style_texte: styleTexte,
     };
 
     setSubmitting(true);
@@ -203,67 +192,11 @@ export default function SetupCardPage() {
         <div className="page-header">
           <h1 className="page-title">Créez votre carte de fidélité</h1>
           <p className="page-subtitle">
-            Personnalisez votre carte à votre image. Les templates sont des suggestions — vous pouvez tout modifier.
+            Personnalisez votre carte à votre image. Tous les champs sont modifiables.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-
-          {/* ── Template suggestions (optional) ─────────────────────────────── */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
-                    <Sparkles className="h-4 w-4 text-gray-500" />
-                  </div>
-                  <CardTitle>Suggestions de design</CardTitle>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedTemplate(null)}
-                  className="text-xs text-gray-400 hover:text-gray-600"
-                >
-                  Effacer la sélection
-                </button>
-              </div>
-            </CardHeader>
-            <CardBody>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                {WALLET_TEMPLATES.map((tpl) => {
-                  const isSelected = selectedTemplate === tpl.id;
-                  return (
-                    <button
-                      key={tpl.id}
-                      type="button"
-                      onClick={() => applyTemplate(tpl.id)}
-                      className={[
-                        'flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-primary-400',
-                        isSelected
-                          ? 'border-primary-500 bg-primary-50'
-                          : 'border-gray-100 bg-white hover:border-gray-300 hover:bg-gray-50',
-                      ].join(' ')}
-                    >
-                      <div
-                        className="w-full rounded-lg h-12 flex items-center justify-center text-white text-xs font-semibold shadow-sm px-2 text-center leading-tight"
-                        style={{ background: tpl.couleur }}
-                      >
-                        <span className="truncate">{tpl.programme}</span>
-                      </div>
-                      <span className="text-2xl leading-none">{tpl.emoji}</span>
-                      <span className={['text-xs font-medium', isSelected ? 'text-primary-700' : 'text-gray-600'].join(' ')}>
-                        {tpl.label}
-                      </span>
-                      {isSelected && <CheckCircle className="h-4 w-4 text-primary-600" />}
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="text-xs text-gray-400 mt-3">
-                💡 Ces templates pré-remplissent le formulaire ci-dessous. Vous pouvez les ignorer et tout personnaliser manuellement.
-              </p>
-            </CardBody>
-          </Card>
 
           {/* ── Card Layout ──────────────────────────────────────────────────── */}
           <Card>
@@ -378,15 +311,32 @@ export default function SetupCardPage() {
                     <Input
                       label="Texte personnalisé (bas de carte)"
                       placeholder="Merci pour votre fidélité !"
-                      value={''}
-                      onChange={() => {}}
+                      value={texteBasCarte}
+                      onChange={(e) => setTexteBasCarte(e.target.value)}
                       hint="Texte affiché en bas de la carte"
                     />
                     <div>
                       <label className="label">Style du texte</label>
                       <div className="flex gap-2">
-                        {['Normal', 'Gras', 'Italique'].map((s) => (
-                          <button key={s} type="button" className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 hover:border-indigo-300">{s}</button>
+                        {([
+                          { id: 'normal', label: 'Normal', style: {} },
+                          { id: 'gras', label: 'Gras', style: { fontWeight: 'bold' } },
+                          { id: 'italique', label: 'Italique', style: { fontStyle: 'italic' } },
+                        ] as const).map((s) => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => setStyleTexte(s.id)}
+                            className={[
+                              'px-4 py-2 text-sm rounded-lg border-2 transition-all',
+                              styleTexte === s.id
+                                ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                                : 'border-gray-200 hover:border-indigo-300 text-gray-600',
+                            ].join(' ')}
+                            style={s.style}
+                          >
+                            {s.label}
+                          </button>
                         ))}
                       </div>
                     </div>
@@ -405,6 +355,7 @@ export default function SetupCardPage() {
                       pointsRecompense={pointsRecompense}
                       recompenseDescription={recompenseDescription}
                       layout={layout}
+                      texteBasCarte={texteBasCarte}
                     />
                     <p className="text-xs text-gray-400 mt-2 text-center">
                       Récompense : {recompenseDescription} ({pointsRecompense} pts)

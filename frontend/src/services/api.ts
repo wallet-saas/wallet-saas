@@ -503,6 +503,8 @@ export interface WalletSetupData {
   points_recompense: number;
   recompense_description: string;
   layout?: 'classic' | 'modern' | 'minimal';
+  texte_perso_bas_carte?: string;
+  style_texte?: 'normal' | 'gras' | 'italique';
 }
 
 export { ApiError };

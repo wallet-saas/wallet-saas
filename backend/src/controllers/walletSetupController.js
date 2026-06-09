@@ -55,21 +55,44 @@ const setupWalletCard = async (req, res) => {
     const logo_url_final = resolveLogo(template_type, logo_url, commercantId);
 
     // Mettre à jour les infos carte dans Supabase
-    const { data: updatedCommercant, error: updateError } = await supabase
+    // Champs de base (toujours présents)
+    const updateData: any = {
+      carte_couleur_primaire: couleur_primaire,
+      carte_couleur_secondaire: couleur_secondaire || null,
+      carte_logo_url: logo_url_final,
+      points_recompense,
+      carte_programme_nom: programme_nom,
+      carte_recompense_description: recompense_description,
+      template_type: template_type || null,
+    };
+
+    // Champs optionnels — peuvent ne pas exister si le SQL n'a pas été exécuté
+    // On les essaie un par un pour ne pas bloquer si la colonne manque
+    const optionalFields: Record<string, any> = {};
+    if (layout) optionalFields.carte_layout = layout;
+    if (req.body.texte_perso_bas_carte) optionalFields.texte_perso_bas_carte = req.body.texte_perso_bas_carte;
+    if (req.body.style_texte) optionalFields.style_texte = req.body.style_texte;
+
+    // Essayer d'abord avec tous les champs
+    let updateResult = await supabase
       .from('commercants')
-      .update({
-        carte_couleur_primaire: couleur_primaire,
-        carte_couleur_secondaire: couleur_secondaire || null,
-        carte_logo_url: logo_url_final,
-        points_recompense,
-        carte_programme_nom: programme_nom,
-        carte_recompense_description: recompense_description,
-        template_type: template_type || null,
-        carte_layout: layout || 'classic',
-      })
+      .update({ ...updateData, ...optionalFields })
       .eq('id', commercantId)
       .select('id, nom_enseigne, carte_couleur_primaire, carte_logo_url, points_recompense, carte_programme_nom, carte_recompense_description, template_type')
       .single();
+
+    // Si erreur (colonne inconnue), réessayer sans les champs optionnels
+    if (updateResult.error && updateResult.error.code === '42703') {
+      console.warn('[walletSetup] Colonne optionnelle manquante, retry sans champs optionnels');
+      updateResult = await supabase
+        .from('commercants')
+        .update(updateData)
+        .eq('id', commercantId)
+        .select('id, nom_enseigne, carte_couleur_primaire, carte_logo_url, points_recompense, carte_programme_nom, carte_recompense_description, template_type')
+        .single();
+    }
+
+    const { data: updatedCommercant, error: updateError } = updateResult;
 
     if (updateError || !updatedCommercant) {
       console.error('[walletSetup] Erreur mise à jour Supabase:', updateError);
@@ -112,27 +135,48 @@ const updateWalletCard = async (req, res) => {
       template_type,
       programme_nom,
       couleur_primaire,
+      couleur_secondaire,
       logo_url,
       points_recompense,
       recompense_description,
+      layout,
     } = req.body;
 
     const logo_url_final = resolveLogo(template_type, logo_url, commercantId);
 
-    // Mettre à jour les infos carte dans Supabase
-    const { data: updatedCommercant, error: updateError } = await supabase
+    const updateData: any = {
+      carte_couleur_primaire: couleur_primaire,
+      carte_couleur_secondaire: couleur_secondaire || null,
+      carte_logo_url: logo_url_final,
+      points_recompense,
+      carte_programme_nom: programme_nom,
+      carte_recompense_description: recompense_description,
+      template_type: template_type || null,
+    };
+
+    const optionalFields: Record<string, any> = {};
+    if (layout) optionalFields.carte_layout = layout;
+    if (req.body.texte_perso_bas_carte) optionalFields.texte_perso_bas_carte = req.body.texte_perso_bas_carte;
+    if (req.body.style_texte) optionalFields.style_texte = req.body.style_texte;
+
+    let updateResult = await supabase
       .from('commercants')
-      .update({
-        carte_couleur_primaire: couleur_primaire,
-        carte_logo_url: logo_url_final,
-        points_recompense,
-        carte_programme_nom: programme_nom,
-        carte_recompense_description: recompense_description,
-        template_type: template_type || null,
-      })
+      .update({ ...updateData, ...optionalFields })
       .eq('id', commercantId)
       .select('id, nom_enseigne, carte_couleur_primaire, carte_logo_url, points_recompense, carte_programme_nom, carte_recompense_description, template_type')
       .single();
+
+    if (updateResult.error && updateResult.error.code === '42703') {
+      console.warn('[walletSetup] Colonne optionnelle manquante (PUT), retry sans champs optionnels');
+      updateResult = await supabase
+        .from('commercants')
+        .update(updateData)
+        .eq('id', commercantId)
+        .select('id, nom_enseigne, carte_couleur_primaire, carte_logo_url, points_recompense, carte_programme_nom, carte_recompense_description, template_type')
+        .single();
+    }
+
+    const { data: updatedCommercant, error: updateError } = updateResult;
 
     if (updateError || !updatedCommercant) {
       console.error('[walletSetup] Erreur mise à jour Supabase (PUT):', updateError);
