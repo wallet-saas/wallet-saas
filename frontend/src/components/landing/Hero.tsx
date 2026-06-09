@@ -4,8 +4,11 @@ import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { ArrowRight, Wallet, CheckCircle2 } from "lucide-react";
 import { MouseEvent } from "react";
 import Link from "next/link";
+import { useLandingTheme } from "./theme";
 
 export function Hero() {
+  const t = useLandingTheme();
+
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
@@ -57,7 +60,7 @@ export function Hero() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
-              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-indigo-400 text-sm font-medium mb-8 backdrop-blur-sm"
+              className={`inline-flex items-center gap-2 px-3 py-1 rounded-full ${t.border} text-indigo-400 text-sm font-medium mb-8 backdrop-blur-sm ${t.sectionBgAlt}`}
             >
               <span className="flex h-2 w-2 rounded-full bg-indigo-500 animate-pulse"></span>
               Nouveau : Intégration Apple & Google Wallet
@@ -67,7 +70,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.8 }}
-              className="text-5xl lg:text-7xl font-bold tracking-tight text-white mb-6 leading-tight"
+              className={`text-5xl lg:text-7xl font-bold tracking-tight ${t.textPrimary} mb-6 leading-tight`}
             >
               La carte de fidélité de vos clients, <br className="hidden lg:block"/>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-600">dans leur téléphone</span>
@@ -77,7 +80,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.8 }}
-              className="text-xl text-slate-400 mb-10 leading-relaxed max-w-lg"
+              className={`text-xl ${t.textSecondary} mb-10 leading-relaxed max-w-lg`}
             >
               Fini le papier. Stamply génère une vraie carte Google Wallet & Apple Wallet en 2 minutes. Simplifiez la vie de vos clients et boostez votre rétention.
             </motion.p>
@@ -106,7 +109,7 @@ export function Hero() {
               >
                 <a
                   href="#demo"
-                  className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-2xl bg-white/5 text-white border border-white/10 transition-colors backdrop-blur-sm"
+                  className={`inline-flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-2xl ${t.sectionBgAlt} ${t.textPrimary} ${t.border} transition-colors backdrop-blur-sm`}
                 >
                   Voir la démo
                 </a>
@@ -117,7 +120,7 @@ export function Hero() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8, duration: 1 }}
-              className="mt-10 flex items-center gap-6 text-sm text-slate-400"
+              className={`mt-10 flex items-center gap-6 text-sm ${t.textSecondary}`}
             >
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-indigo-400" />
@@ -182,7 +185,7 @@ export function Hero() {
                       </div>
                       <div>
                         <div className="text-white font-semibold">Le Club</div>
-                        <div className="text-slate-400 text-xs">Coffee Shop</div>
+                        <div className={`text-slate-400 text-xs`}>Coffee Shop</div>
                       </div>
                     </div>
                   </div>
@@ -201,7 +204,7 @@ export function Hero() {
 
                   <div className="mt-auto z-10 bg-white/5 rounded-xl p-4 backdrop-blur-md border border-white/10" style={{ transform: 'translateZ(10px)' }}>
                     <div className="flex justify-between items-center mb-3">
-                      <div className="text-slate-300 text-sm">Prochaine récompense</div>
+                      <div className={`text-slate-300 text-sm`}>Prochaine récompense</div>
                       <div className="text-white font-bold">1,500 pts</div>
                     </div>
                     <div className="w-full bg-black/50 rounded-full h-2 overflow-hidden relative">

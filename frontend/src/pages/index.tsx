@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { ThemeProvider } from '@/contexts/ThemeContext';
+import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import { Navbar } from '@/components/landing/Navbar';
 import { Hero } from '@/components/landing/Hero';
 import { SocialProof } from '@/components/landing/SocialProof';
@@ -16,6 +16,8 @@ import { Footer } from '@/components/landing/Footer';
 
 function HomeContent() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   useEffect(() => {
     const token = localStorage.getItem('stamply_token');
@@ -31,7 +33,11 @@ function HomeContent() {
         <meta name="description" content="Créez des cartes de fidélité digitales pour Google Wallet et Apple Wallet. 49€/mois. Configuration en 2 minutes. Sans engagement." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-      <div className="min-h-screen bg-[#0A0A0F] text-slate-200 font-sans selection:bg-indigo-500/30">
+      <div className={`min-h-screen font-sans transition-colors duration-300 ${
+        isDark
+          ? "bg-[#0A0A0F] text-slate-200 selection:bg-indigo-500/30"
+          : "bg-white text-gray-900 selection:bg-indigo-500/20"
+      }`}>
         <Navbar />
         <main className="pt-16">
           <Hero />

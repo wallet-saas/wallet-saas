@@ -3,8 +3,11 @@
 import { motion } from "framer-motion";
 import { CheckCircle2, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { useLandingTheme } from "./theme";
 
 export function Pricing() {
+  const t = useLandingTheme();
+
   const features = [
     "Création de carte personnalisée",
     "Intégration Google Wallet & Apple Wallet",
@@ -23,10 +26,10 @@ export function Pricing() {
           viewport={{ once: true }}
           className="text-center max-w-2xl mx-auto mb-20"
         >
-          <h2 className="text-3xl lg:text-5xl font-bold text-white mb-6">
+          <h2 className={`text-3xl lg:text-5xl font-bold ${t.textPrimary} mb-6`}>
             Un tarif simple, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">sans surprise</span>
           </h2>
-          <p className="text-slate-400 text-lg">
+          <p className={`${t.textSecondary} text-lg`}>
             Tout ce dont vous avez besoin pour fidéliser vos clients, dans un seul abonnement. Rentabilisé dès les 5 premiers clients fidélisés.
           </p>
         </motion.div>
@@ -41,23 +44,23 @@ export function Pricing() {
           {/* Animated gradient border */}
           <div className="absolute -inset-[2px] bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 rounded-[2.5rem] opacity-70 group-hover:opacity-100 blur-[2px] transition-opacity duration-500" />
 
-          <div className="bg-[#0A0A0F] rounded-[2.5rem] p-8 lg:p-12 relative shadow-2xl shadow-indigo-500/20 overflow-hidden h-full">
+          <div className={`rounded-[2.5rem] p-8 lg:p-12 relative shadow-2xl shadow-indigo-500/20 overflow-hidden h-full`} style={{ backgroundColor: t.pageBg.includes('bg-white') ? '#ffffff' : '#0A0A0F' }}>
             {/* Background ambient glow inside card */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[80px] rounded-full pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 blur-[80px] rounded-full pointer-events-none" />
+            <div className={`absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[80px] rounded-full pointer-events-none ${t.glowOrb}`} />
+            <div className={`absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 blur-[80px] rounded-full pointer-events-none ${t.glowOrb}`} />
 
             <div className="relative z-10">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm font-medium mb-6">
+              <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full ${t.badgeBg} text-sm font-medium mb-6`}>
                 <Sparkles className="w-4 h-4" />
                 Offre Unique
               </div>
 
-              <h3 className="text-3xl font-semibold text-white mb-2">Plan Pro</h3>
+              <h3 className={`text-3xl font-semibold ${t.textPrimary} mb-2`}>Plan Pro</h3>
               <div className="flex items-baseline gap-2 mb-6">
-                <span className="text-6xl font-bold text-white tracking-tight">49€</span>
-                <span className="text-slate-400 text-lg">/ mois</span>
+                <span className={`text-6xl font-bold ${t.textPrimary} tracking-tight`}>49€</span>
+                <span className={`${t.textSecondary} text-lg`}>/ mois</span>
               </div>
-              <p className="text-slate-400 mb-10 text-lg">
+              <p className={`${t.textSecondary} mb-10 text-lg`}>
                 Sans engagement. Annulez à tout moment.
               </p>
 
@@ -81,7 +84,7 @@ export function Pricing() {
                     viewport={{ once: true }}
                     transition={{ delay: 0.2 + (i * 0.1) }}
                     key={i}
-                    className="flex items-center gap-4 text-slate-300"
+                    className={`flex items-center gap-4 ${t.pageText}`}
                   >
                     <div className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center shrink-0">
                       <CheckCircle2 className="w-4 h-4 text-indigo-400" />

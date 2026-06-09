@@ -1,8 +1,11 @@
 'use client';
 
 import { motion } from "framer-motion";
+import { useLandingTheme } from "./theme";
 
 export function Steps() {
+  const t = useLandingTheme();
+
   const steps = [
     {
       number: "01",
@@ -43,10 +46,10 @@ export function Steps() {
           viewport={{ once: true }}
           className="text-center max-w-2xl mx-auto mb-20"
         >
-          <h2 className="text-3xl lg:text-5xl font-bold text-white mb-6">
+          <h2 className={`text-3xl lg:text-5xl font-bold ${t.textPrimary} mb-6`}>
             Comment ça marche ?
           </h2>
-          <p className="text-slate-400 text-lg">
+          <p className={`${t.textSecondary} text-lg`}>
             Aussi simple pour vous que pour vos clients.
           </p>
         </motion.div>
@@ -69,11 +72,11 @@ export function Steps() {
 
           {steps.map((step, i) => (
             <motion.div key={i} variants={item} className="relative flex flex-col items-center text-center group">
-              <div className="w-16 h-16 rounded-2xl bg-[#0A0A0F] border border-indigo-500/30 flex items-center justify-center text-2xl font-bold text-indigo-400 mb-8 shadow-xl shadow-indigo-500/10 group-hover:scale-110 group-hover:bg-indigo-500/10 group-hover:border-indigo-400 transition-all duration-300 z-10">
+              <div className={`w-16 h-16 rounded-2xl ${t.sectionBg} border border-indigo-500/30 flex items-center justify-center text-2xl font-bold text-indigo-400 mb-8 shadow-xl shadow-indigo-500/10 group-hover:scale-110 group-hover:bg-indigo-500/10 group-hover:border-indigo-400 transition-all duration-300 z-10`}>
                 {step.number}
               </div>
-              <h3 className="text-2xl font-semibold text-white mb-4 group-hover:text-indigo-300 transition-colors">{step.title}</h3>
-              <p className="text-slate-400 leading-relaxed text-lg group-hover:text-slate-300 transition-colors">
+              <h3 className={`text-2xl font-semibold ${t.textPrimary} mb-4 group-hover:text-indigo-300 transition-colors`}>{step.title}</h3>
+              <p className={`${t.textSecondary} leading-relaxed text-lg group-hover:${t.pageText} transition-colors`}>
                 {step.description}
               </p>
             </motion.div>

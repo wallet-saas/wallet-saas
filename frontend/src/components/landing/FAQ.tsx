@@ -3,8 +3,11 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
+import { useLandingTheme } from "./theme";
 
 export function FAQ() {
+  const t = useLandingTheme();
+
   const faqs = [
     {
       question: "Mes clients doivent-ils télécharger une application ?",
@@ -29,7 +32,7 @@ export function FAQ() {
   return (
     <section className="py-24 max-w-3xl mx-auto px-6 lg:px-8">
       <div className="text-center mb-16">
-        <h2 className="text-3xl font-bold text-white mb-4">
+        <h2 className={`text-3xl font-bold ${t.textPrimary} mb-4`}>
           Questions fréquentes
         </h2>
       </div>
@@ -38,18 +41,19 @@ export function FAQ() {
         {faqs.map((faq, i) => (
           <div
             key={i}
-            className="border border-white/10 rounded-2xl bg-[#0A0A0F] overflow-hidden transition-colors hover:border-white/20"
+            className={`border ${t.borderLight} rounded-2xl overflow-hidden transition-colors hover:${t.borderLight}`}
+            style={{ backgroundColor: t.pageBg.includes('bg-white') ? '#ffffff' : '#0A0A0F' }}
           >
             <button
               onClick={() => setOpenIndex(openIndex === i ? null : i)}
               className="w-full px-6 py-5 flex items-center justify-between text-left"
             >
-              <span className="text-lg font-medium pr-4 text-white">{faq.question}</span>
+              <span className={`text-lg font-medium pr-4 ${t.textPrimary}`}>{faq.question}</span>
               <motion.div
                 animate={{ rotate: openIndex === i ? 180 : 0 }}
                 transition={{ duration: 0.2 }}
               >
-                <ChevronDown className="w-5 h-5 text-slate-400 shrink-0" />
+                <ChevronDown className={`w-5 h-5 ${t.textSecondary} shrink-0`} />
               </motion.div>
             </button>
 
@@ -63,7 +67,7 @@ export function FAQ() {
                   className="overflow-hidden"
                 >
                   <div className="px-6 pb-5">
-                    <p className="text-slate-400 leading-relaxed">
+                    <p className={`${t.textSecondary} leading-relaxed`}>
                       {faq.answer}
                     </p>
                   </div>
