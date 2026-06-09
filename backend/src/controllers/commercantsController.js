@@ -1,5 +1,72 @@
 const { supabase } = require('../config/supabase');
 
+// ─── Column existence cache ───────────────────────────────────────────────────
+// On startup, detect which columns actually exist in the commercants table.
+// This avoids "column does not exist" errors from Supabase's schema cache.
+let existingColumns = null;
+
+async function detectExistingColumns() {
+  try {
+    const { data, error } = await supabase.from('commercants').select('*').limit(1).single();
+    if (error || !data) {
+      console.warn('[commercantsController] Could not detect columns:', error?.message);
+      return null;
+    }
+    existingColumns = new Set(Object.keys(data));
+    console.log(`[commercantsController] Detected ${existingColumns.size} columns in commercants table`);
+    // Log missing expected columns
+    const expected = [
+      'module_notifications', 'notif_max_par_jour', 'notif_heure_debut', 'notif_heure_fin', 'notif_template_defaut',
+      'avis_seuil_reponse', 'avis_template_auto', 'avis_reponse_auto',
+      'menu_categories', 'menu_devise', 'menu_afficher_prix',
+      'offres_duree_defaut', 'offres_limite_client', 'offres_notif_auto', 'offres_code_auto',
+      'geoloc_message', 'geoloc_heure_debut', 'geoloc_heure_fin',
+      'auto_review_message', 'auto_review_seuil_etoiles', 'auto_review_alerte_email',
+      'module_boutiques', 'boutique_defaut_id',
+      'texte_perso_bas_carte', 'style_texte',
+    ];
+    const missing = expected.filter(c => !existingColumns.has(c));
+    if (missing.length > 0) {
+      console.warn(`[commercantsController] Missing columns (${missing.length}): ${missing.join(', ')}`);
+    }
+    return existingColumns;
+  } catch (e) {
+    console.error('[commercantsController] Error detecting columns:', e.message);
+    return null;
+  }
+}
+
+// Run detection on module load
+detectExistingColumns();
+
+// Re-detect every 60 seconds in case columns are added externally
+setInterval(detectExistingColumns, 60000);
+
+function filterExisting(payload) {
+  if (!existingColumns) return payload;
+  const filtered = {};
+  for (const [key, value] of Object.entries(payload)) {
+    if (existingColumns.has(key)) {
+      filtered[key] = value;
+    } else {
+      console.warn(`[commercantsController] Skipping missing column: ${key}`);
+    }
+  }
+  return filtered;
+}
+
+function buildSelectList() {
+  if (!existingColumns) {
+    // Fallback: use a safe subset of known columns
+    return 'id, email, nom_enseigne, telephone, adresse, ville, code_postal, template_metier, template_type, module_fidelite, module_avis_google, module_geolocalisation, module_menu_jour, module_offres_flash, abonnement_statut, wallet_class_configured, carte_programme_nom, carte_recompense_description, carte_couleur_primaire, carte_couleur_secondaire, carte_logo_url, points_recompense, points_par_visite, delai_notif_avis_minutes, rayon_geoloc_metres, latitude, longitude, google_place_url, qr_code_install_url, created_at';
+  }
+  // Build select list from existing columns
+  const cols = Array.from(existingColumns).join(', ');
+  return cols;
+}
+
+// ─── Controllers ──────────────────────────────────────────────────────────────
+
 // GET - Récupérer tous les commerçants (sans les mots de passe)
 exports.getAllCommercants = async (req, res) => {
   try {
@@ -10,50 +77,33 @@ exports.getAllCommercants = async (req, res) => {
 
     if (error) throw error;
 
-    res.json({
-      success: true,
-      count: data.length,
-      data: data
-    });
+    res.json({ success: true, count: data.length, data: data });
   } catch (error) {
     console.error('Erreur getAllCommercants:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
-// GET - Récupérer un commerçant par ID (sans le mot de passe)
+// GET - Récupérer un commerçant par ID
 exports.getCommercantById = async (req, res) => {
   try {
     const { id } = req.params;
-
+    const selectList = buildSelectList();
     const { data, error } = await supabase
       .from('commercants')
-      .select('id, email, nom_enseigne, telephone, adresse, ville, code_postal, template_metier, template_type, module_fidelite, module_avis_google, module_geolocalisation, module_menu_jour, module_offres_flash, module_notifications, abonnement_statut, wallet_class_configured, carte_programme_nom, carte_recompense_description, carte_couleur_primaire, carte_couleur_secondaire, carte_logo_url, points_recompense, points_par_visite')
+      .select(selectList)
       .eq('id', id)
       .single();
 
     if (error) throw error;
-
     if (!data) {
-      return res.status(404).json({
-        success: false,
-        error: 'Commerçant non trouvé'
-      });
+      return res.status(404).json({ success: false, error: 'Commerçant non trouvé' });
     }
 
-    res.json({
-      success: true,
-      data: data
-    });
+    res.json({ success: true, data: data });
   } catch (error) {
     console.error('Erreur getCommercantById:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
@@ -61,9 +111,10 @@ exports.getCommercantById = async (req, res) => {
 exports.getMe = async (req, res) => {
   try {
     const { id } = req.commercant;
+    const selectList = buildSelectList();
     const { data, error } = await supabase
       .from('commercants')
-      .select('id, email, nom_enseigne, telephone, adresse, ville, code_postal, template_metier, template_type, module_fidelite, module_avis_google, module_geolocalisation, module_menu_jour, module_offres_flash, module_notifications, notif_max_par_jour, notif_heure_debut, notif_heure_fin, notif_template_defaut, avis_seuil_reponse, avis_template_auto, avis_reponse_auto, menu_categories, menu_devise, menu_afficher_prix, offres_duree_defaut, offres_limite_client, offres_notif_auto, offres_code_auto, geoloc_message, geoloc_heure_debut, geoloc_heure_fin, auto_review_message, auto_review_seuil_etoiles, auto_review_alerte_email, module_boutiques, boutique_defaut_id, abonnement_statut, wallet_class_configured, carte_programme_nom, carte_recompense_description, carte_couleur_primaire, carte_couleur_secondaire, carte_logo_url, carte_layout, texte_perso_bas_carte, style_texte, points_recompense, points_par_visite, delai_notif_avis_minutes, rayon_geoloc_metres, qr_code_install_url, created_at')
+      .select(selectList)
       .eq('id', id)
       .single();
 
@@ -78,18 +129,14 @@ exports.getMe = async (req, res) => {
   }
 };
 
-// PUT /api/commercants/me — Alias pour update (le frontend appelle PUT /me)
+// PUT /api/commercants/me — Alias pour update
 exports.updateMe = async (req, res) => {
-  // Delegate to updateCommercant
   return exports.updateCommercant(req, res);
 };
 
-// POST - Créer un nouveau commerçant (utilise authController.register à la place)
+// POST - Créer un nouveau commerçant
 exports.createCommercant = async (req, res) => {
-  res.status(400).json({
-    success: false,
-    error: 'Utilisez POST /api/auth/register pour créer un compte commerçant'
-  });
+  res.status(400).json({ success: false, error: 'Utilisez POST /api/auth/register pour créer un compte commerçant' });
 };
 
 // PUT /api/commercants/update — Mise à jour des paramètres du commerçant connecté
@@ -98,41 +145,32 @@ exports.updateCommercant = async (req, res) => {
     const allowedFields = [
       'nom_enseigne', 'telephone', 'adresse', 'ville', 'code_postal',
       'carte_couleur_primaire', 'carte_couleur_secondaire', 'carte_logo_url',
-      // accept both aliases
       'couleur_primaire', 'couleur_secondaire', 'logo_url',
       'points_par_visite', 'points_recompense', 'points_requis_recompense',
       'module_avis_google', 'module_geolocalisation', 'module_menu_jour', 'module_offres_flash',
-      // accept frontend aliases
       'module_avis', 'module_geoloc', 'module_menus', 'module_offres',
       'delai_notif_avis_minutes', 'delai_avis_minutes',
       'rayon_geoloc_metres', 'latitude', 'longitude',
       'google_place_url',
-      // 🔔 Notifications
       'module_notifications', 'notif_max_par_jour', 'notif_heure_debut', 'notif_heure_fin', 'notif_template_defaut',
-      // ⭐ Avis
       'avis_seuil_reponse', 'avis_template_auto', 'avis_reponse_auto',
-      // 🍽️ Menus
       'menu_categories', 'menu_devise', 'menu_afficher_prix',
-      // 🏷️ Offres
       'offres_duree_defaut', 'offres_limite_client', 'offres_notif_auto', 'offres_code_auto',
-      // 📍 Géolocalisation
       'geoloc_message', 'geoloc_heure_debut', 'geoloc_heure_fin',
-      // 🤖 Auto-review
       'auto_review_message', 'auto_review_seuil_etoiles', 'auto_review_alerte_email',
-      // 🏪 Boutiques
       'module_boutiques', 'boutique_defaut_id',
+      'carte_programme_nom', 'carte_recompense_description', 'carte_layout',
+      'texte_perso_bas_carte', 'style_texte',
     ];
 
-    // Build payload with only allowed fields, mapping aliases to backend names
+    // Build payload with only allowed fields
     const payload = {};
     const body = req.body;
-
     allowedFields.forEach(f => {
       if (body[f] !== undefined) payload[f] = body[f];
     });
 
     // Map frontend aliases → backend column names
-    // IMPORTANT: use !== undefined (not truthy) so that false values are preserved
     if (payload.couleur_primaire !== undefined)   { payload.carte_couleur_primaire = payload.couleur_primaire; delete payload.couleur_primaire; }
     if (payload.couleur_secondaire !== undefined) { payload.carte_couleur_secondaire = payload.couleur_secondaire; delete payload.couleur_secondaire; }
     if (payload.logo_url !== undefined)           { payload.carte_logo_url = payload.logo_url; delete payload.logo_url; }
@@ -143,39 +181,31 @@ exports.updateCommercant = async (req, res) => {
     if (payload.delai_avis_minutes !== undefined) { payload.delai_notif_avis_minutes = payload.delai_avis_minutes; delete payload.delai_avis_minutes; }
     if (payload.points_requis_recompense !== undefined) { payload.points_recompense = payload.points_requis_recompense; delete payload.points_requis_recompense; }
 
-    // Retry logic: if Supabase complains about unknown columns, strip them and retry
-    let result = await supabase
-      .from('commercants')
-      .update(payload)
-      .eq('id', req.commercant.id)
-      .select('id, email, nom_enseigne, telephone, adresse, ville, code_postal, carte_couleur_primaire, carte_couleur_secondaire, carte_logo_url, points_par_visite, points_recompense, module_avis_google, module_geolocalisation, module_menu_jour, module_offres_flash, delai_notif_avis_minutes, rayon_geoloc_metres, latitude, longitude, google_place_url, abonnement_statut, created_at')
-      .single();
+    // Filter out columns that don't exist in the database
+    const filteredPayload = filterExisting(payload);
 
-    // If error is about unknown columns, strip them and retry
-    if (result.error && result.error.message && result.error.message.includes('does not exist')) {
-      const missingCol = result.error.message.match(/column "([^"]+)"/);
-      if (missingCol && missingCol[1]) {
-        console.warn(`[updateCommercant] Column ${missingCol[1]} not found, retrying without it`);
-        delete payload[missingCol[1]];
-        result = await supabase
-          .from('commercants')
-          .update(payload)
-          .eq('id', req.commercant.id)
-          .select('id, email, nom_enseigne, telephone, adresse, ville, code_postal, carte_couleur_primaire, carte_couleur_secondaire, carte_logo_url, points_par_visite, points_recompense, module_avis_google, module_geolocalisation, module_menu_jour, module_offres_flash, delai_notif_avis_minutes, rayon_geoloc_metres, latitude, longitude, google_place_url, abonnement_statut, created_at')
-          .single();
-      }
+    if (Object.keys(filteredPayload).length === 0) {
+      return res.json({ success: true, data: { commercant: null, message: 'No valid fields to update' } });
     }
 
-    if (result.error) throw result.error;
+    const selectList = buildSelectList();
+    const { data, error } = await supabase
+      .from('commercants')
+      .update(filteredPayload)
+      .eq('id', req.commercant.id)
+      .select(selectList)
+      .single();
 
-    res.json({ success: true, data: { commercant: result.data } });
+    if (error) throw error;
+
+    res.json({ success: true, data: { commercant: data } });
   } catch (error) {
     console.error('Erreur updateCommercant:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
 
-// GET /api/commercants/qr-code — URL d'installation QR unique du commerçant
+// GET /api/commercants/qr-code
 exports.getQrCode = async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -188,11 +218,9 @@ exports.getQrCode = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Commerçant introuvable.' });
     }
 
-    // Generate the URL on the fly if not yet stored (for existing accounts)
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
     const installUrl = data.qr_code_install_url || `${frontendUrl}/install/${data.id}`;
 
-    // Persist it if it was missing
     if (!data.qr_code_install_url) {
       await supabase
         .from('commercants')
@@ -202,10 +230,7 @@ exports.getQrCode = async (req, res) => {
 
     res.json({
       success: true,
-      data: {
-        install_url: installUrl,
-        nom_enseigne: data.nom_enseigne,
-      }
+      data: { install_url: installUrl, nom_enseigne: data.nom_enseigne },
     });
   } catch (error) {
     console.error('Erreur getQrCode:', error);
