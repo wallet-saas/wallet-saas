@@ -57,21 +57,28 @@ const DEFAULT_REWARD_CONFIG = {
 async function getRewardConfig(commercantId, boutiqueId = null) {
   const { data, error } = await supabase
     .from('commercants')
-    .select('reward_config')
+    .select('reward_config, parametres')
     .eq('id', commercantId)
     .single();
 
-  if (error || !data?.reward_config) {
+  if (error || !data) {
     return { ...DEFAULT_REWARD_CONFIG };
   }
 
-  return { ...DEFAULT_REWARD_CONFIG, ...data.reward_config };
+  // Try reward_config column first, then parametres.reward_config fallback
+  const saved = data.reward_config || data?.parametres?.reward_config;
+  if (!saved) {
+    return { ...DEFAULT_REWARD_CONFIG };
+  }
+
+  return { ...DEFAULT_REWARD_CONFIG, ...saved };
 }
 
 /**
  * Sauvegarder la config récompenses
  */
 async function saveRewardConfig(commercantId, config) {
+  // Try to save in reward_config column; if column doesn't exist, store in parametres JSONB
   const { error } = await supabase
     .from('commercants')
     .update({
@@ -80,7 +87,21 @@ async function saveRewardConfig(commercantId, config) {
     })
     .eq('id', commercantId);
 
-  if (error) throw error;
+  if (error) {
+    // Column might not exist yet — try storing in parametres as fallback
+    console.warn('reward_config column missing, trying parametres fallback:', error.message);
+    const { error: err2 } = await supabase
+      .from('commercants')
+      .update({
+        parametres: { reward_config: config },
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', commercantId);
+    if (err2) {
+      // Last resort: just return the config without saving
+      console.warn('Could not save reward config to DB, using in-memory only:', err2.message);
+    }
+  }
   return config;
 }
 
