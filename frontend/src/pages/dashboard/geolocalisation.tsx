@@ -73,8 +73,8 @@ export default function GeolocalisationPage() {
     try {
       await commercantApi.update({
         rayon_geoloc_metres: rayon,
-        latitude: latitude ? parseFloat(latitude) : null,
-        longitude: longitude ? parseFloat(longitude) : null,
+        latitude: latitude ? parseFloat(latitude) : undefined,
+        longitude: longitude ? parseFloat(longitude) : undefined,
         geoloc_message: message,
         geoloc_heure_debut: heureDebut,
         geoloc_heure_fin: heureFin,
