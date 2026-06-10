@@ -60,22 +60,6 @@
       "purpose": "any maskable"
     }
   ],
-  "screenshots": [
-    {
-      "src": "/screenshots/dashboard.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Dashboard Stamply"
-    },
-    {
-      "src": "/screenshots/mobile.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Application mobile Stamply"
-    }
-  ],
   "shortcuts": [
     {
       "name": "Scanner une carte",
@@ -89,26 +73,14 @@
       "short_name": "Cartes",
       "description": "Voir toutes les cartes générées",
       "url": "/dashboard/cartes",
-      "icons": [{ "src": "/icons/card.png", "sizes": "96x96" }]
+      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
     },
     {
       "name": "Analytics",
       "short_name": "Stats",
       "description": "Voir les statistiques",
       "url": "/dashboard/analytics",
-      "icons": [{ "src": "/icons/chart.png", "sizes": "96x96" }]
+      "icons": [{ "src": "/icons/stats.png", "sizes": "96x96" }]
     }
-  ],
-  "related_applications": [
-    {
-      "platform": "play",
-      "url": "https://play.google.com/store/apps/details?id=com.stamply.app",
-      "id": "com.stamply.app"
-    },
-    {
-      "platform": "itunes",
-      "url": "https://apps.apple.com/app/stamply/id123456789"
-    }
-  ],
-  "prefer_related_applications": false
+  ]
 }

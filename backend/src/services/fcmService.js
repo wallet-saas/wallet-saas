@@ -5,10 +5,10 @@
  *   npm install firebase-admin
  *
  * Variable d'env requise :
- *   FCM_KEY_JSON  — contenu JSON complet du fichier firebase-adminsdk service account
+ *   FIREBASE_SERVICE_ACCOUNT_KEY  — contenu JSON complet du fichier firebase-adminsdk service account
  *                   (copier-coller le fichier JSON en une seule ligne minifiée)
  *
- * Mode simulation automatique si FCM_KEY_JSON est absent.
+ * Mode simulation automatique si FIREBASE_SERVICE_ACCOUNT_KEY est absent.
  */
 
 // ---------------------------------------------------------------------------
@@ -25,9 +25,9 @@ function getFirebaseAdmin() {
   if (_initAttempted) return _adminApp;
   _initAttempted = true;
 
-  const raw = process.env.FCM_KEY_JSON;
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
   if (!raw) {
-    console.warn('[FCM] FCM_KEY_JSON absent — mode simulation activé. Les push Android ne seront pas envoyés.');
+    console.warn('[FCM] FIREBASE_SERVICE_ACCOUNT_KEY absent — mode simulation activé. Les push Android ne seront pas envoyés.');
     return null;
   }
 
@@ -119,7 +119,7 @@ async function sendPushNotification(fcmToken, title, body, data = {}) {
  * Utile pour les endpoints de status/stats.
  */
 function isFCMEnabled() {
-  return !!process.env.FCM_KEY_JSON;
+  return !!process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 }
 
 module.exports = {

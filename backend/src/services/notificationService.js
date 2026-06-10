@@ -11,7 +11,7 @@ const fcmService = require('./fcmService');
  *
  * Pour activer FCM (Android) :
  *   npm install firebase-admin
- *   Variable : FCM_KEY_JSON (contenu JSON complet du fichier firebase-adminsdk service account,
+ * Variable : FIREBASE_SERVICE_ACCOUNT_KEY (contenu JSON complet du fichier firebase-adminsdk service account,
  *              en une seule ligne minifiée)
  */
 const APNS_ENABLED =
