@@ -22,14 +22,17 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     Promise.all([
       analyticsApi.overview(),
       analyticsApi.cards(),
     ]).then(([ov, cards]) => {
+      if (cancelled) return;
       setOverview(ov);
       setCardsData(cards);
     }).catch(console.error)
-      .finally(() => setLoading(false));
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, []);
 
   return (

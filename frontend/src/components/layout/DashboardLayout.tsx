@@ -1,16 +1,17 @@
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Spinner } from '@/components/ui/Spinner';
 import {
   LayoutDashboard, CreditCard, QrCode, Bell, Star,
   UtensilsCrossed, Tag, MapPin, BarChart3, Settings,
   CreditCard as StripeCard, LogOut, ChevronLeft, Menu, X,
-  Store, MessageSquare
+  Store, MessageSquare, Sun, Moon
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
+import { commercantApi } from '@/services/api';
 
 type NavItem = {
   label: string;
@@ -38,70 +39,80 @@ const bottomItems = [
   { label: 'Abonnement', href: '/dashboard/abonnement', icon: StripeCard },
 ];
 
+const THEME_KEY = 'stamply_dashboard_theme';
+
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
-  const { commercant, loading, isAuthenticated, logout } = useAuth();
+  const { commercant, loading, isAuthenticated, logout, refreshUser } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isDark, setIsDark] = useState(false);
   const isAbonnementPage = router.pathname === '/dashboard/abonnement' || router.pathname === '/abonnement';
   const isSetupCardPage = router.pathname === '/dashboard/setup-card';
 
+  // Load theme from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem(THEME_KEY);
+    setIsDark(stored === 'dark');
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setIsDark(prev => {
+      const next = !prev;
+      localStorage.setItem(THEME_KEY, next ? 'dark' : 'light');
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     if (loading) return;
-    if (!isAuthenticated) {
-      router.push('/login');
-      return;
-    }
-    // Redirect to /abonnement only for dashboard pages (not when already there)
+    if (!isAuthenticated) { router.push('/login'); return; }
     if (!isAbonnementPage && commercant && commercant.statut_abonnement !== 'actif' && commercant.statut_abonnement !== 'trialing') {
-      router.push('/abonnement');
-      return;
+      router.push('/abonnement'); return;
     }
-    // Redirect to setup-card when wallet class is not yet configured
-    if (
-      commercant &&
-      commercant.statut_abonnement === 'actif' &&
-      !commercant.wallet_class_configured &&
-      !isSetupCardPage
-    ) {
-      router.push('/dashboard/setup-card');
-      return;
+    if (commercant && commercant.statut_abonnement === 'actif' && !commercant.wallet_class_configured && !isSetupCardPage) {
+      router.push('/dashboard/setup-card'); return;
     }
   }, [loading, isAuthenticated, commercant, router, isAbonnementPage, isSetupCardPage]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
-
+  if (loading) return <div className="flex items-center justify-center h-screen"><Spinner size="lg" /></div>;
   if (!isAuthenticated) return null;
   if (!isAbonnementPage && commercant && commercant.statut_abonnement !== 'actif' && commercant.statut_abonnement !== 'trialing') return null;
-  if (
-    !isSetupCardPage &&
-    commercant &&
-    commercant.statut_abonnement === 'actif' &&
-    !commercant.wallet_class_configured
-  ) return null;
+  if (!isSetupCardPage && commercant && commercant.statut_abonnement === 'actif' && !commercant.wallet_class_configured) return null;
 
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
+  const handleLogout = () => { logout(); router.push('/login'); };
+
+  const handleToggleModule = async (moduleField: string) => {
+    try {
+      await commercantApi.update({ [moduleField]: true });
+      await refreshUser();
+    } catch (e: any) {
+      console.error('[Module toggle] Error:', e);
+    }
   };
 
+  // Dark mode classes
+  const bgMain = isDark ? 'bg-[#0a0a0f]' : 'bg-gray-50';
+  const bgSidebar = isDark ? 'bg-[#12121a] border-white/5' : 'bg-white border-gray-100';
+  const textPrimary = isDark ? 'text-white' : 'text-gray-900';
+  const textSecondary = isDark ? 'text-slate-400' : 'text-gray-500';
+  const textMuted = isDark ? 'text-slate-500' : 'text-gray-400';
+  const borderColor = isDark ? 'border-white/5' : 'border-gray-100';
+  const hoverBg = isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50';
+
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className={cn('flex h-screen overflow-hidden transition-colors duration-300', bgMain)}>
       {/* Sidebar — desktop */}
-      <aside className="hidden md:flex flex-col w-60 bg-white border-r border-gray-100 flex-shrink-0">
+      <aside className={cn('hidden md:flex flex-col w-60 border-r flex-shrink-0 transition-colors duration-300', bgSidebar, borderColor)}>
         <SidebarContent
-          router={router}
-          commercant={commercant}
-          onLogout={handleLogout}
+          router={router} commercant={commercant} onLogout={handleLogout}
+          onToggleModule={handleToggleModule}
+          isDark={isDark} toggleTheme={toggleTheme}
+          textPrimary={textPrimary} textSecondary={textSecondary} textMuted={textMuted}
+          borderColor={borderColor} hoverBg={hoverBg}
         />
       </aside>
 
@@ -109,11 +120,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {mobileOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
-          <aside className="relative z-50 flex flex-col w-60 h-full bg-white shadow-xl">
+          <aside className={cn('relative z-50 flex flex-col w-60 h-full shadow-xl transition-colors duration-300', bgSidebar)}>
             <SidebarContent
-              router={router}
-              commercant={commercant}
-              onLogout={handleLogout}
+              router={router} commercant={commercant} onLogout={handleLogout}
+              onToggleModule={handleToggleModule}
+              isDark={isDark} toggleTheme={toggleTheme}
+              textPrimary={textPrimary} textSecondary={textSecondary} textMuted={textMuted}
+              borderColor={borderColor} hoverBg={hoverBg}
               onClose={() => setMobileOpen(false)}
             />
           </aside>
@@ -123,12 +136,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Main content */}
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile top bar */}
-        <div className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100">
-          <button onClick={() => setMobileOpen(true)} className="text-gray-500">
+        <div className={cn('md:hidden flex items-center justify-between px-4 py-3 border-b transition-colors duration-300', bgSidebar, borderColor)}>
+          <button onClick={() => setMobileOpen(true)} className={textSecondary}>
             <Menu className="h-5 w-5" />
           </button>
-          <span className="font-semibold text-gray-900 text-sm">Stamply</span>
-          <div className="w-5" />
+          <span className={cn('font-semibold text-sm', textPrimary)}>Stamply</span>
+          <button onClick={toggleTheme} className={cn('p-1.5 rounded-lg transition-colors', hoverBg, textSecondary)}>
+            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
         </div>
         <div className="flex-1 overflow-y-auto p-4 md:p-8">
           {children}
@@ -143,34 +158,50 @@ interface SidebarContentProps {
   router: ReturnType<typeof useRouter>;
   commercant: ReturnType<typeof useAuth>['commercant'];
   onLogout: () => void;
+  onToggleModule?: (moduleField: string, enabled: boolean) => void;
+  isDark: boolean;
+  toggleTheme: () => void;
+  textPrimary: string;
+  textSecondary: string;
+  textMuted: string;
+  borderColor: string;
+  hoverBg: string;
   onClose?: () => void;
 }
 
-function SidebarContent({ router, commercant, onLogout, onClose }: SidebarContentProps) {
-  // All nav items are visible; disabled modules show as locked/greyed out
+function SidebarContent({ router, commercant, onLogout, onToggleModule, isDark, toggleTheme, textPrimary, textSecondary, textMuted, borderColor, hoverBg, onClose }: SidebarContentProps) {
   const visibleNavItems = navItems;
 
   return (
     <>
       {/* Logo */}
-      <div className="flex items-center justify-between px-5 py-5 border-b border-gray-100">
+      <div className={cn('flex items-center justify-between px-5 py-5 border-b', borderColor)}>
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
             <CreditCard className="h-4 w-4 text-white" />
           </div>
-          <span className="font-bold text-gray-900">Stamply</span>
+          <span className={cn('font-bold', textPrimary)}>Stamply</span>
         </div>
-        {onClose && (
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="h-4 w-4" />
+        <div className="flex items-center gap-1">
+          <button
+            onClick={toggleTheme}
+            className={cn('p-1.5 rounded-lg transition-colors', hoverBg, textSecondary)}
+            title={isDark ? 'Mode clair' : 'Mode sombre'}
+          >
+            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
-        )}
+          {onClose && (
+            <button onClick={onClose} className={cn('p-1.5 rounded-lg transition-colors', hoverBg, textSecondary)}>
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Commerce name */}
-      <div className="px-5 py-3 border-b border-gray-100">
-        <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-0.5">Commerce</p>
-        <p className="text-sm font-semibold text-gray-900 truncate">
+      <div className={cn('px-5 py-3 border-b', borderColor)}>
+        <p className={cn('text-xs font-medium uppercase tracking-wide mb-0.5', textMuted)}>Commerce</p>
+        <p className={cn('text-sm font-semibold truncate', textPrimary)}>
           {commercant?.nom_enseigne || '—'}
         </p>
       </div>
@@ -186,30 +217,39 @@ function SidebarContent({ router, commercant, onLogout, onClose }: SidebarConten
                 key={item.href}
                 href={isDisabled ? '#' : item.href}
                 onClick={(e) => {
-                  if (isDisabled) {
-                    e.preventDefault();
-                    return;
-                  }
+                  if (isDisabled) { e.preventDefault(); return; }
                   onClose?.();
                 }}
                 className={cn(
                   'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                   isDisabled && 'opacity-40 cursor-not-allowed',
-                  active && !isDisabled && 'bg-primary-50 text-primary-700',
-                  !active && !isDisabled && 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
-                  active && isDisabled && 'bg-gray-50 text-gray-400',
+                  active && !isDisabled && 'bg-indigo-50 text-indigo-700',
+                  !active && !isDisabled && cn(textSecondary, hoverBg),
+                  active && isDisabled && cn('bg-gray-50', textMuted),
                 )}
-                title={isDisabled ? `${item.label} — module désactivé` : undefined}
+                title={isDisabled ? `${item.label} — module désactivé (cliquer pour réactiver)` : undefined}
               >
-                <item.icon className={cn('h-4 w-4 flex-shrink-0', active ? 'text-primary-600' : isDisabled ? 'text-gray-300' : 'text-gray-400')} />
-                {item.label}
-                {isDisabled && <span className="ml-auto text-[10px] text-gray-300 font-normal">🔒</span>}
+                <item.icon className={cn('h-4 w-4 flex-shrink-0', active ? 'text-indigo-600' : isDisabled ? 'text-gray-300' : textMuted)} />
+                <span className="flex-1 truncate">{item.label}</span>
+                {isDisabled && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (item.module && onToggleModule) onToggleModule(item.module, true);
+                    }}
+                    className="flex-shrink-0 text-[10px] text-gray-300 hover:text-indigo-500 transition-colors cursor-pointer"
+                    title="Réactiver ce module"
+                  >
+                    🔒
+                  </button>
+                )}
               </Link>
             );
           })}
         </div>
 
-        <div className="px-3 mt-4 pt-4 border-t border-gray-100 space-y-0.5">
+        <div className={cn('px-3 mt-4 pt-4 border-t space-y-0.5', borderColor)}>
           {bottomItems.map((item) => {
             const active = router.pathname === item.href;
             return (
@@ -218,13 +258,11 @@ function SidebarContent({ router, commercant, onLogout, onClose }: SidebarConten
                 href={item.href}
                 className={cn(
                   'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                  active
-                    ? 'bg-primary-50 text-primary-700'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  active ? 'bg-indigo-50 text-indigo-700' : cn(textSecondary, hoverBg)
                 )}
                 onClick={onClose}
               >
-                <item.icon className={cn('h-4 w-4 flex-shrink-0', active ? 'text-primary-600' : 'text-gray-400')} />
+                <item.icon className={cn('h-4 w-4 flex-shrink-0', active ? 'text-indigo-600' : textMuted)} />
                 {item.label}
               </Link>
             );
@@ -233,10 +271,10 @@ function SidebarContent({ router, commercant, onLogout, onClose }: SidebarConten
       </nav>
 
       {/* Logout */}
-      <div className="px-4 py-4 border-t border-gray-100">
+      <div className={cn('px-4 py-4 border-t', borderColor)}>
         <button
           onClick={onLogout}
-          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+          className={cn('flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors', textSecondary, 'hover:text-red-500 hover:bg-red-50')}
         >
           <LogOut className="h-4 w-4" />
           Se déconnecter
@@ -244,17 +282,11 @@ function SidebarContent({ router, commercant, onLogout, onClose }: SidebarConten
       </div>
 
       {/* Legal footer */}
-      <div className="px-5 py-3 border-t border-gray-100">
+      <div className={cn('px-5 py-3 border-t', borderColor)}>
         <div className="flex flex-wrap gap-x-3 gap-y-1">
-          <Link href="/mentions-legales" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
-            Mentions légales
-          </Link>
-          <Link href="/cgu" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
-            CGU
-          </Link>
-          <Link href="/politique-confidentialite" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
-            Confidentialité
-          </Link>
+          <Link href="/mentions-legales" className={cn('text-xs transition-colors', textMuted, `hover:${textPrimary}`)}>Mentions légales</Link>
+          <Link href="/cgu" className={cn('text-xs transition-colors', textMuted, `hover:${textPrimary}`)}>CGU</Link>
+          <Link href="/politique-confidentialite" className={cn('text-xs transition-colors', textMuted, `hover:${textPrimary}`)}>Confidentialité</Link>
         </div>
       </div>
     </>

@@ -13,7 +13,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { Upload, X, Image, Type, Palette, AlertTriangle, ChevronDown } from 'lucide-react';
-import { PremiumCardPreview } from './PremiumCardPreview';
+import { PremiumCardPreview, CardFormat } from '@/components/PremiumCardPreview';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -89,6 +89,7 @@ export function CardEditor({ design, onChange, cardData, onCardDataChange, onIma
   const bgInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [activeSection, setActiveSection] = useState<string>('images');
+  const [previewFormat, setPreviewFormat] = useState<CardFormat>('google');
   const [showGWWarning, setShowGWWarning] = useState(false);
 
   const update = useCallback((partial: Partial<CardDesign>) => {
@@ -433,11 +434,36 @@ export function CardEditor({ design, onChange, cardData, onCardDataChange, onIma
 
       {/* ── Aperçu en temps réel (2/5) ────────────────────────────────── */}
       <div className="lg:col-span-3 lg:sticky lg:top-4 lg:self-start space-y-4">
-        <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
-          <Palette className="w-4 h-4" />
-          Aperçu en temps réel
+        <div className="flex items-center justify-between">
+          <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            <Palette className="w-4 h-4" />
+            Aperçu en temps réel
+          </div>
+          {/* Format toggle */}
+          <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+            <button
+              onClick={() => setPreviewFormat('google')}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                previewFormat === 'google'
+                  ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+              }`}
+            >
+              Google Wallet
+            </button>
+            <button
+              onClick={() => setPreviewFormat('apple')}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                previewFormat === 'apple'
+                  ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+              }`}
+            >
+              Apple Wallet
+            </button>
+          </div>
         </div>
-        <PremiumCardPreview design={design} data={cardData} />
+        <PremiumCardPreview format={previewFormat} design={design} data={cardData} />
 
         {/* Données de la carte — modifiables */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
