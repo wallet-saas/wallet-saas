@@ -8,7 +8,7 @@ import { PageSpinner } from '@/components/ui/Spinner';
 import { commercantApi } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/Toast';
-import { CardEditor, CardDesign, DEFAULT_CARD_DESIGN } from '@/components/CardEditor';
+import { CardEditor, CardDesign, DEFAULT_CARD_DESIGN, CardProgramData, DEFAULT_CARD_DATA } from '@/components/CardEditor';
 import { PremiumCardPreview } from '@/components/PremiumCardPreview';
 import { uploadCardImage } from '@/lib/cardUpload';
 import { Store, Palette, Eye, Save, Settings, CreditCard, Sparkles } from 'lucide-react';
@@ -42,6 +42,13 @@ export default function ParametresPage() {
 
   // Premium card design
   const [cardDesign, setCardDesign] = useState<CardDesign>(DEFAULT_CARD_DESIGN);
+  const [cardData, setCardData] = useState<CardProgramData>({
+    ...DEFAULT_CARD_DATA,
+    commercantNom: commercant?.nom_enseigne || DEFAULT_CARD_DATA.commercantNom,
+    programmeNom: commercant?.carte_programme_nom || DEFAULT_CARD_DATA.programmeNom,
+    recompense: commercant?.carte_recompense_description || DEFAULT_CARD_DATA.recompense,
+    tamponsPalier: commercant?.points_recompense || DEFAULT_CARD_DATA.tamponsPalier,
+  });
 
   useEffect(() => {
     if (commercant) {
@@ -70,6 +77,16 @@ export default function ParametresPage() {
           // Keep defaults
         }
       }
+
+      // Sync card data from commercant
+      setCardData({
+        commercantNom: commercant.nom_enseigne || DEFAULT_CARD_DATA.commercantNom,
+        programmeNom: commercant.carte_programme_nom || DEFAULT_CARD_DATA.programmeNom,
+        clientNom: DEFAULT_CARD_DATA.clientNom,
+        tamponsActuels: DEFAULT_CARD_DATA.tamponsActuels,
+        tamponsPalier: commercant.points_recompense || DEFAULT_CARD_DATA.tamponsPalier,
+        recompense: commercant.carte_recompense_description || DEFAULT_CARD_DATA.recompense,
+      });
 
       setLoading(false);
     }
@@ -131,6 +148,10 @@ export default function ParametresPage() {
       await commercantApi.update({
         card_design: JSON.stringify(cardDesign),
         carte_logo_url: cardDesign.logo_url || undefined,
+        carte_programme_nom: cardData.programmeNom,
+        carte_recompense_description: cardData.recompense,
+        points_recompense: cardData.tamponsPalier,
+        nom_enseigne: cardData.commercantNom,
       });
       await refreshUser();
       toast('Design enregistré avec succès');
@@ -247,6 +268,8 @@ export default function ParametresPage() {
               <CardEditor
                 design={cardDesign}
                 onChange={setCardDesign}
+                cardData={cardData}
+                onCardDataChange={setCardData}
                 onImageUpload={handleImageUpload}
                 isUploading={isUploading}
               />

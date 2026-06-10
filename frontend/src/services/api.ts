@@ -561,6 +561,8 @@ export interface WalletSetupData {
   carte_tier_color?: string;
   carte_overlay_opacity?: number;
   carte_overlay_color?: string;
+  // Tampons system
+  tampons_palier?: number;
 }
 
 export { ApiError };

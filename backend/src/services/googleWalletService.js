@@ -177,8 +177,9 @@ async function upsertLoyaltyClass(commercant) {
     ? commercant.carte_logo_url
     : DEFAULT_LOGO;
   const programName = commercant.carte_programme_nom || commercant.nom_enseigne;
-  const rewardBody = commercant.carte_recompense_description || ('Cumulez des points a chaque visite. ' + (commercant.points_recompense || 10) + ' points = 1 recompense offerte.');
+  const rewardBody = commercant.carte_recompense_description || ('Cumulez des tampons a chaque visite. ' + (commercant.points_recompense || 10) + ' tampons = 1 recompense offerte.');
   const bgColor = commercant.carte_couleur_primaire || '#6366f1';
+  const bgImageUrl = commercant.carte_background_image_url || null;
 
   const baseClass = {
     id: classId,
@@ -200,6 +201,16 @@ async function upsertLoyaltyClass(commercant) {
       },
     ],
   };
+
+  // Add heroImage if background image is available (Google Wallet supports this)
+  if (bgImageUrl) {
+    baseClass.heroImage = {
+      sourceUri: { uri: bgImageUrl },
+      contentDescription: {
+        defaultValue: { language: 'fr-FR', value: 'Image de fond ' + programName },
+      },
+    };
+  }
 
   try {
     const getResp = await axios.get(`${WALLET_API}/loyaltyClass/${classId}`, { headers });
@@ -269,8 +280,8 @@ async function generateSaveUrl(carte, commercant) {
       classId,
       state: 'ACTIVE',
       loyaltyPoints: {
-        label: 'Points',
-        balance: { int: carte.points || 0 },
+        label: 'Tampons',
+        balance: { int: carte.tampons || carte.points || 0 },
       },
       barcode: {
         type: 'QR_CODE',
@@ -280,12 +291,22 @@ async function generateSaveUrl(carte, commercant) {
       textModulesData: [
         {
           id: 'next_reward',
-          header: 'Prochaine récompense',
-          body: `À ${commercant.points_recompense || 10} points`,
+          header: 'Prochaine recompense',
+          body: `${commercant.points_recompense || 10} tampons`,
         },
       ],
       hexBackgroundColor: commercant.carte_couleur_primaire || '#6366f1',
     };
+
+    // Add heroImage if available
+    if (commercant.carte_background_image_url) {
+      loyaltyObject.heroImage = {
+        sourceUri: { uri: commercant.carte_background_image_url },
+        contentDescription: {
+          defaultValue: { language: 'fr-FR', value: 'Image de fond' },
+        },
+      };
+    }
 
     // Le JWT est signé avec la clé privée du compte de service
     const jwtPayload = {
@@ -335,7 +356,7 @@ async function updateLoyaltyObjectPoints(serialNumber, newPoints) {
       `${WALLET_API}/loyaltyObject/${objectId}`,
       {
         loyaltyPoints: {
-          label: 'Points',
+          label: 'Tampons',
           balance: { int: newPoints },
         },
       },
