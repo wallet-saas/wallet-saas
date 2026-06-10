@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
+import { commercantApi } from '@/services/api';
 
 type NavItem = {
   label: string;
@@ -44,7 +45,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
-  const { commercant, loading, isAuthenticated, logout } = useAuth();
+  const { commercant, loading, isAuthenticated, logout, refreshUser } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const isAbonnementPage = router.pathname === '/dashboard/abonnement' || router.pathname === '/abonnement';
   const isSetupCardPage = router.pathname === '/dashboard/setup-card';
@@ -94,6 +95,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     router.push('/login');
   };
 
+  const handleToggleModule = async (moduleField: string) => {
+    try {
+      await commercantApi.update({ [moduleField]: true });
+      await refreshUser();
+    } catch (e: any) {
+      console.error('[Module toggle] Error:', e);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       {/* Sidebar — desktop */}
@@ -102,6 +112,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           router={router}
           commercant={commercant}
           onLogout={handleLogout}
+          onToggleModule={handleToggleModule}
         />
       </aside>
 
@@ -114,6 +125,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               router={router}
               commercant={commercant}
               onLogout={handleLogout}
+              onToggleModule={handleToggleModule}
               onClose={() => setMobileOpen(false)}
             />
           </aside>
@@ -143,10 +155,11 @@ interface SidebarContentProps {
   router: ReturnType<typeof useRouter>;
   commercant: ReturnType<typeof useAuth>['commercant'];
   onLogout: () => void;
+  onToggleModule?: (moduleField: string, enabled: boolean) => void;
   onClose?: () => void;
 }
 
-function SidebarContent({ router, commercant, onLogout, onClose }: SidebarContentProps) {
+function SidebarContent({ router, commercant, onLogout, onToggleModule, onClose }: SidebarContentProps) {
   // All nav items are visible; disabled modules show as locked/greyed out
   const visibleNavItems = navItems;
 
@@ -203,7 +216,13 @@ function SidebarContent({ router, commercant, onLogout, onClose }: SidebarConten
               >
                 <item.icon className={cn('h-4 w-4 flex-shrink-0', active ? 'text-primary-600' : isDisabled ? 'text-gray-300' : 'text-gray-400')} />
                 {item.label}
-                {isDisabled && <span className="ml-auto text-[10px] text-gray-300 font-normal">🔒</span>}
+                {isDisabled && (
+                  <button
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (item.module && onToggleModule) onToggleModule(item.module, true); }}
+                    className="ml-auto text-[10px] text-gray-300 hover:text-indigo-500 transition-colors cursor-pointer"
+                    title="Réactiver ce module"
+                  >🔒</button>
+                )}
               </Link>
             );
           })}
