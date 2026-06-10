@@ -20,7 +20,6 @@ export function useLandingTheme() {
     sectionBgAlt: d ? 'bg-[#0F0F16]' : 'bg-gray-50',
     cardBg: d ? 'bg-[#0F0F16] border-white/5' : 'bg-white border-gray-200',
     cardBgHover: d ? 'hover:border-indigo-500/30' : 'hover:border-indigo-300',
-    cardBorder: d ? 'border-white/10' : 'border-gray-200',
 
     // Text
     textPrimary: d ? 'text-white' : 'text-gray-900',

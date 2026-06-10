@@ -131,7 +131,7 @@ export default function AnalyticsPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Performances notifications</CardTitle>
-                  <div className="flex gap-3 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                  <div className="flex gap-3 text-sm text-gray-500">
                     <span>Total : {formatNumber(notifs.totalEnvoyes ?? 0)} envoyés</span>
                     <span>Taux ouverture : {formatPercent(notifs.tauxOuverture ?? 0)}</span>
                   </div>
@@ -143,13 +143,13 @@ export default function AnalyticsPage() {
                     {notifs.campagnes.map((c: any, i: number) => (
                       <div key={i} className="flex items-center justify-between px-6 py-3">
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white dark:text-white truncate">{c.titre}</p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">{c.total_envoyes} envoyés</p>
+                          <p className="text-sm font-medium text-gray-900 truncate">{c.titre}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{c.total_envoyes} envoyés</p>
                         </div>
                         <div className="flex items-center gap-3 flex-shrink-0">
                           <div className="text-right">
-                            <p className="text-sm font-semibold text-gray-900 dark:text-white dark:text-white">{formatPercent(c.taux_ouverture ?? 0)}</p>
-                            <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">taux ouverture</p>
+                            <p className="text-sm font-semibold text-gray-900">{formatPercent(c.taux_ouverture ?? 0)}</p>
+                            <p className="text-xs text-gray-400">taux ouverture</p>
                           </div>
                           <Badge variant={c.simulation ? 'yellow' : 'blue'}>{c.cible}</Badge>
                         </div>
@@ -157,7 +157,7 @@ export default function AnalyticsPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="py-8 text-center text-sm text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Aucune campagne</div>
+                  <div className="py-8 text-center text-sm text-gray-400">Aucune campagne</div>
                 )}
               </CardBody>
             </Card>
@@ -180,15 +180,15 @@ export default function AnalyticsPage() {
               {dormants.length === 0 ? (
                 <div className="py-8 text-center">
                   <Users className="h-8 w-8 text-gray-200 mx-auto mb-2" />
-                  <p className="text-sm text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Aucun client dormant — bravo !</p>
+                  <p className="text-sm text-gray-400">Aucun client dormant — bravo !</p>
                 </div>
               ) : (
                 <div className="divide-y divide-gray-50">
                   {dormants.slice(0, 10).map((c, i) => (
                     <div key={c.id || i} className="flex items-center justify-between px-6 py-3">
                       <div>
-                        <p className="text-xs font-mono text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{c.carte?.pass_serial_number || c.id.slice(0, 8) + '…'}</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">
+                        <p className="text-xs font-mono text-gray-600">{c.carte?.pass_serial_number || c.id.slice(0, 8) + '…'}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">
                           {c.derniere_visite ? `Dernière visite : ${formatDate(c.derniere_visite)}` : 'Jamais visité'}
                         </p>
                       </div>
@@ -198,7 +198,7 @@ export default function AnalyticsPage() {
                     </div>
                   ))}
                   {dormants.length > 10 && (
-                    <div className="px-6 py-3 text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 text-center">
+                    <div className="px-6 py-3 text-xs text-gray-400 text-center">
                       + {dormants.length - 10} autres clients
                     </div>
                   )}
@@ -230,15 +230,15 @@ export default function AnalyticsPage() {
                 <CardBody>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Note moyenne</span>
+                      <span className="text-sm text-gray-600">Note moyenne</span>
                       <span className="text-sm font-semibold">{(avisStats.moyenneNote ?? 0).toFixed(1)} / 5</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Taux de réponse</span>
+                      <span className="text-sm text-gray-600">Taux de réponse</span>
                       <span className="text-sm font-semibold">{formatPercent(avisStats.tauxReponse ?? 0)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Total avis</span>
+                      <span className="text-sm text-gray-600">Total avis</span>
                       <span className="text-sm font-semibold">{avisStats.total ?? 0}</span>
                     </div>
                   </div>
@@ -258,9 +258,9 @@ export default function AnalyticsPage() {
                     { label: 'Total utilisées', value: formatNumber(offresStats.totalUtilises ?? 0) },
                     { label: 'Taux conversion', value: formatPercent(offresStats.tauxUtilisation ?? 0) },
                   ].map(s => (
-                    <div key={s.label} className="bg-gray-50 dark:bg-gray-800 dark:bg-gray-800 rounded-xl p-4 text-center">
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white dark:text-white">{s.value}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{s.label}</p>
+                    <div key={s.label} className="bg-gray-50 rounded-xl p-4 text-center">
+                      <p className="text-2xl font-bold text-gray-900">{s.value}</p>
+                      <p className="text-xs text-gray-500 mt-1">{s.label}</p>
                     </div>
                   ))}
                 </div>
@@ -275,6 +275,6 @@ export default function AnalyticsPage() {
 
 function Empty({ label }: { label: string }) {
   return (
-    <div className="h-[220px] flex items-center justify-center text-sm text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{label}</div>
+    <div className="h-[220px] flex items-center justify-center text-sm text-gray-400">{label}</div>
   );
 }

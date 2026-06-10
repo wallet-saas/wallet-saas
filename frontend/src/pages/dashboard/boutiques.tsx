@@ -129,11 +129,11 @@ export default function BoutiquesPage() {
         </div>
       </div>
 
-      <div className={`flex items-center gap-4 px-5 py-4 rounded-xl border mb-6 ${moduleEnabled ? 'bg-green-50 border-green-100' : 'bg-gray-50 dark:bg-gray-800 dark:bg-gray-800 border-gray-100 dark:border-gray-700 dark:border-gray-700'}`}>
-        <Store className={`h-5 w-5 ${moduleEnabled ? 'text-green-600' : 'text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500'}`} />
+      <div className={`flex items-center gap-4 px-5 py-4 rounded-xl border mb-6 ${moduleEnabled ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100'}`}>
+        <Store className={`h-5 w-5 ${moduleEnabled ? 'text-green-600' : 'text-gray-400'}`} />
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">Mode multi-boutiques</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{moduleEnabled ? 'Activé — vous pouvez gérer plusieurs points de vente' : 'Désactivé — activez pour ajouter des boutiques'}</p>
+          <p className="text-sm font-medium text-gray-900">Mode multi-boutiques</p>
+          <p className="text-xs text-gray-500">{moduleEnabled ? 'Activé — vous pouvez gérer plusieurs points de vente' : 'Désactivé — activez pour ajouter des boutiques'}</p>
         </div>
         <Toggle checked={moduleEnabled} onChange={handleToggleModule} disabled={savingModule} />
       </div>
@@ -144,7 +144,7 @@ export default function BoutiquesPage() {
           { id: 'settings', label: 'Paramètres', icon: Settings },
         ] as const).map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:text-gray-300'}`}>
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:text-gray-700'}`}>
             <tab.icon className="h-4 w-4" /> {tab.label}
           </button>
         ))}
@@ -154,7 +154,7 @@ export default function BoutiquesPage() {
         boutiques.length === 0 ? (
           <Card><CardBody className="py-12 text-center">
             <Store className="h-12 w-12 text-gray-200 mx-auto mb-3" />
-            <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-4">Aucune boutique configurée</p>
+            <p className="text-gray-500 mb-4">Aucune boutique configurée</p>
             <Button onClick={() => { setShowForm(true); resetForm(); }}><Plus className="h-4 w-4" /> Ajouter ma première boutique</Button>
           </CardBody></Card>
         ) : (
@@ -172,10 +172,10 @@ export default function BoutiquesPage() {
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <p className="font-semibold text-gray-900 dark:text-white dark:text-white">{b.nom}</p>
+                            <p className="font-semibold text-gray-900">{b.nom}</p>
                             {isDefault && <span className="bg-indigo-50 text-indigo-600 text-xs px-2 py-0.5 rounded-full font-medium">Principale</span>}
                           </div>
-                          {b.ville && <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{b.ville}</p>}
+                          {b.ville && <p className="text-xs text-gray-400">{b.ville}</p>}
                         </div>
                       </div>
                       <div className="flex gap-1">
@@ -184,16 +184,16 @@ export default function BoutiquesPage() {
                             <Star className="h-4 w-4 text-yellow-400" />
                           </button>
                         )}
-                        <button onClick={() => handleEdit(b)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-700 dark:bg-gray-700"><Edit3 className="h-4 w-4 text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" /></button>
+                        <button onClick={() => handleEdit(b)} className="p-1.5 rounded-lg hover:bg-gray-100"><Edit3 className="h-4 w-4 text-gray-400" /></button>
                         <button onClick={() => handleDelete(b.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 className="h-4 w-4 text-red-400" /></button>
                       </div>
                     </div>
                     {s && (
                       <div className="grid grid-cols-4 gap-2 mt-3">
                         {[{ v: s.totalCartes, l: 'Cartes' }, { v: s.totalVisites, l: 'Visites' }, { v: s.totalAvis, l: 'Avis' }, { v: s.totalOffres, l: 'Offres' }].map(x => (
-                          <div key={x.l} className="text-center bg-gray-50 dark:bg-gray-800 dark:bg-gray-800 rounded-lg p-2">
-                            <p className="text-lg font-bold text-gray-900 dark:text-white dark:text-white">{x.v}</p>
-                            <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{x.l}</p>
+                          <div key={x.l} className="text-center bg-gray-50 rounded-lg p-2">
+                            <p className="text-lg font-bold text-gray-900">{x.v}</p>
+                            <p className="text-xs text-gray-400">{x.l}</p>
                           </div>
                         ))}
                       </div>
@@ -211,10 +211,10 @@ export default function BoutiquesPage() {
           <Card>
             <CardHeader><CardTitle>Mode multi-boutiques</CardTitle></CardHeader>
             <CardBody className="space-y-4">
-              <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-700 dark:border-gray-700">
+              <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100">
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">Activer les multi-boutiques</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">Permet de gérer plusieurs points de vente avec des cartes de fidélité séparées</p>
+                  <p className="text-sm font-medium text-gray-900">Activer les multi-boutiques</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Permet de gérer plusieurs points de vente avec des cartes de fidélité séparées</p>
                 </div>
                 <Toggle checked={moduleEnabled} onChange={handleToggleModule} disabled={savingModule} />
               </div>
@@ -235,9 +235,9 @@ export default function BoutiquesPage() {
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 dark:border-gray-700">
-                  <Info className="h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
-                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Aucune boutique principale définie — cliquez sur l'étoile d'une boutique pour la définir</p>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100">
+                  <Info className="h-5 w-5 text-gray-400" />
+                  <p className="text-sm text-gray-500">Aucune boutique principale définie — cliquez sur l'étoile d'une boutique pour la définir</p>
                 </div>
               )}
             </CardBody>
@@ -247,7 +247,7 @@ export default function BoutiquesPage() {
 
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
             <h2 className="text-lg font-bold mb-4">{editing ? 'Modifier la boutique' : 'Nouvelle boutique'}</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <Input label="Nom de la boutique *" value={form.nom} onChange={e => setForm({ ...form, nom: e.target.value })} required />
@@ -258,14 +258,14 @@ export default function BoutiquesPage() {
               </div>
               <Input label="URL Google Place" placeholder="https://g.page/..." value={form.google_place_url} onChange={e => setForm({ ...form, google_place_url: e.target.value })} />
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="label">Couleur primaire</label><input type="color" value={form.carte_couleur_primaire} onChange={e => setForm({ ...form, carte_couleur_primaire: e.target.value })} className="h-9 w-full rounded-lg border border-gray-200 dark:border-gray-700 dark:border-gray-700 cursor-pointer" /></div>
-                <div><label className="label">Couleur secondaire</label><input type="color" value={form.carte_couleur_secondaire} onChange={e => setForm({ ...form, carte_couleur_secondaire: e.target.value })} className="h-9 w-full rounded-lg border border-gray-200 dark:border-gray-700 dark:border-gray-700 cursor-pointer" /></div>
+                <div><label className="label">Couleur primaire</label><input type="color" value={form.carte_couleur_primaire} onChange={e => setForm({ ...form, carte_couleur_primaire: e.target.value })} className="h-9 w-full rounded-lg border border-gray-200 cursor-pointer" /></div>
+                <div><label className="label">Couleur secondaire</label><input type="color" value={form.carte_couleur_secondaire} onChange={e => setForm({ ...form, carte_couleur_secondaire: e.target.value })} className="h-9 w-full rounded-lg border border-gray-200 cursor-pointer" /></div>
               </div>
               <Input label="Nom du programme" value={form.carte_programme_nom} onChange={e => setForm({ ...form, carte_programme_nom: e.target.value })} />
               <Input label="Points récompense" type="number" value={form.points_recompense} onChange={e => setForm({ ...form, points_recompense: Number(e.target.value) })} />
               <div className="flex items-center gap-3">
                 <input type="checkbox" id="module_avis" checked={form.module_avis_google} onChange={e => setForm({ ...form, module_avis_google: e.target.checked })} className="rounded" />
-                <label htmlFor="module_avis" className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Activer les avis Google automatiques</label>
+                <label htmlFor="module_avis" className="text-sm font-medium text-gray-700">Activer les avis Google automatiques</label>
               </div>
               <div className="flex gap-3">
                 <Button type="submit" loading={saving}>{editing ? 'Enregistrer' : 'Créer'}</Button>

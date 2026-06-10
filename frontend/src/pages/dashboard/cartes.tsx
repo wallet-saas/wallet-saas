@@ -114,7 +114,7 @@ export default function CartesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>QR Code d'installation</CardTitle>
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">
+                <p className="text-xs text-gray-500 mt-0.5">
                   Affichez ce QR code en caisse — vos clients scannent et installent leur carte automatiquement
                 </p>
               </div>
@@ -126,12 +126,12 @@ export default function CartesPage() {
           </CardHeader>
           <CardBody>
             <div className="flex items-center gap-6">
-              <div className="flex-shrink-0 p-3 bg-white dark:bg-gray-800 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 dark:border-gray-700 rounded-xl">
+              <div className="flex-shrink-0 p-3 bg-white border border-gray-200 rounded-xl">
                 <QRCode id="install-qr-canvas" value={installUrl} size={120} />
               </div>
               <div className="min-w-0">
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">URL d'installation</p>
-                <code className="text-xs font-mono bg-gray-100 dark:bg-gray-700 dark:bg-gray-700 px-2 py-1 rounded break-all block mb-3">
+                <p className="text-xs text-gray-500 mb-1">URL d'installation</p>
+                <code className="text-xs font-mono bg-gray-100 px-2 py-1 rounded break-all block mb-3">
                   {installUrl}
                 </code>
                 <div className="flex gap-2">
@@ -158,10 +158,10 @@ export default function CartesPage() {
         size="sm"
       >
         <div className="flex flex-col items-center gap-4 py-2">
-          <div className="p-4 bg-white dark:bg-gray-800 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 dark:border-gray-700 rounded-xl">
+          <div className="p-4 bg-white border border-gray-200 rounded-xl">
             <QRCode value={installUrl} size={220} />
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 text-center">
+          <p className="text-xs text-gray-500 text-center">
             Vos clients scannent ce QR code pour installer leur carte de fidélité
           </p>
           <Button className="w-full" onClick={handleDownloadQr}>
@@ -175,7 +175,7 @@ export default function CartesPage() {
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="relative flex-1 max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Rechercher par serial…"
                 className="pl-9"
@@ -205,7 +205,7 @@ export default function CartesPage() {
                 <tbody>
                   {filtered.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="text-center py-10 text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                      <td colSpan={5} className="text-center py-10 text-gray-400">
                         Aucune carte trouvée
                       </td>
                     </tr>
@@ -213,7 +213,7 @@ export default function CartesPage() {
                     filtered.map((carte) => (
                       <tr key={carte.id || carte.pass_serial_number}>
                         <td>
-                          <span className="font-mono text-xs bg-gray-100 dark:bg-gray-700 dark:bg-gray-700 px-2 py-1 rounded">
+                          <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
                             {carte.pass_serial_number}
                           </span>
                         </td>
@@ -225,13 +225,13 @@ export default function CartesPage() {
                         </td>
                         <td>
                           {carte.last_visit_at ? (
-                            <span className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{formatRelative(carte.last_visit_at)}</span>
+                            <span className="text-gray-600">{formatRelative(carte.last_visit_at)}</span>
                           ) : (
                             <Badge variant="gray">Jamais</Badge>
                           )}
                         </td>
                         <td>
-                          <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                          <div className="flex items-center gap-1.5 text-gray-500">
                             <Calendar className="h-3.5 w-3.5" />
                             {formatDate(carte.created_at)}
                           </div>
@@ -269,8 +269,8 @@ export default function CartesPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="px-6 py-3 border-t border-gray-100 dark:border-gray-700 dark:border-gray-700 flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Page {page} / {totalPages}</p>
+              <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between">
+                <p className="text-sm text-gray-500">Page {page} / {totalPages}</p>
                 <div className="flex gap-2">
                   <Button variant="secondary" size="sm" disabled={page === 1} onClick={() => fetchCartes(page - 1)}>
                     Précédent
@@ -301,19 +301,19 @@ export default function CartesPage() {
             </div>
 
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Serial Number</p>
-              <code className="text-sm font-mono bg-gray-100 dark:bg-gray-700 dark:bg-gray-700 px-3 py-1.5 rounded-lg">
+              <p className="text-xs text-gray-500 mb-1">Serial Number</p>
+              <code className="text-sm font-mono bg-gray-100 px-3 py-1.5 rounded-lg">
                 {qrModal.carte.pass_serial_number}
               </code>
             </div>
 
             {qrModal.carte.qr_code_url && (
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-2">QR Code d'installation</p>
+                <p className="text-xs text-gray-500 mb-2">QR Code d'installation</p>
                 <img
                   src={qrModal.carte.qr_code_url}
                   alt="QR Code"
-                  className="mx-auto w-40 h-40 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700"
+                  className="mx-auto w-40 h-40 rounded-xl border border-gray-100"
                 />
               </div>
             )}

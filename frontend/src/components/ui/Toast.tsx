@@ -39,8 +39,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             key={toast.id}
             className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border transform transition-all duration-300 animate-slide-in ${
               toast.type === 'success'
-                ? 'bg-white dark:bg-gray-800 border-green-200 text-green-800'
-                : 'bg-white dark:bg-gray-800 border-red-200 text-red-800'
+                ? 'bg-white border-green-200 text-green-800'
+                : 'bg-white border-red-200 text-red-800'
             }`}
           >
             {toast.type === 'success' ? (
@@ -49,7 +49,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               <XCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
             )}
             <span className="text-sm font-medium">{toast.message}</span>
-            <button onClick={() => remove(toast.id)} className="ml-2 text-gray-400 hover:text-gray-600 dark:text-gray-400">
+            <button onClick={() => remove(toast.id)} className="ml-2 text-gray-400 hover:text-gray-600">
               <X className="h-3.5 w-3.5" />
             </button>
           </div>

@@ -92,11 +92,11 @@ export default function AutoReviewPage() {
         <p className="page-subtitle">Configurez les demandes d'avis après chaque visite</p>
       </div>
 
-      <div className={`flex items-center gap-4 px-5 py-4 rounded-xl border mb-6 ${moduleEnabled ? 'bg-green-50 border-green-100' : 'bg-gray-50 dark:bg-gray-800 dark:bg-gray-800 border-gray-100 dark:border-gray-700 dark:border-gray-700'}`}>
-        <Bell className={`h-5 w-5 ${moduleEnabled ? 'text-green-600' : 'text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500'}`} />
+      <div className={`flex items-center gap-4 px-5 py-4 rounded-xl border mb-6 ${moduleEnabled ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100'}`}>
+        <Bell className={`h-5 w-5 ${moduleEnabled ? 'text-green-600' : 'text-gray-400'}`} />
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">Module avis automatiques</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{moduleEnabled ? 'Activé — les clients reçoivent une demande d\'avis après chaque visite' : 'Désactivé — activez pour collecter automatiquement les avis'}</p>
+          <p className="text-sm font-medium text-gray-900">Module avis automatiques</p>
+          <p className="text-xs text-gray-500">{moduleEnabled ? 'Activé — les clients reçoivent une demande d\'avis après chaque visite' : 'Désactivé — activez pour collecter automatiquement les avis'}</p>
         </div>
         <Toggle checked={moduleEnabled} onChange={async (val) => {
           const prev = moduleEnabled;
@@ -117,7 +117,7 @@ export default function AutoReviewPage() {
           { id: 'feedback', label: 'Feedback interne', icon: MessageSquare },
         ] as const).map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:text-gray-300'}`}>
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:text-gray-700'}`}>
             <tab.icon className="h-4 w-4" /> {tab.label}
             {tab.id === 'feedback' && feedback.length > 0 && (
               <span className="bg-red-100 text-red-600 text-xs px-2 py-0.5 rounded-full">{feedback.length}</span>
@@ -141,10 +141,10 @@ export default function AutoReviewPage() {
             <CardHeader><CardTitle>Message et alertes</CardTitle></CardHeader>
             <CardBody className="space-y-4">
               <Textarea label="Message personnalisé" placeholder="Merci pour votre visite ! Donnez-nous votre avis…" rows={4} value={autoMessage} onChange={e => setAutoMessage(e.target.value)} />
-              <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-700 dark:border-gray-700">
+              <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100">
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">Alerte email avis négatifs</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">Recevoir une alerte pour les avis sous 3 étoiles</p>
+                  <p className="text-sm font-medium text-gray-900">Alerte email avis négatifs</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Recevoir une alerte pour les avis sous 3 étoiles</p>
                 </div>
                 <Toggle checked={alerteEmail} onChange={setAlerteEmail} />
               </div>
@@ -175,7 +175,7 @@ export default function AutoReviewPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2.5">
-              <AlertTriangle className="h-4 w-4 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+              <AlertTriangle className="h-4 w-4 text-gray-500" />
               <CardTitle>Feedback interne ({feedback.length})</CardTitle>
             </div>
           </CardHeader>
@@ -183,7 +183,7 @@ export default function AutoReviewPage() {
             {feedback.length === 0 ? (
               <div className="py-12 text-center">
                 <CheckCircle className="h-10 w-10 text-green-200 mx-auto mb-3" />
-                <p className="text-sm text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Aucun feedback négatif — bravo !</p>
+                <p className="text-sm text-gray-400">Aucun feedback négatif — bravo !</p>
               </div>
             ) : (
               <div className="divide-y divide-gray-50">
@@ -193,10 +193,10 @@ export default function AutoReviewPage() {
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           {a.note > 0 && <Stars note={a.note} />}
-                          <span className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{a.source}</span>
+                          <span className="text-xs text-gray-400">{a.source}</span>
                         </div>
-                        {a.contenu && <p className="text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300">{a.contenu}</p>}
-                        <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
+                        {a.contenu && <p className="text-sm text-gray-700">{a.contenu}</p>}
+                        <p className="text-xs text-gray-400 mt-1">
                           <Clock className="h-3 w-3 inline mr-1" />
                           {new Date(a.created_at).toLocaleDateString('fr-FR')}
                         </p>

@@ -144,7 +144,7 @@ export default function ScanPage() {
   };
 
   const stateConfig: Record<ScanState, { icon: React.ReactNode; bg: string; text: string }> = {
-    idle: { icon: <QrCode className="h-6 w-6 text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />, bg: 'bg-gray-50 dark:bg-gray-800 dark:bg-gray-800', text: 'text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500' },
+    idle: { icon: <QrCode className="h-6 w-6 text-gray-400" />, bg: 'bg-gray-50', text: 'text-gray-500' },
     scanning: { icon: <Loader2 className="h-6 w-6 text-primary-600 animate-spin" />, bg: 'bg-primary-50', text: 'text-primary-700' },
     success: { icon: <CheckCircle className="h-6 w-6 text-green-600" />, bg: 'bg-green-50', text: 'text-green-700' },
     error: { icon: <XCircle className="h-6 w-6 text-red-600" />, bg: 'bg-red-50', text: 'text-red-700' },
@@ -195,7 +195,7 @@ export default function ScanPage() {
                 <div>
                   <p className={`text-sm font-medium ${sc.text}`}>{result.message}</p>
                   {result.points !== undefined && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 flex items-center gap-1 mt-0.5">
+                    <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
                       <Star className="h-3 w-3 text-yellow-500" />
                       {result.points} points au total
                     </p>
@@ -251,21 +251,21 @@ export default function ScanPage() {
           </CardHeader>
           <CardBody className="p-0">
             {historyLoading ? (
-              <div className="py-8 text-center text-sm text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Chargement…</div>
+              <div className="py-8 text-center text-sm text-gray-400">Chargement…</div>
             ) : history.length === 0 ? (
               <div className="py-12 text-center">
                 <QrCode className="h-8 w-8 text-gray-200 mx-auto mb-2" />
-                <p className="text-sm text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Aucun scan aujourd'hui</p>
+                <p className="text-sm text-gray-400">Aucun scan aujourd'hui</p>
               </div>
             ) : (
               <div className="divide-y divide-gray-50">
                 {history.map((v, i) => (
                   <div key={v.id || i} className="flex items-center justify-between px-6 py-3">
                     <div>
-                      <p className="text-xs font-mono text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                      <p className="text-xs font-mono text-gray-600">
                         {v.pass_serial_number || '—'}
                       </p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">
+                      <p className="text-xs text-gray-400 mt-0.5">
                         {formatDateTime(v.created_at)}
                       </p>
                     </div>

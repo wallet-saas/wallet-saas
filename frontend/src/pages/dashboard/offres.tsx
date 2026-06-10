@@ -130,11 +130,11 @@ export default function OffresPage() {
         </div>
       </div>
 
-      <div className={`flex items-center gap-4 px-5 py-4 rounded-xl border mb-6 ${moduleEnabled ? 'bg-green-50 border-green-100' : 'bg-gray-50 dark:bg-gray-800 dark:bg-gray-800 border-gray-100 dark:border-gray-700 dark:border-gray-700'}`}>
-        <Tag className={`h-5 w-5 ${moduleEnabled ? 'text-green-600' : 'text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500'}`} />
+      <div className={`flex items-center gap-4 px-5 py-4 rounded-xl border mb-6 ${moduleEnabled ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100'}`}>
+        <Tag className={`h-5 w-5 ${moduleEnabled ? 'text-green-600' : 'text-gray-400'}`} />
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">Module Offres Flash</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{moduleEnabled ? 'Activé — vous pouvez créer des offres' : 'Désactivé — aucune offre ne peut être créée'}</p>
+          <p className="text-sm font-medium text-gray-900">Module Offres Flash</p>
+          <p className="text-xs text-gray-500">{moduleEnabled ? 'Activé — vous pouvez créer des offres' : 'Désactivé — aucune offre ne peut être créée'}</p>
         </div>
         <Toggle checked={moduleEnabled} onChange={async (val) => {
           const prev = moduleEnabled;
@@ -155,7 +155,7 @@ export default function OffresPage() {
           { id: 'settings', label: 'Paramètres', icon: Settings },
         ] as const).map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:text-gray-300'}`}>
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:text-gray-700'}`}>
             <tab.icon className="h-4 w-4" /> {tab.label}
           </button>
         ))}
@@ -167,14 +167,14 @@ export default function OffresPage() {
             offres.length === 0 ? (
               <Card><CardBody><div className="py-12 text-center">
                 <Tag className="h-10 w-10 text-gray-200 mx-auto mb-3" />
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-4">Aucune offre créée</p>
+                <p className="text-sm text-gray-500 mb-4">Aucune offre créée</p>
                 <Button onClick={() => setModal({ open: true })}><Plus className="h-4 w-4" /> Créer la première offre</Button>
               </div></CardBody></Card>
             ) : (
               <div className="space-y-6">
                 {actives.length > 0 && (
                   <div>
-                    <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-3">Offres actives</h2>
+                    <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Offres actives</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {actives.map(o => <OffreCard key={o.id} offre={o} onSend={() => setSendModal({ open: true, offre: o })} onStats={() => handleStats(o)} />)}
                     </div>
@@ -182,7 +182,7 @@ export default function OffresPage() {
                 )}
                 {expirees.length > 0 && (
                   <div>
-                    <h2 className="text-sm font-semibold text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-3">Expirées</h2>
+                    <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">Expirées</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 opacity-60">
                       {expirees.map(o => <OffreCard key={o.id} offre={o} onStats={() => handleStats(o)} />)}
                     </div>
@@ -205,17 +205,17 @@ export default function OffresPage() {
               <Card>
                 <CardHeader><CardTitle>Automatisations</CardTitle></CardHeader>
                 <CardBody className="space-y-4">
-                  <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-700 dark:border-gray-700">
+                  <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100">
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">Notification automatique</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">Notifier les clients quand une offre est créée</p>
+                      <p className="text-sm font-medium text-gray-900">Notification automatique</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Notifier les clients quand une offre est créée</p>
                     </div>
                     <Toggle checked={notifAuto} onChange={setNotifAuto} />
                   </div>
-                  <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-700 dark:border-gray-700">
+                  <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100">
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">Code promo automatique</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">Générer un code promo unique pour chaque offre</p>
+                      <p className="text-sm font-medium text-gray-900">Code promo automatique</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Générer un code promo unique pour chaque offre</p>
                     </div>
                     <Toggle checked={codeAuto} onChange={setCodeAuto} />
                   </div>
@@ -245,7 +245,7 @@ export default function OffresPage() {
             <Input label="Date début" type="date" {...register('date_debut')} />
             <Input label="Date fin" type="date" {...register('date_fin')} />
           </div>
-          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-700 dark:border-gray-700">
+          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
             <Button variant="secondary" type="button" onClick={() => setModal({ open: false })}>Annuler</Button>
             <Button type="submit" loading={isSubmitting}>Créer l'offre</Button>
           </div>
@@ -255,8 +255,8 @@ export default function OffresPage() {
       <Modal open={sendModal.open} onClose={() => setSendModal({ open: false })} title="Envoyer l'offre par notification" size="sm">
         {sendModal.offre && (
           <div className="space-y-4">
-            <div className="bg-gray-50 dark:bg-gray-800 dark:bg-gray-800 rounded-xl p-4">
-              <p className="text-sm font-semibold text-gray-900 dark:text-white dark:text-white">{sendModal.offre.titre}</p>
+            <div className="bg-gray-50 rounded-xl p-4">
+              <p className="text-sm font-semibold text-gray-900">{sendModal.offre.titre}</p>
             </div>
             <Select label="Destinataires" options={cibleOptions} value={sendCible} onChange={e => setSendCible(e.target.value)} />
             <div className="flex gap-2">
@@ -270,12 +270,12 @@ export default function OffresPage() {
       <Modal open={statsModal.open} onClose={() => setStatsModal({ open: false })} title="Statistiques de l'offre" size="sm">
         {statsModal.offre && statsModal.stats && (
           <div className="space-y-4">
-            <p className="text-sm font-semibold text-gray-900 dark:text-white dark:text-white">{statsModal.offre.titre}</p>
+            <p className="text-sm font-semibold text-gray-900">{statsModal.offre.titre}</p>
             <div className="grid grid-cols-3 gap-3">
               {[{ label: 'Envoyés', value: statsModal.stats.total_envoyes }, { label: 'Utilisés', value: statsModal.stats.total_utilises }, { label: 'Taux', value: `${statsModal.stats.taux_utilisation}%` }].map(s => (
-                <div key={s.label} className="bg-gray-50 dark:bg-gray-800 dark:bg-gray-800 rounded-xl p-3 text-center">
-                  <p className="text-xl font-bold text-gray-900 dark:text-white dark:text-white">{s.value}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">{s.label}</p>
+                <div key={s.label} className="bg-gray-50 rounded-xl p-3 text-center">
+                  <p className="text-xl font-bold text-gray-900">{s.value}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
                 </div>
               ))}
             </div>
@@ -291,16 +291,16 @@ function OffreCard({ offre, onSend, onStats }: { offre: Offre; onSend?: () => vo
     <Card className="hover:shadow-md transition-shadow">
       <CardBody>
         <div className="flex items-start justify-between mb-3">
-          <div><p className="text-sm font-semibold text-gray-900 dark:text-white dark:text-white">{offre.titre}</p>{offre.description && <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">{offre.description}</p>}</div>
+          <div><p className="text-sm font-semibold text-gray-900">{offre.titre}</p>{offre.description && <p className="text-xs text-gray-500 mt-0.5">{offre.description}</p>}</div>
           <Badge variant={offre.expiree ? 'gray' : 'green'}>{offre.expiree ? 'Expirée' : 'Active'}</Badge>
         </div>
         <div className="flex flex-wrap gap-2 mb-3">
           {offre.reduction_pourcentage && <span className="flex items-center gap-1 text-xs bg-primary-50 text-primary-700 px-2 py-0.5 rounded-full"><Percent className="h-3 w-3" />{offre.reduction_pourcentage}%</span>}
           {offre.reduction_montant && <span className="flex items-center gap-1 text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full"><Euro className="h-3 w-3" />{offre.reduction_montant}€</span>}
-          {offre.code_promo && <span className="flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-700 dark:bg-gray-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 px-2 py-0.5 rounded-full font-mono">{offre.code_promo}</span>}
-          {offre.date_fin && <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500"><Calendar className="h-3 w-3" />Fin: {formatDate(offre.date_fin)}</span>}
+          {offre.code_promo && <span className="flex items-center gap-1 text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full font-mono">{offre.code_promo}</span>}
+          {offre.date_fin && <span className="flex items-center gap-1 text-xs text-gray-400"><Calendar className="h-3 w-3" />Fin: {formatDate(offre.date_fin)}</span>}
         </div>
-        <div className="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 border-t border-gray-50 pt-3">
+        <div className="flex items-center justify-between text-xs text-gray-400 border-t border-gray-50 pt-3">
           <span>{offre.total_envoyes} envoyés · {offre.total_utilises} utilisés</span>
           <div className="flex gap-1.5">
             <Button variant="ghost" size="sm" onClick={onStats}><BarChart2 className="h-3.5 w-3.5" /></Button>

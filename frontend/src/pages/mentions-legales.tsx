@@ -18,7 +18,7 @@ export default function MentionsLegalesPage() {
             </Link>
             <div className="flex items-center gap-4">
               <Link href="/login" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Connexion</Link>
-              <Link href="/register" className="text-sm font-medium bg-white dark:bg-gray-800 text-black px-4 py-2 rounded-xl hover:bg-slate-200 transition-colors">Essayer gratuitement</Link>
+              <Link href="/register" className="text-sm font-medium bg-white text-black px-4 py-2 rounded-xl hover:bg-slate-200 transition-colors">Essayer gratuitement</Link>
             </div>
           </div>
         </nav>
