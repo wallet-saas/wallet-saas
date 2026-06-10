@@ -33,7 +33,7 @@ export function Hero() {
   };
 
   return (
-    <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden" style={{ perspective: 1000 }}>
+    <section className="relative pt-24 pb-12 sm:pt-32 sm:pb-20 lg:pt-48 lg:pb-32 overflow-hidden" style={{ perspective: 1000 }}>
       {/* Background glowing orbs */}
       <motion.div
         animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
@@ -70,7 +70,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.8 }}
-              className={`text-5xl lg:text-7xl font-bold tracking-tight ${t.textPrimary} mb-6 leading-tight`}
+              className={`text-3xl sm:text-4xl lg:text-7xl font-bold tracking-tight ${t.textPrimary} mb-4 sm:mb-6 leading-tight`}
             >
               La carte de fidélité de vos clients, <br className="hidden lg:block"/>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-600">dans leur téléphone</span>
@@ -97,7 +97,7 @@ export function Hero() {
               >
                 <Link
                   href="/register"
-                  className="group inline-flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-2xl bg-indigo-500 text-white hover:bg-indigo-400 transition-colors gap-2 shadow-[0_0_40px_-10px_rgba(99,102,241,0.5)]"
+                  className="group inline-flex items-center justify-center px-6 py-3 sm:px-8 sm:py-4 text-base sm:text-lg font-semibold rounded-2xl bg-indigo-500 text-white hover:bg-indigo-400 transition-colors gap-2 shadow-[0_0_30px_-10px_rgba(99,102,241,0.4)]"
                 >
                   Essayer gratuitement
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -146,7 +146,7 @@ export function Hero() {
                 rotateY,
                 transformStyle: "preserve-3d"
               }}
-              className="relative w-[320px] h-[650px] bg-black rounded-[50px] border-[8px] border-slate-800 shadow-[0_0_80px_-20px_rgba(99,102,241,0.6)] flex flex-col overflow-hidden"
+              className="relative w-[220px] h-[450px] sm:w-[280px] sm:h-[570px] lg:w-[320px] lg:h-[650px] bg-black rounded-[40px] sm:rounded-[50px] border-[6px] sm:border-[8px] border-slate-800 shadow-[0_0_80px_-20px_rgba(99,102,241,0.6)] flex flex-col overflow-hidden"
             >
               {/* Dynamic Island */}
               <div className="absolute top-2 left-1/2 -translate-x-1/2 w-24 h-7 bg-black rounded-full z-30" style={{ transform: 'translateZ(20px)' }}></div>
@@ -195,11 +195,11 @@ export function Hero() {
                       initial={{ scale: 0.8 }}
                       animate={{ scale: 1 }}
                       transition={{ delay: 1, type: "spring", stiffness: 200 }}
-                      className="text-6xl font-bold text-white mb-2"
+                      className="text-4xl lg:text-6xl font-bold text-white mb-2"
                     >
                       1,250
                     </motion.div>
-                    <div className="text-indigo-400 text-sm font-medium uppercase tracking-wider">Points accumulés</div>
+                    <div className="text-indigo-400 text-xs sm:text-sm font-medium uppercase tracking-wider">Points accumulés</div>
                   </div>
 
                   <div className="mt-auto z-10 bg-white/5 rounded-xl p-4 backdrop-blur-md border border-white/10" style={{ transform: 'translateZ(10px)' }}>

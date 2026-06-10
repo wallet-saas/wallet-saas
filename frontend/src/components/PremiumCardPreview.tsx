@@ -161,14 +161,15 @@ export function PremiumCardPreview({
 
           {/* Row 2: QR Code — centered, GRAND (~200px) */}
           <div className="flex-1 flex items-center justify-center">
-            <div className="bg-white rounded-2xl p-3 sm:p-4 shadow-xl">
+            <div className="bg-white rounded-xl sm:rounded-2xl p-2 sm:p-4 shadow-xl">
               <QRCodeSVG
                 value={qrValue}
-                size={180}
+                size={120}
                 level="H"
                 includeMargin={false}
                 bgColor="#FFFFFF"
                 fgColor="#000000"
+                className="w-[120px] h-[120px] sm:w-[180px] sm:h-[180px]"
               />
             </div>
           </div>

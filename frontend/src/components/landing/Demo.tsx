@@ -28,21 +28,20 @@ export function Demo() {
   const maxChart = Math.max(...chartData);
 
   return (
-    <section id="demo" ref={containerRef} className="py-32 overflow-hidden relative" style={{ perspective: 1000 }}>
-      {/* Dynamic Background glow */}
-      <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-indigo-500/10 blur-[120px] rounded-[100%] pointer-events-none ${t.glowOrb}`} />
+    <section id="demo" ref={containerRef} className="py-16 sm:py-24 lg:py-32 overflow-hidden relative" style={{ perspective: 1000 }}>
+      <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-indigo-500/10 blur-[120px] rounded-[100%] pointer-events-none`} />
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center max-w-2xl mx-auto mb-20"
+          className="text-center max-w-2xl mx-auto mb-10 sm:mb-20"
         >
-          <h2 className={`text-3xl lg:text-5xl font-bold ${t.textPrimary} mb-6`}>
+          <h2 className={`text-2xl sm:text-3xl lg:text-5xl font-bold ${t.textPrimary} mb-4 sm:mb-6`}>
             Gérez tout depuis votre Dashboard
           </h2>
-          <p className={`${t.textSecondary} text-lg`}>
+          <p className={`${t.textSecondary} text-base sm:text-lg`}>
             Une interface simple et intuitive pour suivre votre activité et éditer votre carte en temps réel.
           </p>
         </motion.div>
@@ -73,18 +72,18 @@ export function Demo() {
           </div>
 
           {/* Dashboard Body */}
-          <div className="p-8 grid md:grid-cols-3 gap-8">
-            <div className="md:col-span-2 space-y-8">
+          <div className="p-3 sm:p-8 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-8">
+            <div className="md:col-span-2 space-y-4 sm:space-y-8">
               {/* Stats Row */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4">
                 {stats.map((stat, i) => (
                   <motion.div
                     key={i}
                     whileHover={{ y: -5 }}
-                    className={`${t.sectionBgAlt} border ${t.border} p-5 rounded-2xl shadow-lg transition-colors hover:${t.sectionBgAlt} hover:border-indigo-500/30`}
+                    className={`${t.sectionBgAlt} border ${t.border} p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-lg transition-colors hover:border-indigo-500/30`}
                   >
-                    <div className={`${t.textSecondary} text-sm mb-2`}>{stat.label}</div>
-                    <div className={`text-3xl font-bold ${t.textPrimary}`}>{stat.value}</div>
+                    <div className={`${t.textSecondary} text-[10px] sm:text-sm mb-1 sm:mb-2`}>{stat.label}</div>
+                    <div className={`text-lg sm:text-3xl font-bold ${t.textPrimary}`}>{stat.value}</div>
                   </motion.div>
                 ))}
               </div>
@@ -116,11 +115,11 @@ export function Demo() {
               <motion.div
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="w-[200px] h-[320px] bg-gradient-to-br from-indigo-900 via-slate-900 to-black rounded-2xl p-5 shadow-2xl border border-indigo-500/30 flex flex-col relative"
+                className="w-[140px] h-[220px] sm:w-[200px] sm:h-[320px] bg-gradient-to-br from-indigo-900 via-slate-900 to-black rounded-2xl p-3 sm:p-5 shadow-2xl border border-indigo-500/30 flex flex-col relative"
               >
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-lg shadow-[0_0_15px_rgba(99,102,241,0.5)]">C</div>
-                  <div className="text-white font-semibold">Le Club</div>
+                <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-sm sm:text-lg shadow-[0_0_15px_rgba(99,102,241,0.5)]">C</div>
+                  <div className="text-white font-semibold text-sm sm:text-base">Le Club</div>
                 </div>
 
                 <div className="mt-auto bg-white/10 rounded-xl p-4 backdrop-blur-md border border-white/5">

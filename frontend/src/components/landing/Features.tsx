@@ -1,95 +1,55 @@
 'use client';
 
 import { motion } from "framer-motion";
-import { Palette, QrCode, LineChart } from "lucide-react";
+import { Wallet, QrCode, Palette, BarChart3, Bell, Smartphone, Zap, Shield } from "lucide-react";
 import { useLandingTheme } from "./theme";
+
+const features = [
+  { icon: Wallet, title: "Google & Apple Wallet", desc: "Vos clients ajoutent leur carte directement dans leur app Wallet." },
+  { icon: QrCode, title: "QR Code à scanner", desc: "Scannez le QR code client pour incrémenter ses tampons en 1 clic." },
+  { icon: Palette, title: "Éditeur de carte", desc: "Personnalisez logo, couleurs, fond, overlay et polices en temps réel." },
+  { icon: BarChart3, title: "Statistiques", desc: "Suivez les passages, tampons et récompenses en temps réel." },
+  { icon: Bell, title: "Notifications push", desc: "Gardez le contact avec vos clients après chaque visite." },
+  { icon: Smartphone, title: "100% mobile", desc: "Vos clients n'ont rien à installer. Wallet suffit." },
+  { icon: Zap, title: "Configuration 2 min", desc: "Créez votre programme de fidélité en quelques clics." },
+  { icon: Shield, title: "RGPD compliant", desc: "Données hébergées en France. Consentement explicite." },
+];
 
 export function Features() {
   const t = useLandingTheme();
 
-  const features = [
-    {
-      icon: Palette,
-      title: "Carte 100% personnalisable",
-      description: "Couleurs, logo, image de fond. Créez une carte qui reflète parfaitement l'identité de votre commerce."
-    },
-    {
-      icon: QrCode,
-      title: "Scan ultra-rapide",
-      description: "Scannez le QR code de vos clients en 1 seconde à chaque passage en caisse. Ajouter des points n'a jamais été aussi simple."
-    },
-    {
-      icon: LineChart,
-      title: "Dashboard & Analytics",
-      description: "Suivez vos visites, vos points distribués et les récompenses réclamées. Comprenez enfin qui sont vos meilleurs clients."
-    }
-  ];
-
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2
-      }
-    }
-  };
-
-  const item = {
-    hidden: { opacity: 0, y: 30, scale: 0.95 },
-    show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, stiffness: 100 } }
-  } as const;
-
   return (
-    <section className="py-32 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className={`absolute top-1/2 left-0 -translate-y-1/2 w-full h-[500px] bg-gradient-to-b from-indigo-500/5 via-purple-500/5 to-transparent blur-[100px] pointer-events-none ${t.glowOrb}`} />
+    <section className={`py-16 sm:py-24 lg:py-32 ${t.sectionBg} relative`} id="features">
+      <div className="absolute top-1/2 left-0 -translate-y-1/2 w-full h-[500px] bg-gradient-to-b from-indigo-500/5 via-purple-500/5 to-transparent blur-[100px] pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          className="text-center max-w-2xl mx-auto mb-20"
-        >
-          <h2 className={`text-3xl lg:text-5xl font-bold ${t.textPrimary} mb-6`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-20">
+          <h2 className={`text-2xl sm:text-3xl lg:text-5xl font-bold ${t.textPrimary} mb-4 sm:mb-6`}>
             Tout ce qu'il vous faut, <span className="text-indigo-400">sans la complexité</span>
           </h2>
-          <p className={`${t.textSecondary} text-lg`}>
-            Nous avons pensé Stamply pour être l'outil le plus simple de votre quotidien. Aucune compétence technique n'est requise.
+          <p className={`${t.textSecondary} text-base sm:text-xl leading-relaxed`}>
+            Stamply remplace vos cartes papier et fidélise vos clients automatiquement.
           </p>
-        </motion.div>
+        </div>
 
-        <motion.div
-          variants={container}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-100px" }}
-          className="grid md:grid-cols-3 gap-8"
-        >
-          {features.map((feature, i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          {features.map((f, i) => (
             <motion.div
-              key={i}
-              variants={item}
-              whileHover={{ y: -10, transition: { duration: 0.2 } }}
-              className={`group relative ${t.cardBg} border ${t.border} p-8 rounded-[2rem]} ${t.cardBgHover} transition-colors shadow-lg overflow-hidden`}
-              style={{ boxShadow: t.pageBg.includes('bg-white') ? '0 4px 20px rgba(0,0,0,0.05)' : '0 4px 20px rgba(0,0,0,0.5)' }}
+              key={f.title}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ delay: i * 0.05, duration: 0.5 }}
+              className={`group p-5 sm:p-6 rounded-2xl border ${t.cardBorder} hover:border-indigo-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/5 ${t.cardBg}`}
             >
-              {/* Hover glow effect inside card */}
-              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/0 via-transparent to-purple-500/0 group-hover:from-indigo-500/10 group-hover:to-purple-500/5 transition-all duration-500 ease-out" />
-
-              <div className="relative z-10">
-                <div className={`w-14 h-14 ${t.sectionBgAlt} border ${t.border} rounded-2xl flex items-center justify-center mb-8 group-hover:bg-indigo-500/20 group-hover:border-indigo-500/30 transition-all duration-300`}>
-                  <feature.icon className="w-7 h-7 text-indigo-400 group-hover:text-indigo-300 transition-colors" />
-                </div>
-                <h3 className={`text-2xl font-semibold ${t.textPrimary} mb-4 group-hover:text-indigo-100 transition-colors`}>{feature.title}</h3>
-                <p className={`${t.textSecondary} leading-relaxed group-hover:${t.pageText} transition-colors`}>
-                  {feature.description}
-                </p>
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-indigo-500/20 transition-colors">
+                <f.icon className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-400" />
               </div>
+              <h3 className={`font-semibold ${t.textPrimary} mb-2 text-sm sm:text-base`}>{f.title}</h3>
+              <p className={`${t.textSecondary} text-xs sm:text-sm leading-relaxed`}>{f.desc}</p>
             </motion.div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );

@@ -30,9 +30,9 @@ export function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <section className="py-24 max-w-3xl mx-auto px-6 lg:px-8">
-      <div className="text-center mb-16">
-        <h2 className={`text-3xl font-bold ${t.textPrimary} mb-4`}>
+    <section className="py-16 sm:py-24 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="text-center mb-8 sm:mb-16">
+        <h2 className={`text-2xl sm:text-3xl font-bold ${t.textPrimary} mb-3 sm:mb-4`}>
           Questions fréquentes
         </h2>
       </div>
@@ -46,9 +46,9 @@ export function FAQ() {
           >
             <button
               onClick={() => setOpenIndex(openIndex === i ? null : i)}
-              className="w-full px-6 py-5 flex items-center justify-between text-left"
+              className="w-full px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between text-left"
             >
-              <span className={`text-lg font-medium pr-4 ${t.textPrimary}`}>{faq.question}</span>
+              <span className={`text-base sm:text-lg font-medium pr-4 ${t.textPrimary}`}>{faq.question}</span>
               <motion.div
                 animate={{ rotate: openIndex === i ? 180 : 0 }}
                 transition={{ duration: 0.2 }}
