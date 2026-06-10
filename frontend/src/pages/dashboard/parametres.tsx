@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Head from 'next/head';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
@@ -8,16 +8,20 @@ import { PageSpinner } from '@/components/ui/Spinner';
 import { commercantApi } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/Toast';
-import { CardPreview } from '@/components/CardPreview';
-import { Store, Palette, Eye, Save, Settings, CreditCard } from 'lucide-react';
+import { CardEditor, CardDesign, DEFAULT_CARD_DESIGN } from '@/components/CardEditor';
+import { PremiumCardPreview } from '@/components/PremiumCardPreview';
+import { uploadCardImage } from '@/lib/cardUpload';
+import { Store, Palette, Eye, Save, Settings, CreditCard, Sparkles } from 'lucide-react';
 
 export default function ParametresPage() {
   const { commercant, refreshUser } = useAuth();
   const { show: toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'commerce' | 'carte'>('commerce');
+  const [isUploading, setIsUploading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'commerce' | 'carte' | 'design'>('commerce');
 
+  // Commerce fields
   const [nomEnseigne, setNomEnseigne] = useState('');
   const [telephone, setTelephone] = useState('');
   const [adresse, setAdresse] = useState('');
@@ -25,6 +29,7 @@ export default function ParametresPage() {
   const [codePostal, setCodePostal] = useState('');
   const [email, setEmail] = useState('');
 
+  // Legacy card fields
   const [couleur, setCouleur] = useState('#6366f1');
   const [couleurSecondaire, setCouleurSecondaire] = useState('#764ba2');
   const [programmeNom, setProgrammeNom] = useState('');
@@ -34,6 +39,9 @@ export default function ParametresPage() {
   const [texteBasCarte, setTexteBasCarte] = useState('');
   const [styleTexte, setStyleTexte] = useState<'normal' | 'gras' | 'italique'>('normal');
   const [logoUrl, setLogoUrl] = useState('');
+
+  // Premium card design
+  const [cardDesign, setCardDesign] = useState<CardDesign>(DEFAULT_CARD_DESIGN);
 
   useEffect(() => {
     if (commercant) {
@@ -52,9 +60,34 @@ export default function ParametresPage() {
       setTexteBasCarte(commercant.texte_perso_bas_carte || '');
       setStyleTexte((commercant.style_texte as any) || 'normal');
       setLogoUrl(commercant.carte_logo_url || '');
+
+      // Load premium card design if exists
+      if ((commercant as any).card_design) {
+        try {
+          const parsed = JSON.parse((commercant as any).card_design);
+          setCardDesign({ ...DEFAULT_CARD_DESIGN, ...parsed });
+        } catch {
+          // Keep defaults
+        }
+      }
+
       setLoading(false);
     }
   }, [commercant]);
+
+  const handleImageUpload = useCallback(async (file: File, type: 'background' | 'logo') => {
+    setIsUploading(true);
+    try {
+      const url = await uploadCardImage(file, type, commercant?.id);
+      toast('Image uploadée', 'success');
+      return url;
+    } catch (err: any) {
+      toast(err.message || 'Erreur upload', 'error');
+      throw err;
+    } finally {
+      setIsUploading(false);
+    }
+  }, [commercant?.id, toast]);
 
   const handleSaveCommerce = async () => {
     setSaving(true);
@@ -92,6 +125,19 @@ export default function ParametresPage() {
     finally { setSaving(false); }
   };
 
+  const handleSaveDesign = async () => {
+    setSaving(true);
+    try {
+      await commercantApi.update({
+        card_design: JSON.stringify(cardDesign),
+        carte_logo_url: cardDesign.logo_url || undefined,
+      });
+      await refreshUser();
+      toast('Design enregistré avec succès');
+    } catch (e: any) { toast(e?.message || 'Erreur', 'error'); }
+    finally { setSaving(false); }
+  };
+
   if (loading) return <DashboardLayout><PageSpinner /></DashboardLayout>;
 
   return (
@@ -103,13 +149,16 @@ export default function ParametresPage() {
         <p className="page-subtitle">Gérez vos informations et personnalisez votre carte</p>
       </div>
 
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 flex-wrap">
         {([
           { id: 'commerce', label: 'Mon commerce', icon: Store },
-          { id: 'carte', label: 'Ma carte de fidélité', icon: CreditCard },
+          { id: 'carte', label: 'Contenu carte', icon: CreditCard },
+          { id: 'design', label: 'Design premium', icon: Sparkles },
         ] as const).map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:text-gray-700'}`}>
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === tab.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:text-gray-700'
+            }`}>
             <tab.icon className="h-4 w-4" /> {tab.label}
           </button>
         ))}
@@ -144,72 +193,8 @@ export default function ParametresPage() {
       )}
 
       {activeTab === 'carte' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div>
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2.5">
-                  <Eye className="h-4 w-4 text-gray-500" />
-                  <CardTitle>Aperçu en direct</CardTitle>
-                </div>
-              </CardHeader>
-              <CardBody>
-                <CardPreview
-                  couleur={couleur}
-                  couleurSecondaire={couleurSecondaire}
-                  programme={programmeNom}
-                  logoUrl={logoUrl || undefined}
-                  pointsRecompense={pointsRecompense}
-                  recompenseDescription={recompenseDesc}
-                  layout={layout}
-                  texteBasCarte={texteBasCarte}
-                  styleTexte={styleTexte}
-                />
-                <p className="text-xs text-gray-400 mt-3 text-center">Récompense : {recompenseDesc} ({pointsRecompense} pts)</p>
-              </CardBody>
-            </Card>
-          </div>
-
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2.5">
-                  <Palette className="h-4 w-4 text-gray-500" />
-                  <CardTitle>Style de carte</CardTitle>
-                </div>
-              </CardHeader>
-              <CardBody className="space-y-4">
-                <div>
-                  <label className="label">Layout</label>
-                  <div className="grid grid-cols-3 gap-2 mt-1">
-                    {(['classic', 'modern', 'minimal'] as const).map(l => (
-                      <button key={l} type="button" onClick={() => setLayout(l)}
-                        className={`p-2 rounded-lg border-2 text-center text-sm capitalize transition-all ${layout === l ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-100 hover:border-gray-300'}`}>
-                        {l}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="label">Couleur primaire</label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <input type="color" value={couleur} onChange={e => setCouleur(e.target.value)} className="h-9 w-12 rounded-lg border border-gray-200 cursor-pointer p-0.5" />
-                      <Input value={couleur} onChange={e => setCouleur(e.target.value)} className="flex-1" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="label">Couleur secondaire</label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <input type="color" value={couleurSecondaire} onChange={e => setCouleurSecondaire(e.target.value)} className="h-9 w-12 rounded-lg border border-gray-200 cursor-pointer p-0.5" />
-                      <Input value={couleurSecondaire} onChange={e => setCouleurSecondaire(e.target.value)} className="flex-1" />
-                    </div>
-                  </div>
-                </div>
-                <Input label="URL du logo (optionnel)" placeholder="https://monsite.fr/logo.png" value={logoUrl} onChange={e => setLogoUrl(e.target.value)} />
-              </CardBody>
-            </Card>
-
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-6">
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2.5">
@@ -237,8 +222,40 @@ export default function ParametresPage() {
               </CardBody>
             </Card>
 
-            <Button onClick={handleSaveCarte} loading={saving} size="lg" className="w-full">
-              <Save className="h-4 w-4" /> Enregistrer la carte
+            <Button onClick={handleSaveCarte} loading={saving} size="lg">
+              <Save className="h-4 w-4" /> Enregistrer
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'design' && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2.5">
+                <Sparkles className="h-4 w-4 text-indigo-500" />
+                <div>
+                  <CardTitle>Éditeur de carte premium</CardTitle>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    Personnalisez les images, polices et couleurs de votre carte de fidélité.
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardBody>
+              <CardEditor
+                design={cardDesign}
+                onChange={setCardDesign}
+                onImageUpload={handleImageUpload}
+                isUploading={isUploading}
+              />
+            </CardBody>
+          </Card>
+
+          <div className="flex justify-end">
+            <Button onClick={handleSaveDesign} loading={saving} size="lg">
+              <Save className="h-4 w-4 mr-2" /> Enregistrer le design
             </Button>
           </div>
         </div>

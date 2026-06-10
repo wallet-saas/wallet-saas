@@ -550,6 +550,17 @@ export interface WalletSetupData {
   layout?: 'classic' | 'modern' | 'minimal';
   texte_perso_bas_carte?: string;
   style_texte?: 'normal' | 'gras' | 'italique';
+  // Premium card design fields
+  card_design?: string;
+  carte_background_image_url?: string;
+  carte_logo_url?: string;
+  carte_font_family?: string;
+  carte_text_color?: string;
+  carte_text_color_auto?: boolean;
+  carte_tier_name?: string;
+  carte_tier_color?: string;
+  carte_overlay_opacity?: number;
+  carte_overlay_color?: string;
 }
 
 export { ApiError };

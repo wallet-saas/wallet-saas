@@ -8,6 +8,15 @@ let existingColumns = null;
 // Columns that should exist — will be auto-created if missing (on Render with DATABASE_URL)
 const REQUIRED_COLUMNS = [
   { name: 'carte_layout', type: 'TEXT', default: "'classic'" },
+  { name: 'card_design', type: 'TEXT', default: "NULL" },
+  { name: 'carte_background_image_url', type: 'TEXT', default: "NULL" },
+  { name: 'carte_font_family', type: 'TEXT', default: "'sans'" },
+  { name: 'carte_text_color', type: 'TEXT', default: "'#FFFFFF'" },
+  { name: 'carte_text_color_auto', type: 'BOOLEAN', default: "true" },
+  { name: 'carte_tier_name', type: 'TEXT', default: "'Gold'" },
+  { name: 'carte_tier_color', type: 'TEXT', default: "'#FFD700'" },
+  { name: 'carte_overlay_opacity', type: 'INTEGER', default: "40" },
+  { name: 'carte_overlay_color', type: 'TEXT', default: "'#000000'" },
 ];
 
 async function ensureColumns() {
@@ -55,6 +64,10 @@ async function detectExistingColumns() {
       'auto_review_message', 'auto_review_seuil_etoiles', 'auto_review_alerte_email',
       'module_boutiques', 'boutique_defaut_id',
       'texte_perso_bas_carte', 'style_texte', 'carte_layout',
+      // Premium card design
+      'card_design', 'carte_background_image_url', 'carte_font_family',
+      'carte_text_color', 'carte_text_color_auto', 'carte_tier_name',
+      'carte_tier_color', 'carte_overlay_opacity', 'carte_overlay_color',
     ];
     const missing = expected.filter(c => !existingColumns.has(c));
     if (missing.length > 0) {
@@ -193,6 +206,10 @@ exports.updateCommercant = async (req, res) => {
       'module_boutiques', 'boutique_defaut_id',
       'carte_programme_nom', 'carte_recompense_description', 'carte_layout',
       'texte_perso_bas_carte', 'style_texte',
+      // Premium card design
+      'card_design', 'carte_background_image_url', 'carte_font_family',
+      'carte_text_color', 'carte_text_color_auto', 'carte_tier_name',
+      'carte_tier_color', 'carte_overlay_opacity', 'carte_overlay_color',
     ];
 
     // Build payload with only allowed fields

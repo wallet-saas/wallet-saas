@@ -84,6 +84,17 @@ const setupWalletCard = async (req, res) => {
     if (layout) rawPayload.carte_layout = layout;
     if (req.body.texte_perso_bas_carte) rawPayload.texte_perso_bas_carte = req.body.texte_perso_bas_carte;
     if (req.body.style_texte) rawPayload.style_texte = req.body.style_texte;
+    // Premium card design fields
+    if (req.body.card_design) rawPayload.card_design = req.body.card_design;
+    if (req.body.carte_background_image_url) rawPayload.carte_background_image_url = req.body.carte_background_image_url;
+    if (req.body.carte_logo_url) rawPayload.carte_logo_url = req.body.carte_logo_url;
+    if (req.body.carte_font_family) rawPayload.carte_font_family = req.body.carte_font_family;
+    if (req.body.carte_text_color) rawPayload.carte_text_color = req.body.carte_text_color;
+    if (req.body.carte_text_color_auto !== undefined) rawPayload.carte_text_color_auto = req.body.carte_text_color_auto;
+    if (req.body.carte_tier_name) rawPayload.carte_tier_name = req.body.carte_tier_name;
+    if (req.body.carte_tier_color) rawPayload.carte_tier_color = req.body.carte_tier_color;
+    if (req.body.carte_overlay_opacity !== undefined) rawPayload.carte_overlay_opacity = req.body.carte_overlay_opacity;
+    if (req.body.carte_overlay_color) rawPayload.carte_overlay_color = req.body.carte_overlay_color;
 
     const updateData = filterExisting(rawPayload);
 
@@ -154,6 +165,17 @@ const updateWalletCard = async (req, res) => {
     if (layout) rawPayload.carte_layout = layout;
     if (req.body.texte_perso_bas_carte) rawPayload.texte_perso_bas_carte = req.body.texte_perso_bas_carte;
     if (req.body.style_texte) rawPayload.style_texte = req.body.style_texte;
+    // Premium card design fields
+    if (req.body.card_design) rawPayload.card_design = req.body.card_design;
+    if (req.body.carte_background_image_url) rawPayload.carte_background_image_url = req.body.carte_background_image_url;
+    if (req.body.carte_logo_url) rawPayload.carte_logo_url = req.body.carte_logo_url;
+    if (req.body.carte_font_family) rawPayload.carte_font_family = req.body.carte_font_family;
+    if (req.body.carte_text_color) rawPayload.carte_text_color = req.body.carte_text_color;
+    if (req.body.carte_text_color_auto !== undefined) rawPayload.carte_text_color_auto = req.body.carte_text_color_auto;
+    if (req.body.carte_tier_name) rawPayload.carte_tier_name = req.body.carte_tier_name;
+    if (req.body.carte_tier_color) rawPayload.carte_tier_color = req.body.carte_tier_color;
+    if (req.body.carte_overlay_opacity !== undefined) rawPayload.carte_overlay_opacity = req.body.carte_overlay_opacity;
+    if (req.body.carte_overlay_color) rawPayload.carte_overlay_color = req.body.carte_overlay_color;
 
     const updateData = filterExisting(rawPayload);
 
