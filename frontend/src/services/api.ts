@@ -153,7 +153,7 @@ export const avisApi = {
   sendResponse: (avisId: string, reponse: string) =>
     request<{ success: boolean }>('/api/avis/send-response', {
       method: 'POST',
-      body: JSON.stringify({ avis_id: avisId, reponse_envoyee: reponse }),
+      body: JSON.stringify({ avis_id: avisId, reponse }),
     }),
 };
 
@@ -293,6 +293,16 @@ export interface Commercant {
   template_type?: string;
   carte_programme_nom?: string;
   carte_recompense_description?: string;
+  // Premium card design (JSON blob)
+  card_design?: string;
+  carte_background_image_url?: string;
+  carte_font_family?: string;
+  carte_text_color?: string;
+  carte_text_color_auto?: boolean;
+  carte_tier_name?: string;
+  carte_tier_color?: string;
+  carte_overlay_opacity?: number;
+  carte_overlay_color?: string;
 }
 
 export interface RegisterData {
@@ -354,9 +364,9 @@ export interface NotifStats {
   totalEnvoyes: number;
   totalOuverts: number;
   tauxOuverture: number;
-  parCible: Record<string, number>;
-  apns: boolean;
-  fcm: boolean;
+  parCible: Record<string, { count: number; totalEnvoyes: number; totalOuverts: number }>;
+  apns: string;
+  fcm: string;
 }
 
 export interface Avis {

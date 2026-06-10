@@ -56,7 +56,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       return;
     }
     // Redirect to /abonnement only for dashboard pages (not when already there)
-    if (!isAbonnementPage && commercant && commercant.statut_abonnement !== 'actif') {
+    if (!isAbonnementPage && commercant && commercant.statut_abonnement !== 'actif' && commercant.statut_abonnement !== 'trialing') {
       router.push('/abonnement');
       return;
     }
@@ -81,7 +81,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   if (!isAuthenticated) return null;
-  if (!isAbonnementPage && commercant && commercant.statut_abonnement !== 'actif') return null;
+  if (!isAbonnementPage && commercant && commercant.statut_abonnement !== 'actif' && commercant.statut_abonnement !== 'trialing') return null;
   if (
     !isSetupCardPage &&
     commercant &&

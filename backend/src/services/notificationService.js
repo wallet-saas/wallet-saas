@@ -158,23 +158,32 @@ async function sendPushNotification(commercantId, titre, message, cible = 'tous'
  * @param {string} notificationId UUID de la notification
  */
 async function trackNotificationOpen(notificationId) {
-  // On récupère la valeur actuelle puis on incrémente
-  const { data: notif, error: fetchError } = await supabase
-    .from('notifications')
-    .select('total_ouverts')
-    .eq('id', notificationId)
-    .single();
+  // Use RPC for atomic increment to avoid race conditions
+  const { data, error } = await supabase.rpc('increment_notification_open', {
+    notif_id: notificationId,
+  });
 
-  if (fetchError || !notif) throw new Error('Notification introuvable');
+  if (error) {
+    // Fallback: read-then-write (less safe but works without RPC)
+    const { data: notif, error: fetchError } = await supabase
+      .from('notifications')
+      .select('total_ouverts')
+      .eq('id', notificationId)
+      .single();
 
-  const { error: updateError } = await supabase
-    .from('notifications')
-    .update({ total_ouverts: notif.total_ouverts + 1 })
-    .eq('id', notificationId);
+    if (fetchError || !notif) throw new Error('Notification introuvable');
 
-  if (updateError) throw new Error(`Erreur tracking : ${updateError.message}`);
+    const { error: updateError } = await supabase
+      .from('notifications')
+      .update({ total_ouverts: notif.total_ouverts + 1 })
+      .eq('id', notificationId);
 
-  return { total_ouverts: notif.total_ouverts + 1 };
+    if (updateError) throw new Error(`Erreur tracking : ${updateError.message}`);
+
+    return { total_ouverts: notif.total_ouverts + 1 };
+  }
+
+  return { total_ouverts: data };
 }
 
 module.exports = {

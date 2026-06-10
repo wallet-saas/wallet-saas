@@ -102,7 +102,8 @@ async function cancelSubscription(commercant) {
 // Map Stripe status to our statut_abonnement values
 function mapStripeStatus(stripeStatus) {
   switch (stripeStatus) {
-    case 'active':      return 'actif';
+    case 'active':
+    case 'trialing':    return 'actif';
     case 'past_due':
     case 'unpaid':      return 'suspendu';
     case 'canceled':    return 'annule';

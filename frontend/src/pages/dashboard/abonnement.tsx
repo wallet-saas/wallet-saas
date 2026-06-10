@@ -99,7 +99,7 @@ export default function AbonnementPage() {
     </DashboardLayout>
   );
 
-  const isActive = commercant.statut_abonnement === 'actif';
+  const isActive = commercant.statut_abonnement === 'actif' || commercant.statut_abonnement === 'trialing';
 
   return (
     <DashboardLayout>
