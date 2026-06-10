@@ -48,15 +48,15 @@ export default function RegisterPage() {
   return (
     <>
       <Head><title>Inscription — Stamply</title></Head>
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-800 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           {/* Logo */}
           <div className="text-center mb-8">
             <div className="w-12 h-12 rounded-2xl bg-primary-600 flex items-center justify-center mx-auto mb-3">
               <CreditCard className="h-6 w-6 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Créer votre espace</h1>
-            <p className="text-sm text-gray-500 mt-1">Lancez votre programme de fidélité en quelques minutes</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Créer votre espace</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Lancez votre programme de fidélité en quelques minutes</p>
           </div>
 
           <div className="card p-6">
@@ -110,7 +110,7 @@ export default function RegisterPage() {
                 />
               </div>
 
-              <div className="border-t border-gray-100 pt-4">
+              <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
                 <Input
                   label="Mot de passe"
                   type="password"
@@ -139,7 +139,7 @@ export default function RegisterPage() {
             </form>
           </div>
 
-          <p className="text-center text-sm text-gray-500 mt-4">
+          <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
             Déjà un compte ?{' '}
             <Link href="/login" className="text-primary-600 font-medium hover:underline">
               Se connecter
@@ -147,9 +147,9 @@ export default function RegisterPage() {
           </p>
 
           <div className="flex justify-center gap-4 mt-6">
-            <Link href="/mentions-legales" className="text-xs text-gray-400 hover:text-gray-600">Mentions légales</Link>
-            <Link href="/cgu" className="text-xs text-gray-400 hover:text-gray-600">CGU</Link>
-            <Link href="/politique-confidentialite" className="text-xs text-gray-400 hover:text-gray-600">Confidentialité</Link>
+            <Link href="/mentions-legales" className="text-xs text-gray-400 hover:text-gray-600 dark:text-gray-400">Mentions légales</Link>
+            <Link href="/cgu" className="text-xs text-gray-400 hover:text-gray-600 dark:text-gray-400">CGU</Link>
+            <Link href="/politique-confidentialite" className="text-xs text-gray-400 hover:text-gray-600 dark:text-gray-400">Confidentialité</Link>
           </div>
         </div>
       </div>

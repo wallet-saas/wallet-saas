@@ -124,7 +124,7 @@ export default function SetupCardPage() {
                 </div>
                 <div>
                   <CardTitle>Design de la carte</CardTitle>
-                  <p className="text-sm text-gray-500 mt-0.5">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">
                     Personnalisez l'apparence de votre carte. L'aperçu se met à jour en temps réel.
                   </p>
                 </div>

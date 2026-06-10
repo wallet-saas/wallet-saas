@@ -23,7 +23,7 @@ function getStatusConfig(statut?: string) {
     case 'annule':
       return { label: 'Annulé', variant: 'red' as const, icon: XCircle, color: 'text-red-600' };
     default:
-      return { label: 'Inactif', variant: 'gray' as const, icon: XCircle, color: 'text-gray-400' };
+      return { label: 'Inactif', variant: 'gray' as const, icon: XCircle, color: 'text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500' };
   }
 }
 
@@ -116,28 +116,28 @@ export default function AbonnementPage() {
           <Card>
             <CardBody>
               <div className="flex items-center gap-4 mb-6">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isActive ? 'bg-green-50' : 'bg-gray-100'}`}>
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isActive ? 'bg-green-50' : 'bg-gray-100 dark:bg-gray-700 dark:bg-gray-700'}`}>
                   <StatusIcon className={`h-6 w-6 ${statusConfig.color}`} />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Statut de l'abonnement</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Statut de l'abonnement</p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <h2 className="text-xl font-bold text-gray-900">Plan Pro</h2>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white dark:text-white">Plan Pro</h2>
                     <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <p className="text-xs text-gray-500">Tarif</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">49€</p>
-                  <p className="text-xs text-gray-400">/mois HT</p>
+                <div className="bg-gray-50 dark:bg-gray-800 dark:bg-gray-800 rounded-xl p-4">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Tarif</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white dark:text-white mt-1">49€</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">/mois HT</p>
                 </div>
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <p className="text-xs text-gray-500">Commerce</p>
-                  <p className="text-sm font-semibold text-gray-900 mt-1 truncate">{commercant.nom_enseigne}</p>
-                  <p className="text-xs text-gray-400">{commercant.email}</p>
+                <div className="bg-gray-50 dark:bg-gray-800 dark:bg-gray-800 rounded-xl p-4">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Commerce</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white dark:text-white mt-1 truncate">{commercant.nom_enseigne}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{commercant.email}</p>
                 </div>
               </div>
 
@@ -195,7 +195,7 @@ export default function AbonnementPage() {
           <CardBody>
             <ul className="space-y-3">
               {features.map(f => (
-                <li key={f} className="flex items-start gap-2.5 text-sm text-gray-600">
+                <li key={f} className="flex items-start gap-2.5 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                   <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
                   {f}
                 </li>

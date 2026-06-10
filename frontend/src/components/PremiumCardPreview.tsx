@@ -7,9 +7,11 @@
  *    Zone client (10%) : "CLIENT" + nom à gauche
  *    Zone QR (40%) : QR centré, 60% largeur carte
  *    Hero image (30%) : photo commerçant bas, bords arrondis bas
+ *    → Image de fond UNIQUEMENT dans la zone hero (30% bas)
+ *    → Couleur/gradient sur le reste (header + client + QR)
  *
  * 2. Apple Wallet — portrait 320×560px
- *    Header (15%) : nom commerce grand gauche + tampons droite, texte sur image fond
+ *    Header (15%) : logo rond gauche + nom commerce + tampons droite
  *    Image pleine carte en fond (background-size: cover)
  *    Zone client (10%) : "MEMBRE" + nom gauche / récompense droite
  *    Zone QR (30%) : QR centré bas
@@ -57,33 +59,23 @@ const FONT_MAP: Record<string, string> = {
 };
 
 const FONT_ITALIC: Record<string, boolean> = {
-  sans: false,
-  serif: false,
-  script: true,
-  mono: false,
+  sans: false, serif: false, script: true, mono: false,
 };
 
-export function PremiumCardPreview({
-  format,
-  design,
-  data,
-  className = '',
-}: PremiumCardPreviewProps) {
+export function PremiumCardPreview({ format, design, data, className = '' }: PremiumCardPreviewProps) {
   const {
-    commercantNom = 'Ma Boutique',
-    programmeNom = 'Carte de fidélité',
-    clientNom = 'Jean Dupont',
-    tamponsActuels = 7,
-    tamponsPalier = 10,
-    recompense = '1 café offert',
-    qrValue = 'stamply://client/test-uuid-1234',
+    commercantNom = 'Ma Boutique', programmeNom = 'Carte de fidélité',
+    clientNom = 'Jean Dupont', tamponsActuels = 7, tamponsPalier = 10,
+    recompense = '1 café offert', qrValue = 'stamply://client/test-uuid-1234',
   } = data || {};
 
   const fontStyle = FONT_MAP[design.font_family] || FONT_MAP.sans;
   const isItalic = FONT_ITALIC[design.font_family] || false;
   const textColor = design.text_color_auto ? '#FFFFFF' : design.text_color;
+  const hasBg = !!design.background_image_url;
+  const defaultBg = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%)';
 
-  // Overlay style
+  // Overlay for color tint on top of bg image
   let overlayStyle: React.CSSProperties;
   if (design.overlay_type === 'gradient') {
     const dirMap = { horizontal: 'to right', vertical: 'to bottom', diagonal: 'to bottom right' };
@@ -95,61 +87,45 @@ export function PremiumCardPreview({
     overlayStyle = { backgroundColor: design.overlay_color, opacity: design.overlay_opacity / 100 };
   }
 
-  const hasBg = !!design.background_image_url;
-  const defaultBg = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%)';
-
   if (format === 'google') {
-    return <GoogleWalletCard
-      design={design} data={{ commercantNom, programmeNom, clientNom, tamponsActuels, tamponsPalier, recompense, qrValue }}
+    return <GoogleWalletCard design={design} data={{ commercantNom, programmeNom, clientNom, tamponsActuels, tamponsPalier, recompense, qrValue }}
       fontStyle={fontStyle} isItalic={isItalic} textColor={textColor}
-      overlayStyle={overlayStyle} hasBg={hasBg} defaultBg={defaultBg} className={className}
-    />;
+      overlayStyle={overlayStyle} hasBg={hasBg} defaultBg={defaultBg} className={className} />;
   }
 
-  return <AppleWalletCard
-    design={design} data={{ commercantNom, programmeNom, clientNom, tamponsActuels, tamponsPalier, recompense, qrValue }}
+  return <AppleWalletCard design={design} data={{ commercantNom, programmeNom, clientNom, tamponsActuels, tamponsPalier, recompense, qrValue }}
     fontStyle={fontStyle} isItalic={isItalic} textColor={textColor}
-    overlayStyle={overlayStyle} hasBg={hasBg} defaultBg={defaultBg} className={className}
-  />;
+    overlayStyle={overlayStyle} hasBg={hasBg} defaultBg={defaultBg} className={className} />;
+}
+
+/* ── Shared types ── */
+interface CardProps {
+  design: CardDesign; data: CardData; fontStyle: string; isItalic: boolean;
+  textColor: string; overlayStyle: React.CSSProperties; hasBg: boolean; defaultBg: string; className: string;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    GOOGLE WALLET — 320×480px portrait
+   Image de fond UNIQUEMENT dans la zone hero (30% bas)
+   Le reste a le gradient/couleur par défaut
    ═══════════════════════════════════════════════════════════════════════════ */
 
-interface CardProps {
-  design: CardDesign;
-  data: CardData;
-  fontStyle: string;
-  isItalic: boolean;
-  textColor: string;
-  overlayStyle: React.CSSProperties;
-  hasBg: boolean;
-  defaultBg: string;
-  className: string;
-}
-
 function GoogleWalletCard({ design, data, fontStyle, isItalic, textColor, overlayStyle, hasBg, defaultBg, className }: CardProps) {
-  const qrSize = 140; // ~60% of 320px card width minus padding
+  const qrSize = 140;
 
   return (
     <div className={`flex justify-center ${className}`}>
-      <div
-        className="relative w-full max-w-[320px] rounded-2xl overflow-hidden shadow-2xl"
-        style={{ aspectRatio: '320 / 480', fontFamily: fontStyle, fontStyle: isItalic ? 'italic' : 'normal', color: textColor }}
-      >
-        {/* Background */}
-        {hasBg ? (
-          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${design.background_image_url})` }} />
-        ) : (
-          <div className="absolute inset-0" style={{ background: defaultBg }} />
-        )}
+      <div className="relative w-full max-w-[320px] rounded-2xl overflow-hidden shadow-2xl"
+        style={{ aspectRatio: '320 / 480', fontFamily: fontStyle, fontStyle: isItalic ? 'italic' : 'normal', color: textColor }}>
+
+        {/* ── Fond couleur/gradient sur TOUTE la carte (pas l'image) ── */}
+        <div className="absolute inset-0" style={{ background: defaultBg }} />
         <div className="absolute inset-0" style={overlayStyle} />
 
-        {/* Content */}
+        {/* ── Content ── */}
         <div className="relative h-full flex flex-col" style={{ padding: '12px' }}>
 
-          {/* ── Header (15%) — Logo + Nom commerce ── */}
+          {/* Header (15%) — Logo + Nom + Tampons */}
           <div className="flex items-center gap-3" style={{ height: '15%' }}>
             <div className="w-[44px] h-[44px] rounded-full overflow-hidden bg-white/20 backdrop-blur-sm border-2 border-white/40 flex-shrink-0 shadow-lg">
               {design.logo_url ? (
@@ -161,12 +137,9 @@ function GoogleWalletCard({ design, data, fontStyle, isItalic, textColor, overla
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="text-[15px] font-bold tracking-wide drop-shadow-lg truncate leading-tight">
-                {data.commercantNom}
-              </h3>
+              <h3 className="text-[15px] font-bold tracking-wide drop-shadow-lg truncate leading-tight">{data.commercantNom}</h3>
               <p className="text-[9px] opacity-70 tracking-[0.15em] uppercase truncate">{data.programmeNom}</p>
             </div>
-            {/* Tampons badge top right */}
             <div className="flex-shrink-0 text-right">
               <div className="flex items-baseline gap-0.5 drop-shadow-lg">
                 <span className="text-[22px] font-bold leading-none">{data.tamponsActuels}</span>
@@ -177,7 +150,7 @@ function GoogleWalletCard({ design, data, fontStyle, isItalic, textColor, overla
             </div>
           </div>
 
-          {/* ── Zone client (10%) ── */}
+          {/* Zone client (10%) */}
           <div className="flex items-center" style={{ height: '10%' }}>
             <div>
               <div className="text-[8px] opacity-50 uppercase tracking-wider">Client</div>
@@ -185,48 +158,33 @@ function GoogleWalletCard({ design, data, fontStyle, isItalic, textColor, overla
             </div>
           </div>
 
-          {/* ── Zone QR (40%) — centré ── */}
+          {/* Zone QR (40%) — centré */}
           <div className="flex-1 flex items-center justify-center" style={{ height: '40%' }}>
             <div className="bg-white rounded-xl p-2 shadow-xl">
-              <QRCodeSVG
-                value={data.qrValue}
-                size={qrSize}
-                level="H"
-                includeMargin={false}
-                bgColor="#FFFFFF"
-                fgColor="#000000"
-              />
+              <QRCodeSVG value={data.qrValue} size={qrSize} level="H" includeMargin={false} bgColor="#FFFFFF" fgColor="#000000" />
             </div>
           </div>
 
-          {/* ── Hero image (30%) — bas de carte, bords arrondis ── */}
+          {/* Hero image (30%) — ICI seulement l'image de fond */}
           <div style={{ height: '30%' }}>
             {hasBg ? (
-              <div
-                className="w-full h-full rounded-b-2xl overflow-hidden"
-                style={{
-                  backgroundImage: `url(${design.background_image_url})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center bottom',
-                }}
-              >
-                <div className="w-full h-full bg-gradient-to-t from-black/60 via-black/20 to-transparent flex items-end p-3">
-                  <div className="text-white/90 text-[10px] font-medium drop-shadow">
-                    {data.recompense}
-                  </div>
+              <div className="w-full h-full rounded-b-2xl overflow-hidden relative">
+                {/* Image de fond confinée à cette zone */}
+                <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${design.background_image_url})` }} />
+                {/* Overlay léger pour lisibilité récompense */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                <div className="relative h-full flex items-end p-3">
+                  <div className="text-white/90 text-[10px] font-medium drop-shadow">{data.recompense}</div>
                 </div>
               </div>
             ) : (
               <div className="w-full h-full rounded-b-2xl bg-white/10 backdrop-blur-sm flex items-end p-3">
-                <div className="text-white/80 text-[10px] font-medium">
-                  🎁 {data.recompense}
-                </div>
+                <div className="text-white/80 text-[10px] font-medium">🎁 {data.recompense}</div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Shine */}
         <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent pointer-events-none" />
       </div>
     </div>
@@ -235,6 +193,8 @@ function GoogleWalletCard({ design, data, fontStyle, isItalic, textColor, overla
 
 /* ═══════════════════════════════════════════════════════════════════════════
    APPLE WALLET — 320×560px portrait
+   Image en fond PLEINE CARTE + overlay semi-transparent
+   Logo dans le header
    ═══════════════════════════════════════════════════════════════════════════ */
 
 function AppleWalletCard({ design, data, fontStyle, isItalic, textColor, overlayStyle, hasBg, defaultBg, className }: CardProps) {
@@ -242,45 +202,58 @@ function AppleWalletCard({ design, data, fontStyle, isItalic, textColor, overlay
 
   return (
     <div className={`flex justify-center ${className}`}>
-      <div
-        className="relative w-full max-w-[320px] rounded-2xl overflow-hidden shadow-2xl"
-        style={{ aspectRatio: '320 / 560', fontFamily: fontStyle, fontStyle: isItalic ? 'italic' : 'normal', color: textColor }}
-      >
-        {/* Full-card background image */}
+      <div className="relative w-full max-w-[320px] rounded-2xl overflow-hidden shadow-2xl"
+        style={{ aspectRatio: '320 / 560', fontFamily: fontStyle, fontStyle: isItalic ? 'italic' : 'normal', color: textColor }}>
+
+        {/* Image de fond pleine carte */}
         {hasBg ? (
           <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${design.background_image_url})` }} />
         ) : (
           <div className="absolute inset-0" style={{ background: defaultBg }} />
         )}
-        <div className="absolute inset-0" style={overlayStyle} />
-        {/* Dark gradient from top for header readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/30" />
+
+        {/* Overlay couleur — opacité réduite pour ne pas cacher l'image */}
+        {hasBg ? (
+          <div className="absolute inset-0" style={{ ...overlayStyle, opacity: Math.min(overlayStyle.opacity as number, 0.4) }} />
+        ) : (
+          <div className="absolute inset-0" style={overlayStyle} />
+        )}
+
+        {/* Gradient sombre en haut pour lisibilité header */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/40" />
 
         {/* Content */}
         <div className="relative h-full flex flex-col" style={{ padding: '14px' }}>
 
-          {/* ── Header (15%) — Nom commerce grand gauche + tampons droite ── */}
-          <div className="flex items-start justify-between" style={{ height: '15%' }}>
-            <div className="min-w-0 flex-1 pr-2">
-              <h3 className="text-[17px] font-bold tracking-wide drop-shadow-lg truncate leading-tight">
-                {data.commercantNom}
-              </h3>
+          {/* Header (15%) — Logo + Nom commerce + Tampons */}
+          <div className="flex items-center gap-3" style={{ height: '15%' }}>
+            <div className="w-[40px] h-[40px] rounded-full overflow-hidden bg-white/20 backdrop-blur-sm border-2 border-white/40 flex-shrink-0 shadow-lg">
+              {design.logo_url ? (
+                <img src={design.logo_url} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-white/70 text-base font-bold">
+                  {data.commercantNom.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-[16px] font-bold tracking-wide drop-shadow-lg truncate leading-tight">{data.commercantNom}</h3>
               <p className="text-[9px] opacity-70 tracking-[0.15em] uppercase truncate">{data.programmeNom}</p>
             </div>
             <div className="flex-shrink-0 text-right">
               <div className="flex items-baseline gap-0.5 drop-shadow-lg">
-                <span className="text-[26px] font-bold leading-none">{data.tamponsActuels}</span>
-                <span className="text-[13px] opacity-60">/</span>
-                <span className="text-[16px] font-semibold opacity-80">{data.tamponsPalier}</span>
+                <span className="text-[24px] font-bold leading-none">{data.tamponsActuels}</span>
+                <span className="text-[12px] opacity-60">/</span>
+                <span className="text-[15px] font-semibold opacity-80">{data.tamponsPalier}</span>
               </div>
               <div className="text-[8px] opacity-60 uppercase tracking-wider">tampons</div>
             </div>
           </div>
 
-          {/* ── Spacer (image de fond visible) ── */}
+          {/* Spacer — image de fond visible */}
           <div className="flex-1" />
 
-          {/* ── Zone client (10%) — MEMBRE + nom gauche / récompense droite ── */}
+          {/* Zone client (10%) — MEMBRE + nom gauche / récompense droite */}
           <div className="flex items-end justify-between" style={{ height: '10%' }}>
             <div>
               <div className="text-[8px] opacity-50 uppercase tracking-wider">Membre</div>
@@ -292,22 +265,14 @@ function AppleWalletCard({ design, data, fontStyle, isItalic, textColor, overlay
             </div>
           </div>
 
-          {/* ── Zone QR (30%) — QR centré en bas ── */}
+          {/* Zone QR (30%) — QR centré en bas */}
           <div className="flex items-center justify-center" style={{ height: '30%' }}>
             <div className="bg-white rounded-xl p-2 shadow-xl">
-              <QRCodeSVG
-                value={data.qrValue}
-                size={qrSize}
-                level="H"
-                includeMargin={false}
-                bgColor="#FFFFFF"
-                fgColor="#000000"
-              />
+              <QRCodeSVG value={data.qrValue} size={qrSize} level="H" includeMargin={false} bgColor="#FFFFFF" fgColor="#000000" />
             </div>
           </div>
         </div>
 
-        {/* Shine */}
         <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent pointer-events-none" />
       </div>
     </div>

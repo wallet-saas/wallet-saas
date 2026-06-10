@@ -36,7 +36,7 @@ export default function ContactPage() {
             </Link>
             <div className="flex items-center gap-4">
               <Link href="/login" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Connexion</Link>
-              <Link href="/register" className="text-sm font-medium bg-white text-black px-4 py-2 rounded-xl hover:bg-slate-200 transition-colors">Essayer gratuitement</Link>
+              <Link href="/register" className="text-sm font-medium bg-white dark:bg-gray-800 text-black px-4 py-2 rounded-xl hover:bg-slate-200 transition-colors">Essayer gratuitement</Link>
             </div>
           </div>
         </nav>
@@ -48,14 +48,14 @@ export default function ContactPage() {
 
             {/* Contact info cards */}
             <div className="grid sm:grid-cols-2 gap-4 mb-12">
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+              <div className="bg-white dark:bg-gray-800/5 border border-white/10 rounded-2xl p-6">
                 <Mail className="w-5 h-5 text-indigo-400 mb-3" />
                 <p className="text-sm font-medium text-white mb-1">Email</p>
                 <a href="mailto:jules.gerber2@gmail.com" className="text-sm text-slate-400 hover:text-indigo-400 transition-colors">
                   jules.gerber2@gmail.com
                 </a>
               </div>
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+              <div className="bg-white dark:bg-gray-800/5 border border-white/10 rounded-2xl p-6">
                 <MapPin className="w-5 h-5 text-indigo-400 mb-3" />
                 <p className="text-sm font-medium text-white mb-1">Adresse</p>
                 <p className="text-sm text-slate-400">Mulhouse, France</p>
@@ -70,7 +70,7 @@ export default function ContactPage() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4 bg-white/5 border border-white/10 rounded-2xl p-6 lg:p-8">
+            <form onSubmit={handleSubmit} className="space-y-4 bg-white dark:bg-gray-800/5 border border-white/10 rounded-2xl p-6 lg:p-8">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1.5">Nom</label>

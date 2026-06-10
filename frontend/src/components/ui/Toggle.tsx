@@ -23,12 +23,12 @@ export function Toggle({ checked, onChange, label, disabled }: ToggleProps) {
       >
         <span
           className={cn(
-            'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+            'inline-block h-4 w-4 transform rounded-full bg-white dark:bg-gray-800 shadow transition-transform',
             checked ? 'translate-x-6' : 'translate-x-1'
           )}
         />
       </button>
-      {label && <span className="text-sm text-gray-700">{label}</span>}
+      {label && <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>}
     </label>
   );
 }

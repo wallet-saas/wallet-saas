@@ -36,7 +36,7 @@ function HomeContent() {
       <div className={`min-h-screen font-sans transition-colors duration-300 ${
         isDark
           ? "bg-[#0A0A0F] text-slate-200 selection:bg-indigo-500/30"
-          : "bg-white text-gray-900 selection:bg-indigo-500/20"
+          : "bg-white dark:bg-gray-800 text-gray-900 dark:text-white selection:bg-indigo-500/20"
       }`}>
         <Navbar />
         <main className="pt-16">

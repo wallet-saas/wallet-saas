@@ -104,7 +104,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const hoverBg = isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50';
 
   return (
-    <div className={cn('flex h-screen overflow-hidden transition-colors duration-300', bgMain)}>
+    <div className={cn('flex h-screen overflow-hidden transition-colors duration-300', bgMain, isDark && 'dark')}>
       {/* Sidebar — desktop */}
       <aside className={cn('hidden md:flex flex-col w-60 border-r flex-shrink-0 transition-colors duration-300', bgSidebar, borderColor)}>
         <SidebarContent

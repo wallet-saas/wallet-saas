@@ -169,11 +169,11 @@ export default function MenusPage() {
         </div>
       </div>
 
-      <div className={`flex items-center gap-4 px-5 py-4 rounded-xl border mb-6 ${moduleEnabled ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100'}`}>
-        <UtensilsCrossed className={`h-5 w-5 ${moduleEnabled ? 'text-green-600' : 'text-gray-400'}`} />
+      <div className={`flex items-center gap-4 px-5 py-4 rounded-xl border mb-6 ${moduleEnabled ? 'bg-green-50 border-green-100' : 'bg-gray-50 dark:bg-gray-800 dark:bg-gray-800 border-gray-100 dark:border-gray-700 dark:border-gray-700'}`}>
+        <UtensilsCrossed className={`h-5 w-5 ${moduleEnabled ? 'text-green-600' : 'text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500'}`} />
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-900">Module Menu du Jour</p>
-          <p className="text-xs text-gray-500">{moduleEnabled ? 'Activé — vos clients peuvent voir votre menu' : 'Désactivé — le menu est masqué'}</p>
+          <p className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">Module Menu du Jour</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{moduleEnabled ? 'Activé — vos clients peuvent voir votre menu' : 'Désactivé — le menu est masqué'}</p>
         </div>
         <Toggle checked={moduleEnabled} onChange={async (val) => {
           const prev = moduleEnabled;
@@ -201,7 +201,7 @@ export default function MenusPage() {
           { id: 'settings', label: 'Paramètres', icon: Settings },
         ] as const).map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:text-gray-700'}`}>
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:text-gray-300'}`}>
             <tab.icon className="h-4 w-4" /> {tab.label}
           </button>
         ))}
@@ -215,7 +215,7 @@ export default function MenusPage() {
                 <CardBody>
                   <div className="py-12 text-center">
                     <UtensilsCrossed className="h-10 w-10 text-gray-200 mx-auto mb-3" />
-                    <p className="text-sm text-gray-500 mb-4">Aucun plat configuré</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-4">Aucun plat configuré</p>
                     <Button onClick={openCreate}><Plus className="h-4 w-4" /> Ajouter le premier plat</Button>
                   </div>
                 </CardBody>
@@ -224,24 +224,24 @@ export default function MenusPage() {
               <div className="space-y-4">
                 {Object.entries(parCategorie).map(([categorie, items]) => (
                   <Card key={categorie}>
-                    <button className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors" onClick={() => setCollapsed(p => ({ ...p, [categorie]: !p[categorie] }))}>
+                    <button className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 dark:bg-gray-800 transition-colors" onClick={() => setCollapsed(p => ({ ...p, [categorie]: !p[categorie] }))}>
                       <div className="flex items-center gap-3">
-                        <span className="font-semibold text-gray-900">{categorie || 'Sans catégorie'}</span>
+                        <span className="font-semibold text-gray-900 dark:text-white dark:text-white">{categorie || 'Sans catégorie'}</span>
                         <Badge variant="gray">{items.length}</Badge>
                       </div>
-                      {collapsed[categorie] ? <ChevronRight className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
+                      {collapsed[categorie] ? <ChevronRight className="h-4 w-4 text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" /> : <ChevronDown className="h-4 w-4 text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />}
                     </button>
                     {!collapsed[categorie] && (
-                      <div className="border-t border-gray-100 divide-y divide-gray-50">
+                      <div className="border-t border-gray-100 dark:border-gray-700 dark:border-gray-700 divide-y divide-gray-50">
                         {items.map(menu => (
                           <div key={menu.id} className="flex items-center gap-4 px-6 py-4">
-                            {menu.image_url && <img src={menu.image_url} alt={menu.titre} className="w-12 h-12 rounded-lg object-cover flex-shrink-0 bg-gray-100" />}
+                            {menu.image_url && <img src={menu.image_url} alt={menu.titre} className="w-12 h-12 rounded-lg object-cover flex-shrink-0 bg-gray-100 dark:bg-gray-700 dark:bg-gray-700" />}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <p className="text-sm font-medium text-gray-900">{menu.titre}</p>
+                                <p className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">{menu.titre}</p>
                                 {!menu.disponible && <Badge variant="gray">Indisponible</Badge>}
                               </div>
-                              {menu.description && <p className="text-xs text-gray-500 mt-0.5 truncate">{menu.description}</p>}
+                              {menu.description && <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5 truncate">{menu.description}</p>}
                               {menu.prix && afficherPrix && <p className="text-sm font-semibold text-primary-600 mt-1">{menu.prix}{deviseSymbol}</p>}
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
@@ -277,10 +277,10 @@ export default function MenusPage() {
                 <CardHeader><CardTitle>Affichage</CardTitle></CardHeader>
                 <CardBody className="space-y-4">
                   <Select label="Devise" options={[{ value: 'EUR', label: '€ Euro' }, { value: 'USD', label: '$ Dollar' }, { value: 'CHF', label: 'CHF Franc Suisse' }]} value={devise} onChange={e => setDevise(e.target.value)} />
-                  <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100">
+                  <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-700 dark:border-gray-700">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Afficher les prix</p>
-                      <p className="text-xs text-gray-500 mt-0.5">Masquer les prix sur la carte client</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">Afficher les prix</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">Masquer les prix sur la carte client</p>
                     </div>
                     <Toggle checked={afficherPrix} onChange={setAfficherPrix} />
                   </div>
@@ -312,7 +312,7 @@ export default function MenusPage() {
             </div>
           </div>
           <Input label="Image URL" placeholder="https://…" error={errors.image_url?.message} {...register('image_url')} />
-          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+          <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700 dark:border-gray-700">
             <div className="flex items-center gap-4">
               <Toggle checked={watch('disponible')} onChange={v => setValue('disponible', v)} label="Disponible" />
               <Toggle checked={watch('menu_du_jour')} onChange={v => setValue('menu_du_jour', v)} label="⭐ Menu du jour" />

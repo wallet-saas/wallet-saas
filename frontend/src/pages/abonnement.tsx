@@ -114,16 +114,16 @@ export default function AbonnementPage() {
   // ── Success screen (post-payment polling) ───────────────────────────────────
   if (router.query.success === '1') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-800">
         <div className="text-center max-w-sm px-4">
           <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="h-8 w-8 text-green-600" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Paiement confirmé !</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Paiement confirmé !</h2>
 
           {pollingStatus === 'timeout' ? (
             <>
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                 L&apos;activation prend plus de temps que prévu.<br />
                 Cliquez ci-dessous pour accéder au tableau de bord.
               </p>
@@ -143,7 +143,7 @@ export default function AbonnementPage() {
             </>
           ) : (
             <div className="space-y-2">
-              <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+              <div className="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                 <Spinner size="sm" />
                 Activation de votre abonnement en cours…
               </div>
@@ -162,7 +162,7 @@ export default function AbonnementPage() {
   // ── Loading ─────────────────────────────────────────────────────────────────
   if (loading || !commercant) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-800">
         <Spinner size="lg" />
       </div>
     );
@@ -172,23 +172,23 @@ export default function AbonnementPage() {
   return (
     <>
       <Head><title>Choisissez votre plan — Stamply</title></Head>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-800">
         {/* Header */}
-        <div className="bg-white border-b border-gray-100">
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
           <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
                 <CreditCard className="h-4 w-4 text-white" />
               </div>
-              <span className="font-bold text-gray-900">Stamply</span>
+              <span className="font-bold text-gray-900 dark:text-white">Stamply</span>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-500 hidden sm:block">
+              <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">
                 Connecté : <strong>{commercant.nom_enseigne}</strong>
               </span>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-red-600 transition-colors"
+                className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-red-600 transition-colors"
               >
                 <LogOut className="h-4 w-4" />
                 Déconnexion
@@ -200,17 +200,17 @@ export default function AbonnementPage() {
         {/* Hero */}
         <div className="max-w-5xl mx-auto px-4 py-12">
           <div className="text-center mb-10">
-            <h1 className="text-3xl font-bold text-gray-900 mb-3">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">
               Lancez votre programme de fidélité
             </h1>
-            <p className="text-gray-500 text-lg">
+            <p className="text-gray-500 dark:text-gray-400 text-lg">
               Un abonnement unique. Toutes les fonctionnalités incluses.
             </p>
           </div>
 
           {/* Pricing card */}
           <div className="max-w-sm mx-auto">
-            <div className="bg-white rounded-2xl border-2 border-primary-200 shadow-lg overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border-2 border-primary-200 shadow-lg overflow-hidden">
               {/* Badge */}
               <div className="bg-primary-600 text-white text-xs font-semibold text-center py-2 tracking-wide uppercase">
                 Plan Pro — Tout inclus
@@ -220,10 +220,10 @@ export default function AbonnementPage() {
                 {/* Price */}
                 <div className="text-center mb-6">
                   <div className="flex items-end justify-center gap-1">
-                    <span className="text-5xl font-bold text-gray-900">49€</span>
+                    <span className="text-5xl font-bold text-gray-900 dark:text-white">49€</span>
                     <span className="text-gray-400 mb-2">/mois HT</span>
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">Sans engagement · Annulation en 1 clic</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Sans engagement · Annulation en 1 clic</p>
                 </div>
 
                 <Button
@@ -242,7 +242,7 @@ export default function AbonnementPage() {
                 {/* Features */}
                 <ul className="mt-6 space-y-3">
                   {features.map(({ icon: Icon, label }) => (
-                    <li key={label} className="flex items-center gap-3 text-sm text-gray-600">
+                    <li key={label} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
                       <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
                       {label}
                     </li>

@@ -137,7 +137,7 @@ export default function ParametresPage() {
         ] as const).map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === tab.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:text-gray-700'
+              activeTab === tab.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:text-gray-300'
             }`}>
             <tab.icon className="h-4 w-4" /> {tab.label}
           </button>
@@ -148,7 +148,7 @@ export default function ParametresPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2.5">
-              <Store className="h-4 w-4 text-gray-500" />
+              <Store className="h-4 w-4 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
               <CardTitle>Informations du commerce</CardTitle>
             </div>
           </CardHeader>
@@ -180,7 +180,7 @@ export default function ParametresPage() {
                 <Sparkles className="h-4 w-4 text-indigo-500" />
                 <div>
                   <CardTitle>Éditeur de carte premium</CardTitle>
-                  <p className="text-sm text-gray-500 mt-0.5">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">
                     Personnalisez les images, polices et couleurs de votre carte de fidélité.
                   </p>
                 </div>

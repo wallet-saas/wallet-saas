@@ -171,12 +171,12 @@ export default function DashboardPage() {
                   <a
                     key={item.href}
                     href={item.href}
-                    className="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all text-center group"
+                    className="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 hover:border-gray-200 dark:border-gray-700 dark:border-gray-700 hover:shadow-sm transition-all text-center group"
                   >
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${item.color}`}>
                       <item.icon className="h-5 w-5" />
                     </div>
-                    <span className="text-xs font-medium text-gray-700 group-hover:text-gray-900">{item.label}</span>
+                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 group-hover:text-gray-900 dark:hover:text-white dark:text-white dark:hover:text-white dark:text-white">{item.label}</span>
                   </a>
                 ))}
               </div>
@@ -190,7 +190,7 @@ export default function DashboardPage() {
 
 function EmptyChart({ label }: { label: string }) {
   return (
-    <div className="h-[220px] flex items-center justify-center text-sm text-gray-400">
+    <div className="h-[220px] flex items-center justify-center text-sm text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
       {label}
     </div>
   );

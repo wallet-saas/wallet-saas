@@ -125,11 +125,11 @@ export default function NotificationsPage() {
 
       {loading ? <PageSpinner /> : (
         <div className="space-y-6">
-          <div className={`flex items-center gap-4 px-5 py-4 rounded-xl border ${moduleEnabled ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100'}`}>
-            <Bell className={`h-5 w-5 ${moduleEnabled ? 'text-green-600' : 'text-gray-400'}`} />
+          <div className={`flex items-center gap-4 px-5 py-4 rounded-xl border ${moduleEnabled ? 'bg-green-50 border-green-100' : 'bg-gray-50 dark:bg-gray-800 dark:bg-gray-800 border-gray-100 dark:border-gray-700 dark:border-gray-700'}`}>
+            <Bell className={`h-5 w-5 ${moduleEnabled ? 'text-green-600' : 'text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500'}`} />
             <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900">Module notifications push</p>
-              <p className="text-xs text-gray-500">{moduleEnabled ? 'Activé — vos clients reçoivent des notifications' : 'Désactivé — aucune notification ne sera envoyée'}</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">Module notifications push</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{moduleEnabled ? 'Activé — vos clients reçoivent des notifications' : 'Désactivé — aucune notification ne sera envoyée'}</p>
             </div>
             <Toggle checked={moduleEnabled} onChange={async (val) => {
               const prev = moduleEnabled;
@@ -151,10 +151,10 @@ export default function NotificationsPage() {
               { id: 'settings', label: 'Paramètres', icon: Settings },
             ] as const).map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:text-gray-700'}`}>
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:text-gray-300'}`}>
                 <tab.icon className="h-4 w-4" /> {tab.label}
                 {tab.id === 'history' && history.length > 0 && (
-                  <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">{history.length}</span>
+                  <span className="bg-gray-100 dark:bg-gray-700 dark:bg-gray-700 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 text-xs px-2 py-0.5 rounded-full">{history.length}</span>
                 )}
               </button>
             ))}
@@ -216,7 +216,7 @@ export default function NotificationsPage() {
                 <CardBody>
                   <div className="py-8 text-center">
                     <Bell className="h-8 w-8 text-gray-200 mx-auto mb-2" />
-                    <p className="text-sm text-gray-400">Aucune notification envoyée</p>
+                    <p className="text-sm text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Aucune notification envoyée</p>
                   </div>
                 </CardBody>
               ) : (
@@ -227,15 +227,15 @@ export default function NotificationsPage() {
                       <div key={n.id} className="px-6 py-4">
                         <div className="flex items-start justify-between gap-3 mb-2">
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">{n.titre}</p>
-                            <p className="text-xs text-gray-500 truncate mt-0.5">{n.message}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white dark:text-white truncate">{n.titre}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate mt-0.5">{n.message}</p>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <Badge variant={n.simulation ? 'yellow' : 'blue'}>{cibleLabel[n.cible] || n.cible}</Badge>
                             {n.simulation && <Badge variant="gray">Simulation</Badge>}
                           </div>
                         </div>
-                        <div className="flex items-center gap-4 text-xs text-gray-400">
+                        <div className="flex items-center gap-4 text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                           <span className="flex items-center gap-1"><Users className="h-3 w-3" />{n.total_envoyes} envoyés</span>
                           <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{n.total_ouverts} ouverts ({taux}%)</span>
                           <span className="ml-auto">{formatDateTime(n.created_at)}</span>
@@ -271,10 +271,10 @@ export default function NotificationsPage() {
               <Card>
                 <CardHeader><CardTitle>Mode simulation</CardTitle></CardHeader>
                 <CardBody className="space-y-4">
-                  <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100">
+                  <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-700 dark:border-gray-700">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Activer le mode simulation</p>
-                      <p className="text-xs text-gray-500 mt-0.5">Les notifications ne seront pas réellement envoyées — utile pour tester</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">Activer le mode simulation</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">Les notifications ne seront pas réellement envoyées — utile pour tester</p>
                     </div>
                     <Toggle checked={modeSimulation} onChange={setModeSimulation} />
                   </div>

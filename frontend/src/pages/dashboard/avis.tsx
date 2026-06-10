@@ -122,11 +122,11 @@ export default function AvisPage() {
         <p className="page-subtitle">Gérez et répondez aux avis clients</p>
       </div>
 
-      <div className={`flex items-center gap-4 px-5 py-4 rounded-xl border mb-6 ${moduleEnabled ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100'}`}>
-        <Star className={`h-5 w-5 ${moduleEnabled ? 'text-green-600' : 'text-gray-400'}`} />
+      <div className={`flex items-center gap-4 px-5 py-4 rounded-xl border mb-6 ${moduleEnabled ? 'bg-green-50 border-green-100' : 'bg-gray-50 dark:bg-gray-800 dark:bg-gray-800 border-gray-100 dark:border-gray-700 dark:border-gray-700'}`}>
+        <Star className={`h-5 w-5 ${moduleEnabled ? 'text-green-600' : 'text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500'}`} />
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-900">Module Avis Google</p>
-          <p className="text-xs text-gray-500">{moduleEnabled ? 'Activé — les avis sont collectés et analysés' : 'Désactivé — activez pour collecter les avis'}</p>
+          <p className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">Module Avis Google</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{moduleEnabled ? 'Activé — les avis sont collectés et analysés' : 'Désactivé — activez pour collecter les avis'}</p>
         </div>
         <Toggle
           checked={moduleEnabled}
@@ -149,7 +149,7 @@ export default function AvisPage() {
           { id: 'settings', label: 'Paramètres', icon: Settings },
         ] as const).map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:text-gray-700'}`}>
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:text-gray-300'}`}>
             <tab.icon className="h-4 w-4" /> {tab.label}
           </button>
         ))}
@@ -167,7 +167,7 @@ export default function AvisPage() {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm text-gray-500 flex items-center gap-1.5"><Filter className="h-4 w-4" /> Filtrer :</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 flex items-center gap-1.5"><Filter className="h-4 w-4" /> Filtrer :</span>
                 <Button variant={!filterNote ? 'primary' : 'secondary'} size="sm" onClick={() => handleFilterNote(undefined)}>Toutes</Button>
                 {[5,4,3,2,1].map(n => (
                   <Button key={n} variant={filterNote === n ? 'primary' : 'secondary'} size="sm" onClick={() => handleFilterNote(n)}>
@@ -180,7 +180,7 @@ export default function AvisPage() {
                 {avis.length === 0 ? (
                   <div className="md:col-span-2 card p-12 text-center">
                     <Star className="h-10 w-10 text-gray-200 mx-auto mb-3" />
-                    <p className="text-sm text-gray-400">Aucun avis trouvé</p>
+                    <p className="text-sm text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Aucun avis trouvé</p>
                   </div>
                 ) : avis.map(a => (
                   <Card key={a.id} className="hover:shadow-md transition-shadow">
@@ -192,11 +192,11 @@ export default function AvisPage() {
                           {a.reponse_envoyee && <Badge variant="green">Répondu</Badge>}
                         </div>
                       </div>
-                      {a.contenu && <p className="text-sm text-gray-700 mb-3 line-clamp-3">"{a.contenu}"</p>}
+                      {a.contenu && <p className="text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-3 line-clamp-3">"{a.contenu}"</p>}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Badge variant="gray">{a.source}</Badge>
-                          <span className="text-xs text-gray-400">{formatDate(a.created_at)}</span>
+                          <span className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{formatDate(a.created_at)}</span>
                         </div>
                         <Button variant="secondary" size="sm" onClick={() => openModal(a)}>
                           <MessageSquare className="h-3.5 w-3.5" /> Répondre
@@ -222,10 +222,10 @@ export default function AvisPage() {
               <Card>
                 <CardHeader><CardTitle>Réponses automatiques</CardTitle></CardHeader>
                 <CardBody className="space-y-4">
-                  <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100">
+                  <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-700 dark:border-gray-700">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Réponse automatique par IA</p>
-                      <p className="text-xs text-gray-500 mt-0.5">Génère et envoie automatiquement une réponse aux avis sous le seuil</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">Réponse automatique par IA</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">Génère et envoie automatiquement une réponse aux avis sous le seuil</p>
                     </div>
                     <Toggle checked={reponseAuto} onChange={setReponseAuto} />
                   </div>
@@ -246,9 +246,9 @@ export default function AvisPage() {
       <Modal open={modal.open} onClose={() => setModal({ open: false })} title="Répondre à l'avis" size="md">
         {modal.avis && (
           <div className="space-y-4">
-            <div className="bg-gray-50 rounded-xl p-4">
+            <div className="bg-gray-50 dark:bg-gray-800 dark:bg-gray-800 rounded-xl p-4">
               <Stars note={modal.avis.note} size="md" />
-              {modal.avis.contenu && <p className="text-sm text-gray-700 mt-2">"{modal.avis.contenu}"</p>}
+              {modal.avis.contenu && <p className="text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300 mt-2">"{modal.avis.contenu}"</p>}
             </div>
             <Textarea label="Votre réponse" value={modal.reponse || ''} onChange={e => setModal(m => ({ ...m, reponse: e.target.value }))} rows={5} placeholder="Rédigez votre réponse…" />
             <div className="flex gap-2">

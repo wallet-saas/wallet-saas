@@ -134,8 +134,8 @@ export default function GeolocalisationPage() {
                     <MapPin className="h-5 w-5 text-primary-600" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">Module Géolocalisation</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white dark:text-white">Module Géolocalisation</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                       Activez ou désactivez les notifications de proximité
                     </p>
                   </div>
@@ -155,13 +155,13 @@ export default function GeolocalisationPage() {
           </Card>
 
           {/* Tabs */}
-          <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
+          <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 dark:bg-gray-700 rounded-xl p-1">
             <button type="button" onClick={() => setActiveTab('statistiques')}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'statistiques' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'statistiques' ? 'bg-white dark:bg-gray-800 dark:bg-gray-800 text-gray-900 dark:text-white dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:text-gray-300'}`}>
               <BarChart3 className="h-4 w-4" /> Statistiques
             </button>
             <button type="button" onClick={() => setActiveTab('parametres')}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'parametres' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'parametres' ? 'bg-white dark:bg-gray-800 dark:bg-gray-800 text-gray-900 dark:text-white dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:text-gray-300'}`}>
               <Settings className="h-4 w-4" /> Paramètres
             </button>
           </div>
@@ -169,16 +169,16 @@ export default function GeolocalisationPage() {
           {/* Statistiques Tab */}
           {activeTab === 'statistiques' && (
             <div className="space-y-6">
-              <div className={`flex items-center gap-3 px-5 py-4 rounded-xl border ${stats?.moduleActif ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100'}`}>
+              <div className={`flex items-center gap-3 px-5 py-4 rounded-xl border ${stats?.moduleActif ? 'bg-green-50 border-green-100' : 'bg-gray-50 dark:bg-gray-800 dark:bg-gray-800 border-gray-100 dark:border-gray-700 dark:border-gray-700'}`}>
                 {stats?.moduleActif
                   ? <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                  : <XCircle className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                  : <XCircle className="h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 flex-shrink-0" />
                 }
                 <div>
-                  <p className={`text-sm font-semibold ${stats?.moduleActif ? 'text-green-700' : 'text-gray-600'}`}>
+                  <p className={`text-sm font-semibold ${stats?.moduleActif ? 'text-green-700' : 'text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>
                     Module {stats?.moduleActif ? 'activé' : 'désactivé'}
                   </p>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">
                     {stats?.moduleActif
                       ? `Rayon de détection : ${stats.rayon}m — Position ${stats.positionConfiguree ? 'configurée' : 'non configurée'}`
                       : 'Activez le module pour envoyer des notifications de proximité'}
@@ -210,8 +210,8 @@ export default function GeolocalisationPage() {
                       <div key={item.step} className="flex gap-4">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${item.color}`}>{item.step}</div>
                         <div>
-                          <p className="text-sm font-semibold text-gray-900 mb-1">{item.title}</p>
-                          <p className="text-xs text-gray-500 leading-relaxed">{item.desc}</p>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white dark:text-white mb-1">{item.title}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 leading-relaxed">{item.desc}</p>
                         </div>
                       </div>
                     ))}
@@ -231,12 +231,12 @@ export default function GeolocalisationPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Radio className="h-4 w-4 text-blue-600" />
-                        <span className="text-sm text-gray-700">Distance de proximité</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300">Distance de proximité</span>
                       </div>
-                      <span className="text-lg font-bold text-gray-900">{rayon}m</span>
+                      <span className="text-lg font-bold text-gray-900 dark:text-white dark:text-white">{rayon}m</span>
                     </div>
                     <input type="range" min={50} max={1000} step={10} value={rayon} onChange={(e) => setRayon(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600" />
-                    <div className="flex justify-between text-xs text-gray-400">
+                    <div className="flex justify-between text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                       <span>50m</span><span>500m</span><span>1000m</span>
                     </div>
                   </div>
@@ -266,11 +266,11 @@ export default function GeolocalisationPage() {
                     <Input label="Message de notification personnalisé" placeholder="Ex: 🎉 Bonjour ! Passez nous voir, vous pouvez gagner des points !" value={message} onChange={(e) => setMessage(e.target.value)} />
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="label flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-gray-400" /> Heure début</label>
+                        <label className="label flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" /> Heure début</label>
                         <input type="number" min={0} max={23} value={heureDebut} onChange={(e) => setHeureDebut(Number(e.target.value))} className="input text-center text-lg font-semibold" />
                       </div>
                       <div>
-                        <label className="label flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-gray-400" /> Heure fin</label>
+                        <label className="label flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" /> Heure fin</label>
                         <input type="number" min={0} max={23} value={heureFin} onChange={(e) => setHeureFin(Number(e.target.value))} className="input text-center text-lg font-semibold" />
                       </div>
                     </div>
