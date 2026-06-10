@@ -1,19 +1,17 @@
 /**
  * Stamply Premium Card Preview — Rendu réaliste de la carte de fidélité
  * 
- * Format carte bancaire premium (ratio 1.586:1, ~600×380px)
- * - Image de fond en cover
- * - Logo en haut à gauche
- * - Nom du commerce en haut
- * - Tampons actuels / palier (ex: "7 / 10")
- * - QR code centré, grand (~40% hauteur)
- * - Nom du client en bas à gauche
- * - Récompense en bas à droite
+ * Format premium (ratio 16:9, ~800×500px)
+ * - Image de fond en cover sur toute la carte
+ * - Logo haut gauche ~60×60px
+ * - Nom commerce + programme haut centre
+ * - QR code centré, GRAND (~200×200px) — élément principal
+ * - Tampons (7/10) haut droite
+ * - Nom client bas gauche
+ * - Récompense bas droite
  */
 
 import { QRCodeSVG } from 'qrcode.react';
-
-// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface CardDesign {
   background_image_url: string;
@@ -58,8 +56,6 @@ const FONT_ITALIC: Record<string, boolean> = {
   mono: false,
 };
 
-// ─── Component ───────────────────────────────────────────────────────────────
-
 export function PremiumCardPreview({
   design,
   data,
@@ -100,11 +96,11 @@ export function PremiumCardPreview({
 
   return (
     <div className={`flex justify-center ${className}`}>
-      {/* Card — ratio carte bancaire 1.586:1 */}
+      {/* Card — ratio 16:9 premium */}
       <div
-        className="relative w-full max-w-[600px] rounded-2xl overflow-hidden shadow-2xl"
+        className="relative w-full max-w-[800px] rounded-2xl overflow-hidden shadow-2xl"
         style={{
-          aspectRatio: '1.586 / 1',
+          aspectRatio: '16 / 9',
           fontFamily: fontStyle,
           fontStyle: isItalic ? 'italic' : 'normal',
           color: textColor,
@@ -123,52 +119,52 @@ export function PremiumCardPreview({
         {/* ── Overlay ──────────────────────────────────────────────────── */}
         <div className="absolute inset-0" style={overlayStyle} />
 
-        {/* ── Glassmorphism subtle ──────────────────────────────────────── */}
+        {/* ── Subtle glass effect ───────────────────────────────────────── */}
         <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-black/10" />
 
         {/* ── Card Content ─────────────────────────────────────────────── */}
-        <div className="relative h-full flex flex-col p-5 sm:p-6">
+        <div className="relative h-full flex flex-col p-5 sm:p-7">
           
           {/* Row 1: Logo + Commerce Name + Tampons */}
-          <div className="flex items-start justify-between gap-3">
-            {/* Logo */}
-            <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl overflow-hidden bg-white/20 backdrop-blur-sm border border-white/30 flex-shrink-0 shadow-lg">
+          <div className="flex items-start justify-between gap-4">
+            {/* Logo ~60×60 */}
+            <div className="w-[52px] h-[52px] sm:w-[60px] sm:h-[60px] rounded-xl overflow-hidden bg-white/20 backdrop-blur-sm border border-white/30 flex-shrink-0 shadow-lg">
               {design.logo_url ? (
                 <img src={design.logo_url} alt="Logo" className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-white/60 text-lg font-bold">
+                <div className="w-full h-full flex items-center justify-center text-white/60 text-xl font-bold">
                   {commercantNom.charAt(0).toUpperCase()}
                 </div>
               )}
             </div>
 
             {/* Commerce Name — centered top */}
-            <div className="flex-1 text-center min-w-0">
-              <h3 className="text-lg sm:text-xl font-bold tracking-wide drop-shadow-lg truncate">
+            <div className="flex-1 text-center min-w-0 pt-1">
+              <h3 className="text-xl sm:text-2xl font-bold tracking-wide drop-shadow-lg truncate">
                 {commercantNom}
               </h3>
-              <p className="text-[10px] sm:text-xs opacity-70 tracking-[0.2em] uppercase mt-0.5">
+              <p className="text-[10px] sm:text-xs opacity-70 tracking-[0.2em] uppercase mt-1">
                 {programmeNom}
               </p>
             </div>
 
             {/* Tampons */}
-            <div className="text-right flex-shrink-0">
+            <div className="text-right flex-shrink-0 pt-1">
               <div className="flex items-baseline gap-0.5 drop-shadow-lg">
-                <span className="text-2xl sm:text-3xl font-bold">{tamponsActuels}</span>
-                <span className="text-sm sm:text-base opacity-60">/</span>
-                <span className="text-lg sm:text-xl font-semibold opacity-80">{tamponsPalier}</span>
+                <span className="text-3xl sm:text-4xl font-bold">{tamponsActuels}</span>
+                <span className="text-base sm:text-lg opacity-60">/</span>
+                <span className="text-xl sm:text-2xl font-semibold opacity-80">{tamponsPalier}</span>
               </div>
               <div className="text-[10px] sm:text-xs opacity-60 uppercase tracking-wider">tampons</div>
             </div>
           </div>
 
-          {/* Row 2: QR Code — centered, grand (~40% hauteur) */}
-          <div className="flex-1 flex items-center justify-center py-2 sm:py-3">
-            <div className="bg-white rounded-2xl p-2.5 sm:p-3 shadow-xl">
+          {/* Row 2: QR Code — centered, GRAND (~200px) */}
+          <div className="flex-1 flex items-center justify-center">
+            <div className="bg-white rounded-2xl p-3 sm:p-4 shadow-xl">
               <QRCodeSVG
                 value={qrValue}
-                size={120}
+                size={180}
                 level="H"
                 includeMargin={false}
                 bgColor="#FFFFFF"
@@ -178,11 +174,11 @@ export function PremiumCardPreview({
           </div>
 
           {/* Row 3: Client Name + Récompense */}
-          <div className="flex items-end justify-between gap-3">
+          <div className="flex items-end justify-between gap-4">
             {/* Client Name */}
             <div className="min-w-0">
               <div className="text-[10px] sm:text-xs opacity-50 uppercase tracking-wider mb-0.5">Client</div>
-              <div className="text-sm sm:text-base font-semibold drop-shadow-md truncate max-w-[200px]">
+              <div className="text-sm sm:text-lg font-semibold drop-shadow-md truncate max-w-[250px]">
                 {clientNom}
               </div>
             </div>
@@ -190,7 +186,7 @@ export function PremiumCardPreview({
             {/* Récompense */}
             <div className="text-right flex-shrink-0">
               <div className="text-[10px] sm:text-xs opacity-50 uppercase tracking-wider mb-0.5">Récompense</div>
-              <div className="text-xs sm:text-sm font-semibold drop-shadow-md">
+              <div className="text-xs sm:text-base font-semibold drop-shadow-md">
                 {recompense}
               </div>
             </div>

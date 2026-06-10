@@ -3,7 +3,7 @@ import Head from 'next/head';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Input, Textarea } from '@/components/ui/Input';
+import { Input } from '@/components/ui/Input';
 import { PageSpinner } from '@/components/ui/Spinner';
 import { commercantApi } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/Toast';
 import { CardEditor, CardDesign, DEFAULT_CARD_DESIGN, CardProgramData, DEFAULT_CARD_DATA } from '@/components/CardEditor';
 import { PremiumCardPreview } from '@/components/PremiumCardPreview';
 import { uploadCardImage } from '@/lib/cardUpload';
-import { Store, Palette, Eye, Save, Settings, CreditCard, Sparkles } from 'lucide-react';
+import { Store, Save, Sparkles } from 'lucide-react';
 
 export default function ParametresPage() {
   const { commercant, refreshUser } = useAuth();
@@ -19,7 +19,7 @@ export default function ParametresPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'commerce' | 'carte' | 'design'>('commerce');
+  const [activeTab, setActiveTab] = useState<'commerce' | 'design'>('commerce');
 
   // Commerce fields
   const [nomEnseigne, setNomEnseigne] = useState('');
@@ -28,17 +28,6 @@ export default function ParametresPage() {
   const [ville, setVille] = useState('');
   const [codePostal, setCodePostal] = useState('');
   const [email, setEmail] = useState('');
-
-  // Legacy card fields
-  const [couleur, setCouleur] = useState('#6366f1');
-  const [couleurSecondaire, setCouleurSecondaire] = useState('#764ba2');
-  const [programmeNom, setProgrammeNom] = useState('');
-  const [recompenseDesc, setRecompenseDesc] = useState('');
-  const [pointsRecompense, setPointsRecompense] = useState(10);
-  const [layout, setLayout] = useState<'classic' | 'modern' | 'minimal'>('classic');
-  const [texteBasCarte, setTexteBasCarte] = useState('');
-  const [styleTexte, setStyleTexte] = useState<'normal' | 'gras' | 'italique'>('normal');
-  const [logoUrl, setLogoUrl] = useState('');
 
   // Premium card design
   const [cardDesign, setCardDesign] = useState<CardDesign>(DEFAULT_CARD_DESIGN);
@@ -58,15 +47,6 @@ export default function ParametresPage() {
       setVille(commercant.ville || '');
       setCodePostal(commercant.code_postal || '');
       setEmail(commercant.email || '');
-      setCouleur(commercant.carte_couleur_primaire || '#6366f1');
-      setCouleurSecondaire(commercant.carte_couleur_secondaire || '#764ba2');
-      setProgrammeNom(commercant.carte_programme_nom || '');
-      setRecompenseDesc(commercant.carte_recompense_description || '');
-      setPointsRecompense(commercant.points_recompense || 10);
-      setLayout((commercant.carte_layout as any) || 'classic');
-      setTexteBasCarte(commercant.texte_perso_bas_carte || '');
-      setStyleTexte((commercant.style_texte as any) || 'normal');
-      setLogoUrl(commercant.carte_logo_url || '');
 
       // Load premium card design if exists
       if ((commercant as any).card_design) {
@@ -122,26 +102,6 @@ export default function ParametresPage() {
     finally { setSaving(false); }
   };
 
-  const handleSaveCarte = async () => {
-    setSaving(true);
-    try {
-      await commercantApi.update({
-        carte_couleur_primaire: couleur,
-        carte_couleur_secondaire: couleurSecondaire,
-        carte_programme_nom: programmeNom,
-        carte_recompense_description: recompenseDesc,
-        points_recompense: pointsRecompense,
-        carte_layout: layout,
-        texte_perso_bas_carte: texteBasCarte,
-        style_texte: styleTexte,
-        carte_logo_url: logoUrl,
-      });
-      await refreshUser();
-      toast('Carte mise à jour');
-    } catch (e: any) { toast(e?.message || 'Erreur', 'error'); }
-    finally { setSaving(false); }
-  };
-
   const handleSaveDesign = async () => {
     setSaving(true);
     try {
@@ -173,7 +133,6 @@ export default function ParametresPage() {
       <div className="flex gap-2 mb-6 flex-wrap">
         {([
           { id: 'commerce', label: 'Mon commerce', icon: Store },
-          { id: 'carte', label: 'Contenu carte', icon: CreditCard },
           { id: 'design', label: 'Design premium', icon: Sparkles },
         ] as const).map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
@@ -211,43 +170,6 @@ export default function ParametresPage() {
             </div>
           </CardBody>
         </Card>
-      )}
-
-      {activeTab === 'carte' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 gap-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2.5">
-                  <Settings className="h-4 w-4 text-gray-500" />
-                  <CardTitle>Contenu de la carte</CardTitle>
-                </div>
-              </CardHeader>
-              <CardBody className="space-y-4">
-                <Input label="Nom du programme" placeholder="Carte Fidélité" value={programmeNom} onChange={e => setProgrammeNom(e.target.value)} />
-                <Input label="Description de la récompense" placeholder="1 café offert" value={recompenseDesc} onChange={e => setRecompenseDesc(e.target.value)} />
-                <Input label="Points requis pour la récompense" type="number" min={1} value={pointsRecompense} onChange={e => setPointsRecompense(Number(e.target.value))} />
-                <Textarea label="Texte personnalisé (bas de carte)" placeholder="Merci pour votre fidélité !" rows={2} value={texteBasCarte} onChange={e => setTexteBasCarte(e.target.value)} />
-                <div>
-                  <label className="label">Style du texte</label>
-                  <div className="flex gap-2 mt-1">
-                    {(['normal', 'gras', 'italique'] as const).map(s => (
-                      <button key={s} type="button" onClick={() => setStyleTexte(s)}
-                        className={`px-4 py-2 text-sm rounded-lg border-2 capitalize transition-all ${styleTexte === s ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 hover:border-indigo-300 text-gray-600'}`}
-                        style={s === 'gras' ? { fontWeight: 'bold' } : s === 'italique' ? { fontStyle: 'italic' } : {}}>
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-
-            <Button onClick={handleSaveCarte} loading={saving} size="lg">
-              <Save className="h-4 w-4" /> Enregistrer
-            </Button>
-          </div>
-        </div>
       )}
 
       {activeTab === 'design' && (

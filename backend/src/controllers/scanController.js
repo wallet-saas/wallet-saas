@@ -105,7 +105,7 @@ const scanQR = async (req, res) => {
       }
     }
 
-    // --- Calcul des points et récompenses ---
+    // --- Calcul des tampons et récompenses ---
     const { data: commercant } = await supabase
       .from('commercants')
       .select('points_recompense, reward_config')
@@ -125,15 +125,17 @@ const scanQR = async (req, res) => {
       seuil
     );
 
-    const reset = autoReset && carte.points >= maxNiveau;
-    const newPoints = reset ? 1 : carte.points + 1;
-    const reward = !reset && newPoints === seuil;
+    // carte.points = nombre de tampons actuels
+    const tamponsActuels = carte.points || 0;
+    const reset = autoReset && tamponsActuels >= maxNiveau;
+    const newTampons = reset ? 1 : tamponsActuels + 1;
+    const reward = !reset && newTampons === seuil;
 
-    // --- Mise à jour des points ---
+    // --- Mise à jour des tampons ---
     const { error: updateError } = await supabase
       .from('cartes')
       .update({
-        points: newPoints,
+        points: newTampons,
         last_visit_at: now_iso,
         updated_at: now_iso
       })
@@ -143,7 +145,7 @@ const scanQR = async (req, res) => {
       console.error('Erreur update cartes:', updateError);
       return res.status(500).json({
         success: false,
-        error: 'Erreur lors de la mise à jour des points.'
+        error: 'Erreur lors de la mise à jour des tampons.'
       });
     }
 
@@ -163,24 +165,24 @@ const scanQR = async (req, res) => {
     }
 
     // --- Mettre à jour la carte Google Wallet (best-effort) ---
-    googleWalletService.updateLoyaltyObjectPoints(carte.pass_serial_number, newPoints);
+    googleWalletService.updateLoyaltyObjectPoints(carte.pass_serial_number, newTampons);
 
     // --- Vérifier et attribuer des badges ---
-    const newBadges = await badgeService.checkAndAssignBadges(carte.id, commercantId, newPoints);
+    const newBadges = await badgeService.checkAndAssignBadges(carte.id, commercantId, newTampons);
 
     // --- Vérifier les récompenses (nouveau système configurable) ---
     const newRewards = await rewardService.checkRewardUnlocked(
-      carte.id, commercantId, newPoints, null
+      carte.id, commercantId, newTampons, null
     );
 
     // --- Programmer la notification d'avis automatique ---
-    await autoReviewService.scheduleReviewNotification(carte.id, commercantId, newPoints);
+    await autoReviewService.scheduleReviewNotification(carte.id, commercantId, newTampons);
 
     // --- Message de réponse ---
     let message = reward
-      ? `🎉 Récompense débloquée ! (${seuil} points atteints)`
+      ? `🎉 Récompense débloquée ! (${seuil} tampons atteints)`
       : reset
-        ? `Nouveau cycle ! Points remis à 1.`
+        ? `Nouveau cycle ! Tampons remis à 1.`
         : 'Visite enregistrée !';
 
     if (newRewards && newRewards.length > 0) {
@@ -190,7 +192,7 @@ const scanQR = async (req, res) => {
     return res.status(200).json({
       success: true,
       qr_type: qrType,
-      points: newPoints,
+      tampons: newTampons,
       seuil,
       reward,
       reset,
