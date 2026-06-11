@@ -239,6 +239,15 @@ exports.updateCommercant = async (req, res) => {
       const parts = payload.geoloc_heure_fin.split(':');
       payload.geoloc_heure_fin = parseInt(parts[0]) * 60 + parseInt(parts[1]);
     }
+    // Convert time strings "HH:MM" to minutes integer for notification fields
+    if (payload.notif_heure_debut && typeof payload.notif_heure_debut === 'string') {
+      const parts = payload.notif_heure_debut.split(':');
+      payload.notif_heure_debut = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    }
+    if (payload.notif_heure_fin && typeof payload.notif_heure_fin === 'string') {
+      const parts = payload.notif_heure_fin.split(':');
+      payload.notif_heure_fin = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    }
 
     // Filter out columns that don't exist in the database
     const filteredPayload = filterExisting(payload);

@@ -50,7 +50,7 @@ const createBoutique = async (req, res) => {
     const { id: commercantId } = req.commercant;
     const {
       nom, adresse, ville, code_postal, telephone,
-      google_place_url, google_place_id,
+      google_place_url,
       carte_couleur_primaire, carte_couleur_secondaire,
       carte_programme_nom, carte_recompense_description,
       points_recompense, logo_url, template_type,
@@ -71,8 +71,7 @@ const createBoutique = async (req, res) => {
         code_postal: code_postal?.trim() || null,
         telephone: telephone?.trim() || null,
         google_place_url: google_place_url?.trim() || null,
-        google_place_id: google_place_id?.trim() || null,
-        carte_couleur_primaire: carte_couleur_primaire || '#6366f1',
+        carte_couleur_primaire: carte_couleur_primaire || null,
         carte_couleur_secondaire: carte_couleur_secondaire || '#764ba2',
         carte_programme_nom: carte_programme_nom?.trim() || null,
         carte_recompense_description: carte_recompense_description?.trim() || null,
