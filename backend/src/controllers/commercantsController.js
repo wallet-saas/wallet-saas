@@ -230,6 +230,16 @@ exports.updateCommercant = async (req, res) => {
     if (payload.delai_avis_minutes !== undefined) { payload.delai_notif_avis_minutes = payload.delai_avis_minutes; delete payload.delai_avis_minutes; }
     if (payload.points_requis_recompense !== undefined) { payload.points_recompense = payload.points_requis_recompense; delete payload.points_requis_recompense; }
 
+    // Convert time strings "HH:MM" to minutes integer for geoloc fields
+    if (payload.geoloc_heure_debut && typeof payload.geoloc_heure_debut === 'string') {
+      const parts = payload.geoloc_heure_debut.split(':');
+      payload.geoloc_heure_debut = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    }
+    if (payload.geoloc_heure_fin && typeof payload.geoloc_heure_fin === 'string') {
+      const parts = payload.geoloc_heure_fin.split(':');
+      payload.geoloc_heure_fin = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    }
+
     // Filter out columns that don't exist in the database
     const filteredPayload = filterExisting(payload);
 
