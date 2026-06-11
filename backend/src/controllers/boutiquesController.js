@@ -70,7 +70,6 @@ const createBoutique = async (req, res) => {
         ville: ville?.trim() || null,
         code_postal: code_postal?.trim() || null,
         telephone: telephone?.trim() || null,
-        google_place_url: google_place_url?.trim() || null,
         carte_couleur_primaire: carte_couleur_primaire || null,
         carte_couleur_secondaire: carte_couleur_secondaire || '#764ba2',
         carte_programme_nom: carte_programme_nom?.trim() || null,
