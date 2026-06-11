@@ -14,6 +14,9 @@ import { Pricing } from '@/components/landing/Pricing';
 import { FAQ } from '@/components/landing/FAQ';
 import { Footer } from '@/components/landing/Footer';
 
+// Build ID for cache busting — changes on every deploy
+const BUILD_ID = process.env.VERCEL_GIT_COMMIT_SHA || process.env.NEXT_PUBLIC_BUILD_ID || Date.now().toString();
+
 function HomeContent() {
   const router = useRouter();
   const { theme } = useTheme();
@@ -32,6 +35,14 @@ function HomeContent() {
         <title>Stamply — Cartes de fidélité digitales Google Wallet & Apple Wallet</title>
         <meta name="description" content="Créez des cartes de fidélité digitales pour Google Wallet et Apple Wallet. 49€/mois. Configuration en 2 minutes. Sans engagement." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="build-id" content={BUILD_ID} />
+        <script dangerouslySetInnerHTML={{ __html: `
+          // Force cache invalidation on new deployments
+          if (window.__STAMPLY_BUILD__ && window.__STAMPLY_BUILD__ !== '${BUILD_ID}') {
+            window.location.reload(true);
+          }
+          window.__STAMPLY_BUILD__ = '${BUILD_ID}';
+        `}} />
       </Head>
       <div className={`min-h-screen font-sans transition-colors duration-300 ${
         isDark
