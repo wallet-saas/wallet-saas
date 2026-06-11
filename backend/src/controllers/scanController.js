@@ -229,9 +229,9 @@ const getScanHistory = async (req, res) => {
 
     const { data: visites, error } = await supabase
       .from('visites')
-      .select('id, points_gagnes, source, created_at, client_id')
+      .select('id, points_gagnes, source, carte_id, commercant_id')
       .eq('commercant_id', commercantId)
-      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
       .limit(limit);
 
     if (error) {
