@@ -13,30 +13,9 @@
 
 const express = require('express');
 const router = express.Router();
-const { createClient } = require('@supabase/supabase-js');
-const jwt = require('jsonwebtoken');
+const { supabase } = require('../config/supabase');
+const authMiddleware = require('../middleware/authMiddleware');
 const { body, query, validationResult } = require('express-validator');
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-const JWT_SECRET = process.env.JWT_SECRET || 'stamply-dev-secret';
-
-// ============================================
-// MIDDLEWARE AUTH
-// ============================================
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  if (!token) return res.status(401).json({ success: false, error: 'Token requis' });
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ success: false, error: 'Token invalide' });
-    req.user = user;
-    next();
-  });
-}
 
 // ============================================
 // SQL: Table offres_flash
@@ -75,7 +54,7 @@ function authenticateToken(req, res, next) {
 // POST /api/offres-flash
 // Créer une offre flash
 // ============================================
-router.post('/', authenticateToken, [
+router.post('/', authMiddleware, [
   body('titre').trim().isLength({ min: 3, max: 100 }),
   body('description').optional().trim().isLength({ max: 500 }),
   body('reduction_pourcentage').optional().isInt({ min: 1, max: 99 }),
@@ -94,7 +73,7 @@ router.post('/', authenticateToken, [
   }
 
   try {
-    const commercantId = req.user.id;
+    const commercantId = req.commercant.id;
     const now = new Date();
 
     const {
@@ -107,11 +86,11 @@ router.post('/', authenticateToken, [
     } = req.body;
 
     // Vérifier qu'il n'y a pas déjà une offre active pour cette boutique
+    // Fallback: si la colonne 'active' n'existe pas, on filtre par date fin >= now
     let activeCheck = supabase
       .from('offres_flash')
       .select('id, titre')
       .eq('commercant_id', commercantId)
-      .eq('active', true)
       .gte('fin', now.toISOString());
 
     if (boutique_id) {
@@ -146,7 +125,6 @@ router.post('/', authenticateToken, [
         debut,
         fin,
         max_reclamations: max_reclamations || null,
-        active: true,
         notification_envoyee: false,
       })
       .select()
@@ -172,7 +150,7 @@ router.post('/', authenticateToken, [
 // GET /api/offres-flash
 // Lister les offres flash du commerçant
 // ============================================
-router.get('/', authenticateToken, [
+router.get('/', authMiddleware, [
   query('boutique_id').optional().isUUID(),
   query('status').optional().isIn(['active', 'past', 'all']),
 ], async (req, res) => {
@@ -182,7 +160,7 @@ router.get('/', authenticateToken, [
   }
 
   try {
-    const commercantId = req.user.id;
+    const commercantId = req.commercant.id;
     const { boutique_id, status = 'active' } = req.query;
     const now = new Date().toISOString();
 
@@ -197,9 +175,9 @@ router.get('/', authenticateToken, [
     }
 
     if (status === 'active') {
-      query = query.eq('active', true).gte('fin', now);
+      query = query.gte('fin', now);
     } else if (status === 'past') {
-      query = query.or(`fin.lt.${now},active.eq.false`);
+      query = query.lt('fin', now);
     }
 
     const { data, error } = await query;
@@ -244,7 +222,6 @@ router.get('/public', [
         commercants(nom, carte_logo_url),
         boutiques(nom, adresse, ville)
       `)
-      .eq('active', true)
       .gte('fin', now)
       .order('debut', { ascending: false })
       .limit(20);
@@ -276,9 +253,9 @@ router.get('/public', [
 // GET /api/offres-flash/:id
 // Détail d'une offre flash
 // ============================================
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
-    const commercantId = req.user.id;
+    const commercantId = req.commercant.id;
     const { id } = req.params;
 
     const { data, error } = await supabase
@@ -302,7 +279,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // PUT /api/offres-flash/:id
 // Modifier une offre flash
 // ============================================
-router.put('/:id', authenticateToken, [
+router.put('/:id', authMiddleware, [
   body('titre').optional().trim().isLength({ min: 3, max: 100 }),
   body('description').optional().trim().isLength({ max: 500 }),
   body('fin').optional().isISO8601(),
@@ -314,7 +291,7 @@ router.put('/:id', authenticateToken, [
   }
 
   try {
-    const commercantId = req.user.id;
+    const commercantId = req.commercant.id;
     const { id } = req.params;
     const updates = { ...req.body, updated_at: new Date().toISOString() };
 
@@ -340,14 +317,14 @@ router.put('/:id', authenticateToken, [
 // DELETE /api/offres-flash/:id
 // Supprimer/archiver une offre flash
 // ============================================
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
-    const commercantId = req.user.id;
+    const commercantId = req.commercant.id;
     const { id } = req.params;
 
     const { error } = await supabase
       .from('offres_flash')
-      .update({ active: false, updated_at: new Date().toISOString() })
+      .update({ updated_at: new Date().toISOString() })
       .eq('id', id)
       .eq('commercant_id', commercantId);
 
@@ -363,9 +340,9 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 // POST /api/offres-flash/:id/reclamer
 // Un client réclame une offre flash
 // ============================================
-router.post('/:id/reclamer', authenticateToken, async (req, res) => {
+router.post('/:id/reclamer', authMiddleware, async (req, res) => {
   try {
-    const clientId = req.user.id;
+    const clientId = req.commercant.id;
     const { id } = req.params;
 
     // Vérifier l'offre
@@ -373,7 +350,6 @@ router.post('/:id/reclamer', authenticateToken, async (req, res) => {
       .from('offres_flash')
       .select('*')
       .eq('id', id)
-      .eq('active', true)
       .gte('fin', new Date().toISOString())
       .single();
 
@@ -454,9 +430,9 @@ router.post('/:id/vue', async (req, res) => {
 // GET /api/offres-flash/stats
 // Statistiques des offres flash
 // ============================================
-router.get('/stats', authenticateToken, async (req, res) => {
+router.get('/stats', authMiddleware, async (req, res) => {
   try {
-    const commercantId = req.user.id;
+    const commercantId = req.commercant.id;
     const { boutique_id } = req.query;
 
     let query = supabase
@@ -473,7 +449,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
 
     const stats = {
       total_offres: data?.length || 0,
-      actives: data?.filter(o => o.active && new Date(o.fin) > new Date()).length || 0,
+      actives: data?.filter(o => new Date(o.fin) > new Date()).length || 0,
       expirees: data?.filter(o => new Date(o.fin) <= new Date()).length || 0,
       total_vues: data?.reduce((sum, o) => sum + (o.vues_count || 0), 0) || 0,
       total_reclamations: data?.reduce((sum, o) => sum + (o.reclamations_count || 0), 0) || 0,

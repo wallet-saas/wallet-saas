@@ -10,30 +10,9 @@
 
 const express = require('express');
 const router = express.Router();
-const { createClient } = require('@supabase/supabase-js');
-const jwt = require('jsonwebtoken');
+const { supabase } = require('../config/supabase');
+const authMiddleware = require('../middleware/authMiddleware');
 const { body, validationResult } = require('express-validator');
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-const JWT_SECRET = process.env.JWT_SECRET || 'stamply-dev-secret';
-
-// ============================================
-// MIDDLEWARE AUTH
-// ============================================
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  if (!token) return res.status(401).json({ success: false, error: 'Token requis' });
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ success: false, error: 'Token invalide' });
-    req.user = user;
-    next();
-  });
-}
 
 // ============================================
 // TABLE: auto_review_settings
@@ -76,23 +55,16 @@ function authenticateToken(req, res, next) {
 // GET /api/auto-review/settings
 // Récupérer les paramètres d'avis automatique du commerçant
 // ============================================
-router.get('/settings', authenticateToken, async (req, res) => {
+router.get('/settings', authMiddleware, async (req, res) => {
   try {
     const { boutique_id } = req.query;
-    const commercantId = req.user.id;
+    const commercantId = req.commercant.id;
 
-    let query = supabase
+    const { data, error } = await supabase
       .from('auto_review_settings')
       .select('*')
-      .eq('commercant_id', commercantId);
-
-    if (boutique_id) {
-      query = query.eq('boutique_id', boutique_id);
-    } else {
-      query = query.is('boutique_id', null);
-    }
-
-    const { data, error } = await query.single();
+      .eq('commercant_id', commercantId)
+      .single();
 
     if (error && error.code !== 'PGRST116') {
       throw error;
@@ -119,7 +91,7 @@ router.get('/settings', authenticateToken, async (req, res) => {
 // PUT /api/auto-review/settings
 // Mettre à jour les paramètres d'avis automatique
 // ============================================
-router.put('/settings', authenticateToken, [
+router.put('/settings', authMiddleware, [
   body('active').optional().isBoolean(),
   body('delai_minutes').optional().isInt({ min: 1, max: 10080 }),
   body('google_place_url').optional().isURL().isLength({ max: 500 }),
@@ -132,22 +104,15 @@ router.put('/settings', authenticateToken, [
   }
 
   try {
-    const { boutique_id, active, delai_minutes, google_place_url, message_personnalise, seuil_etoiles } = req.body;
-    const commercantId = req.user.id;
+    const { active, delai_minutes, google_place_url, message_personnalise, seuil_etoiles } = req.body;
+    const commercantId = req.commercant.id;
 
     // Vérifier si les paramètres existent déjà
-    let existingQuery = supabase
+    const { data: existing } = await supabase
       .from('auto_review_settings')
       .select('id')
-      .eq('commercant_id', commercantId);
-
-    if (boutique_id) {
-      existingQuery = existingQuery.eq('boutique_id', boutique_id);
-    } else {
-      existingQuery = existingQuery.is('boutique_id', null);
-    }
-
-    const { data: existing } = await existingQuery.single();
+      .eq('commercant_id', commercantId)
+      .single();
 
     const settingsData = {
       commercant_id: commercantId,
@@ -158,10 +123,6 @@ router.put('/settings', authenticateToken, [
       seuil_etoiles: seuil_etoiles ?? 4,
       updated_at: new Date().toISOString(),
     };
-
-    if (boutique_id) {
-      settingsData.boutique_id = boutique_id;
-    }
 
     let result;
     if (existing) {
@@ -194,9 +155,9 @@ router.put('/settings', authenticateToken, [
 // GET /api/auto-review/feedback
 // Récupérer les feedbacks internes (avis < 4 étoiles)
 // ============================================
-router.get('/feedback', authenticateToken, async (req, res) => {
+router.get('/feedback', authMiddleware, async (req, res) => {
   try {
-    const commercantId = req.user.id;
+    const commercantId = req.commercant.id;
     const { boutique_id, limit = 50, offset = 0 } = req.query;
 
     let query = supabase
@@ -233,9 +194,9 @@ router.get('/feedback', authenticateToken, async (req, res) => {
 // GET /api/auto-review/stats
 // Statistiques des avis automatiques
 // ============================================
-router.get('/stats', authenticateToken, async (req, res) => {
+router.get('/stats', authMiddleware, async (req, res) => {
   try {
-    const commercantId = req.user.id;
+    const commercantId = req.commercant.id;
     const { boutique_id } = req.query;
 
     // Compter les notifications par statut
@@ -290,7 +251,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
 // Planifie la notification d'avis automatique
 // RÈGLE : 1 notification par client, jamais de spam
 // ============================================
-router.post('/trigger', authenticateToken, async (req, res) => {
+router.post('/trigger', authMiddleware, async (req, res) => {
   try {
     const { client_id, commercant_id, boutique_id } = req.body;
 

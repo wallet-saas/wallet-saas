@@ -39,7 +39,7 @@ export default function RegisterPage() {
     try {
       const { mot_de_passe_confirm, mot_de_passe, ...rest } = data;
       await authRegister({ ...rest, password: mot_de_passe });
-      router.push('/abonnement');
+      router.push('/dashboard/abonnement');
     } catch (e: any) {
       setError(e?.message || 'Erreur lors de l\'inscription');
     }

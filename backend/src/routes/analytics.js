@@ -11,36 +11,15 @@
 
 const express = require('express');
 const router = express.Router();
-const { createClient } = require('@supabase/supabase-js');
-const jwt = require('jsonwebtoken');
+const { supabase } = require('../config/supabase');
+const authMiddleware = require('../middleware/authMiddleware');
 const { query, validationResult } = require('express-validator');
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-const JWT_SECRET = process.env.JWT_SECRET || 'stamply-dev-secret';
-
-// ============================================
-// MIDDLEWARE AUTH
-// ============================================
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  if (!token) return res.status(401).json({ success: false, error: 'Token requis' });
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ success: false, error: 'Token invalide' });
-    req.user = user;
-    next();
-  });
-}
 
 // ============================================
 // GET /api/analytics/dashboard
 // Dashboard complet avec toutes les stats
 // ============================================
-router.get('/dashboard', authenticateToken, [
+router.get('/dashboard', authMiddleware, [
   query('periode').optional().isIn(['7d', '30d', '90d', '1y', 'all']),
   query('boutique_id').optional().isUUID(),
 ], async (req, res) => {
@@ -50,7 +29,7 @@ router.get('/dashboard', authenticateToken, [
   }
 
   try {
-    const commercantId = req.user.id;
+    const commercantId = req.commercant.id;
     const { periode = '30d', boutique_id } = req.query;
 
     // Calculer la date de début
@@ -241,9 +220,9 @@ router.get('/dashboard', authenticateToken, [
 // GET /api/analytics/visites-hebdo
 // Visites des 7 derniers jours (pour graphique)
 // ============================================
-router.get('/visites-hebdo', authenticateToken, async (req, res) => {
+router.get('/visites-hebdo', authMiddleware, async (req, res) => {
   try {
-    const commercantId = req.user.id;
+    const commercantId = req.commercant.id;
     const { boutique_id } = req.query;
     const now = new Date();
     const jours = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
@@ -292,11 +271,11 @@ router.get('/visites-hebdo', authenticateToken, async (req, res) => {
 // GET /api/analytics/clients-top
 // Top 10 des clients les plus fidèles
 // ============================================
-router.get('/clients-top', authenticateToken, [
+router.get('/clients-top', authMiddleware, [
   query('limit').optional().isInt({ min: 1, max: 50 }),
 ], async (req, res) => {
   try {
-    const commercantId = req.user.id;
+    const commercantId = req.commercant.id;
     const { boutique_id, limit = 10 } = req.query;
 
     let query = supabase
@@ -339,9 +318,9 @@ router.get('/clients-top', authenticateToken, [
 // GET /api/analytics/revenus-estimes
 // Revenus moyens par clients / jour sur la periode
 // ============================================
-router.get('/revenus-estimes', authenticateToken, async (req, res) => {
+router.get('/revenus-estimes', authMiddleware, async (req, res) => {
   try {
-    const commercantId = req.user.id;
+    const commercantId = req.commercant.id;
     const { periode = '30d', moyenne_achat = 15, boutique_id } = req.query;
 
     const now = new Date();

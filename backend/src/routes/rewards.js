@@ -11,6 +11,7 @@
 const express = require('express');
 const router = express.Router();
 const { query, body, validationResult } = require('express-validator');
+const { supabase } = require('../config/supabase');
 const authMiddleware = require('../middleware/authMiddleware');
 const rewardService = require('../services/rewardService');
 

@@ -59,15 +59,7 @@ app.use('/api/offres-flash', offresFlashRoutes);
 app.use('/api/rewards', rewardsRoutes);
 app.use('/api/qr', qrCodeRoutes);
 
-// Health check endpoint (used by Render)
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    version: '1.0.0',
-  });
-});
+// Note: /health is also registered via healthRoutes above (line 54)
 
 // Route de test
 app.get('/', (req, res) => {

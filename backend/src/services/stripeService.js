@@ -23,7 +23,7 @@ async function getPriceId() {
   });
   const price = await stripe.prices.create({
     product: product.id,
-    unit_amount: 2900, // 29 € in cents
+    unit_amount: 4900, // 49 € in cents
     currency: 'eur',
     recurring: { interval: 'month' },
   });

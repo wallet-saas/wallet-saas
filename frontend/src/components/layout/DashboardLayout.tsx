@@ -95,9 +95,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     router.push('/login');
   };
 
-  const handleToggleModule = async (moduleField: string) => {
+  const handleToggleModule = async (moduleField: string, enabled: boolean) => {
     try {
-      await commercantApi.update({ [moduleField]: true });
+      await commercantApi.update({ [moduleField]: enabled });
       await refreshUser();
     } catch (e: any) {
       console.error('[Module toggle] Error:', e);

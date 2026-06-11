@@ -32,7 +32,7 @@ export default function LoginPage() {
       if (commercant.statut_abonnement === 'actif') {
         router.push('/dashboard');
       } else {
-        router.push('/abonnement');
+        router.push('/dashboard/abonnement');
       }
     } catch (e: any) {
       setError(e?.message || 'Identifiants incorrects');
