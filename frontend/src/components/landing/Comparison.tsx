@@ -1,99 +1,92 @@
 'use client';
 
 import { motion } from "framer-motion";
-import { XCircle, CheckCircle } from "lucide-react";
+import { XCircle, CheckCircle2, Zap } from "lucide-react";
 import { useLandingTheme } from "./theme";
 
 export function Comparison() {
   const t = useLandingTheme();
 
-  const paperProblems = [
-    "Perdue ou oubliée par le client 1 fois sur 3",
-    "Coût d'impression récurrent et impact écologique",
-    "Aucune donnée client, impossible de les recontacter",
-    "Image de marque vieillissante"
-  ];
-
-  const stamplyAdvantages = [
-    "Toujours dans le téléphone (Apple/Google Wallet)",
-    "Zéro impression, 100% digital",
-    "Statistiques détaillées et base de données clients",
-    "Image de marque premium et moderne"
-  ];
-
   return (
-    <section className="py-16 sm:py-24 lg:py-40 relative">
-      <div className={`absolute inset-0 ${t.sectionBgAlt}`} />
-
+    <section className={`py-20 sm:py-32 relative overflow-hidden ${t.sectionBg}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
-          className="text-center max-w-2xl mx-auto mb-10 sm:mb-20"
+          className="text-center max-w-3xl mx-auto mb-12 sm:mb-20"
         >
-          <h2 className={`text-2xl sm:text-3xl lg:text-5xl font-bold ${t.textPrimary} mb-4 sm:mb-6`}>
-            Passez à la vitesse supérieure
+          <h2 className={`text-2xl sm:text-4xl lg:text-5xl font-bold ${t.textPrimary} mb-4 sm:mb-6`}>
+            Du carton à la{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">fidélité digitale.</span>
           </h2>
           <p className={`${t.textSecondary} text-base sm:text-lg`}>
-            La carte papier, c'est du passé. Offrez à vos clients une expérience moderne, mémorable et sans friction.
+            Délaissez les systèmes archaïques. Entrez dans l'ère de la fidélité programmatique et maximisez la Life Time Value de chaque client.
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 max-w-5xl mx-auto" style={{ perspective: 1000 }}>
-          {/* Paper Card Problem */}
+        <div className="grid md:grid-cols-2 gap-6 sm:gap-8 md:gap-12 max-w-5xl mx-auto">
+          {/* Legacy */}
           <motion.div
-            initial={{ opacity: 0, rotateY: -15, x: -50 }}
-            whileInView={{ opacity: 1, rotateY: 0, x: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className={`rounded-2xl sm:rounded-[2rem] p-5 sm:p-8 lg:p-12 relative overflow-hidden border ${t.border} ${t.cardBg}`}
-            style={{ background: t.pageBg.includes('bg-white') ? 'linear-gradient(to bottom, #f9fafb, #ffffff)' : 'linear-gradient(to bottom, #15151a, #0A0A0F)' }}
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className={`${t.cardBg} ${t.cardBorder} rounded-2xl sm:rounded-3xl p-6 sm:p-8`}
           >
-            <div className="absolute top-0 right-0 p-6">
-              <XCircle className={`w-10 h-10 ${t.textMuted}`} />
+            <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                <XCircle className="w-5 h-5 sm:w-6 sm:h-6 text-red-400" />
+              </div>
+              <div>
+                <h3 className={`text-lg sm:text-xl font-semibold ${t.textPrimary}`}>Carte papier</h3>
+                <div className="text-xs font-mono text-slate-500 mt-0.5">SYSTÈME LEGACY</div>
+              </div>
             </div>
-            <h3 className={`text-lg sm:text-2xl font-semibold ${t.pageText} mb-6 sm:mb-8 flex items-center gap-3 sm:gap-4`}>
-              <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm`} style={{ backgroundColor: t.pageBg.includes('bg-white') ? '#f3f4f6' : '#1e293b' }}>Avant</span>
-              Carte papier
-            </h3>
-            <ul className={`space-y-4 sm:space-y-6 ${t.textSecondary}`}>
-              {paperProblems.map((text, i) => (
-                <li key={i} className="flex items-start gap-3 sm:gap-4">
-                  <div className={`w-1.5 h-1.5 rounded-full ${t.textMuted} mt-2 shrink-0`} />
-                  <span className="leading-relaxed text-sm sm:text-base">{text}</span>
-                </li>
+            <div className="space-y-4 sm:space-y-6">
+              {[
+                { title: "Perte de données", desc: "Aucun traçage analytique possible. Les clients sont anonymes." },
+                { title: "Friction UX", desc: "Support physique requis. Oubli fréquent par l'utilisateur final." },
+                { title: "Coûts récurrents", desc: "Impressions, distribution, gestion manuelle." },
+              ].map((item, i) => (
+                <div key={i}>
+                  <h4 className={`font-medium mb-1 ${t.textSecondary}`}>{item.title}</h4>
+                  <p className={`text-sm ${t.textMuted} leading-relaxed`}>{item.desc}</p>
+                </div>
               ))}
-            </ul>
+            </div>
           </motion.div>
 
-          {/* Digital Solution */}
+          {/* Stamply */}
           <motion.div
-            initial={{ opacity: 0, rotateY: 15, x: 50 }}
-            whileInView={{ opacity: 1, rotateY: 0, x: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-            className={`rounded-2xl sm:rounded-[2rem] p-5 sm:p-8 lg:p-12 relative overflow-hidden border ${t.borderLight}`}
-            style={{ background: t.pageBg.includes('bg-white') ? 'linear-gradient(to bottom, #eef2ff, #ffffff)' : 'linear-gradient(to bottom, rgba(99,102,241,0.1), #0A0A0F)' }}
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="relative"
           >
-            {/* Glow */}
-            <div className={`absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/30 blur-[50px] rounded-full pointer-events-none ${t.glowOrb}`} />
-
-            <div className="absolute top-0 right-0 p-6">
-              <CheckCircle className="w-10 h-10 text-indigo-400" />
+            <div className="absolute -inset-[1px] bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 rounded-2xl sm:rounded-3xl opacity-30" />
+            <div className={`relative ${t.cardBg} rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-indigo-500/20`}>
+              <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+                  <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-400" />
+                </div>
+                <div>
+                  <h3 className={`text-lg sm:text-xl font-semibold ${t.textPrimary}`}>Stamply</h3>
+                  <div className="text-xs font-mono text-indigo-400 mt-0.5">WALLET API V2</div>
+                </div>
+              </div>
+              <div className="space-y-4 sm:space-y-6">
+                {[
+                  { title: "Data Analytics native", desc: "Suivi en temps réel des cohortes, de la fréquence et du churn." },
+                  { title: "Rétention OS-Level", desc: "Intégration profonde iOS/Android via notifications Push natives." },
+                  { title: "Scalabilité infinie", desc: "0 coût marginal par nouvel utilisateur. Déploiement instantané." },
+                ].map((item, i) => (
+                  <div key={i}>
+                    <h4 className="font-medium mb-1 text-indigo-100">{item.title}</h4>
+                    <p className={`text-sm ${t.textSecondary} leading-relaxed`}>{item.desc}</p>
+                  </div>
+                ))}
+              </div>
             </div>
-            <h3 className={`text-lg sm:text-2xl font-semibold ${t.textPrimary} mb-6 sm:mb-8 flex items-center gap-3 sm:gap-4`}>
-              <span className={`px-2 sm:px-3 py-1 rounded-full ${t.badgeBg} text-xs sm:text-sm`}>Après</span>
-              Carte Stamply
-            </h3>
-            <ul className={`space-y-4 sm:space-y-6 ${t.pageText} relative z-10`}>
-              {stamplyAdvantages.map((text, i) => (
-                <li key={i} className="flex items-start gap-3 sm:gap-4">
-                  <div className="w-2 h-2 rounded-full bg-indigo-400 mt-2 shrink-0 shadow-[0_0_10px_rgba(99,102,241,0.8)]" />
-                  <span className="leading-relaxed font-medium text-sm sm:text-base">{text}</span>
-                </li>
-              ))}
-            </ul>
           </motion.div>
         </div>
       </div>

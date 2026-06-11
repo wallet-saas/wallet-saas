@@ -18,7 +18,7 @@ export function useLandingTheme() {
     // Section backgrounds
     sectionBg: d ? 'bg-[#0A0A0F]' : 'bg-white',
     sectionBgAlt: d ? 'bg-[#0F0F16]' : 'bg-gray-50',
-    cardBg: d ? 'bg-[#0F0F16] border-white/5' : 'bg-white border-gray-200',
+    cardBg: d ? 'bg-white/[0.03] border-white/5' : 'bg-white border-gray-200',
     cardBgHover: d ? 'hover:border-indigo-500/30' : 'hover:border-indigo-300',
     cardBorder: d ? 'border-white/10' : 'border-gray-200',
 

@@ -8,16 +8,16 @@ export function Footer() {
   const t = useLandingTheme();
 
   return (
-    <footer className={`py-10 sm:py-12 border-t ${t.border}`}>
+    <footer className={`py-10 sm:py-12 border-t ${t.border} ${t.sectionBg}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-indigo-500 flex items-center justify-center">
-              <Wallet className="w-3 h-3 text-white" />
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-500 flex items-center justify-center">
+              <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
             </div>
-            <span className={`font-semibold ${t.textPrimary}`}>Stamply</span>
+            <span className={`text-lg sm:text-xl font-bold tracking-tight ${t.textPrimary}`}>Stamply</span>
           </Link>
-          <div className={`flex items-center gap-4 sm:gap-6 text-sm ${t.textSecondary} flex-wrap justify-center`}>
+          <div className={`flex items-center gap-4 sm:gap-6 text-xs sm:text-sm ${t.textSecondary} flex-wrap justify-center`}>
             <Link href="/mentions-legales" className="hover:opacity-80 transition-opacity">Mentions légales</Link>
             <Link href="/cgu" className="hover:opacity-80 transition-opacity">CGV</Link>
             <Link href="/politique-confidentialite" className="hover:opacity-80 transition-opacity">Confidentialité</Link>

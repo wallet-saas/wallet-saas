@@ -20,31 +20,28 @@ export function Steps() {
     {
       number: "03",
       title: "Scannez et fidélisez",
-      description: "À chaque visite, scannez leur carte avec votre téléphone pour ajouter des points automatiquement."
+      description: "À chaque visite, scannez leur carte avec votre téléphone pour ajouter des tampons automatiquement."
     }
   ];
 
   const container = {
     hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.3 }
-    }
+    show: { opacity: 1, transition: { staggerChildren: 0.3 } }
   };
 
   const item = {
     hidden: { opacity: 0, y: 30, scale: 0.9 },
     show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, stiffness: 100 } }
-  } as const;
+  };
 
   return (
-    <section className="py-16 sm:py-24 lg:py-32 relative overflow-hidden">
+    <section className={`py-20 sm:py-32 relative overflow-hidden ${t.sectionBg}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center max-w-2xl mx-auto mb-10 sm:mb-20"
+          className="text-center max-w-2xl mx-auto mb-12 sm:mb-20"
         >
           <h2 className={`text-2xl sm:text-3xl lg:text-5xl font-bold ${t.textPrimary} mb-4 sm:mb-6`}>
             Comment ça marche ?
@@ -59,9 +56,9 @@ export function Steps() {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12 relative"
+          className="grid md:grid-cols-3 gap-8 sm:gap-12 relative"
         >
-          {/* Connecting line for desktop */}
+          {/* Connecting line */}
           <motion.div
             initial={{ scaleX: 0 }}
             whileInView={{ scaleX: 1 }}
@@ -72,11 +69,11 @@ export function Steps() {
 
           {steps.map((step, i) => (
             <motion.div key={i} variants={item} className="relative flex flex-col items-center text-center group">
-              <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl ${t.sectionBg} border border-indigo-500/30 flex items-center justify-center text-xl sm:text-2xl font-bold text-indigo-400 mb-6 sm:mb-8 shadow-xl shadow-indigo-500/10 group-hover:scale-110 group-hover:bg-indigo-500/10 group-hover:border-indigo-400 transition-all duration-300 z-10`}>
+              <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl ${t.cardBg} border border-indigo-500/30 flex items-center justify-center text-xl sm:text-2xl font-bold text-indigo-400 mb-6 sm:mb-8 shadow-xl shadow-indigo-500/10 group-hover:scale-110 group-hover:bg-indigo-500/10 group-hover:border-indigo-400 transition-all duration-300 z-10`}>
                 {step.number}
               </div>
               <h3 className={`text-lg sm:text-2xl font-semibold ${t.textPrimary} mb-3 sm:mb-4 group-hover:text-indigo-300 transition-colors`}>{step.title}</h3>
-              <p className={`${t.textSecondary} leading-relaxed text-sm sm:text-lg group-hover:${t.pageText} transition-colors`}>
+              <p className={`${t.textSecondary} text-sm sm:text-base leading-relaxed group-hover:text-slate-300 transition-colors`}>
                 {step.description}
               </p>
             </motion.div>

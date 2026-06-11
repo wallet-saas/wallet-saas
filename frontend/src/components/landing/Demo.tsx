@@ -1,147 +1,183 @@
 'use client';
 
-import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
+import { motion } from "framer-motion";
+import { Users, TrendingUp, Gift, QrCode, Bell, Paintbrush, Zap, ArrowUpRight, CreditCard } from "lucide-react";
 import { useLandingTheme } from "./theme";
 
 export function Demo() {
   const t = useLandingTheme();
 
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start end", "end start"]
-  });
-
-  const scale = useTransform(scrollYProgress, [0, 0.4], [0.8, 1]);
-  const opacity = useTransform(scrollYProgress, [0, 0.3], [0, 1]);
-  const rotateX = useTransform(scrollYProgress, [0, 0.4], [20, 0]);
-
-  const stats = [
-    { label: "Clients actifs", value: "1,204" },
-    { label: "Visites ce mois", value: "458" },
-    { label: "Récompenses", value: "89" }
-  ];
-
-  const chartData = [40, 70, 45, 90, 65, 85, 120, 95, 110, 140, 100, 130];
-  const maxChart = Math.max(...chartData);
-
   return (
-    <section id="demo" ref={containerRef} className="py-16 sm:py-24 lg:py-32 overflow-hidden relative" style={{ perspective: 1000 }}>
-      <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-indigo-500/10 blur-[120px] rounded-[100%] pointer-events-none`} />
-
+    <section className={`py-20 sm:py-32 overflow-hidden ${t.sectionBg}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center max-w-2xl mx-auto mb-10 sm:mb-20"
+          className="text-center max-w-2xl mx-auto mb-12 sm:mb-20"
         >
+          <div className={`inline-flex items-center justify-center gap-2 p-1.5 mb-4 rounded-full ${t.badgeBg}`}>
+            <Zap className="w-3 h-3" /> Espace Commerçant
+          </div>
           <h2 className={`text-2xl sm:text-3xl lg:text-5xl font-bold ${t.textPrimary} mb-4 sm:mb-6`}>
             Gérez tout depuis votre Dashboard
           </h2>
           <p className={`${t.textSecondary} text-base sm:text-lg`}>
-            Une interface simple et intuitive pour suivre votre activité et éditer votre carte en temps réel.
+            Une interface puissante pour analyser votre trafic, engager vos clients et personnaliser votre programme de fidélité.
           </p>
         </motion.div>
 
         <motion.div
-          className={`relative mx-auto max-w-5xl rounded-3xl border ${t.border} overflow-hidden`}
-          style={{
-            scale,
-            opacity,
-            rotateX,
-            transformStyle: "preserve-3d",
-            background: t.pageBg.includes('bg-white') ? '#ffffff' : '#12121a',
-            boxShadow: t.pageBg.includes('bg-white') ? '0 0 100px -20px rgba(99,102,241,0.15)' : '0 0 100px -20px rgba(99,102,241,0.3)'
-          }}
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className={`relative mx-auto max-w-5xl rounded-2xl border ${t.cardBorder} ${t.cardBg} shadow-2xl overflow-hidden`}
         >
-          {/* Browser Chrome */}
-          <div className={`h-14 border-b ${t.border} flex items-center px-4 justify-between backdrop-blur-md`} style={{ backgroundColor: t.pageBg.includes('bg-white') ? '#f9fafb' : '#0A0A0F' }}>
-            <div className="flex gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50"></div>
-              <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50"></div>
-              <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50"></div>
+          {/* Dashboard Header */}
+          <div className={`h-12 sm:h-16 border-b ${t.border} flex items-center px-4 sm:px-6 justify-between`}>
+            <div className="flex items-center gap-4 sm:gap-6">
+              <div className="flex gap-1.5 sm:gap-2">
+                <div className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full bg-red-500/80" />
+                <div className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full bg-yellow-500/80" />
+                <div className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full bg-green-500/80" />
+              </div>
+              <div className="hidden sm:flex gap-1 text-sm font-medium">
+                <span className="text-white bg-indigo-500/20 border border-indigo-500/30 px-3 py-1.5 rounded-lg">Vue d'ensemble</span>
+                <span className={`${t.textSecondary} hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer`}>Clients</span>
+                <span className={`${t.textSecondary} hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer`}>Campagnes</span>
+              </div>
             </div>
-            <div className={`flex gap-4 text-sm ${t.textSecondary}`}>
-              <span className={`${t.textPrimary} ${t.sectionBgAlt} px-3 py-1 rounded-md shadow-inner`}>Vue d&apos;ensemble</span>
-              <span className={`px-3 py-1 hover:${t.textPrimary} transition-colors cursor-pointer`}>Clients</span>
-              <span className={`px-3 py-1 hover:${t.textPrimary} transition-colors cursor-pointer`}>Design</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-xs sm:text-sm">
+              JS
             </div>
           </div>
 
           {/* Dashboard Body */}
-          <div className="p-3 sm:p-8 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-8">
-            <div className="md:col-span-2 space-y-4 sm:space-y-8">
+          <div className="p-4 sm:p-6 md:p-8 grid lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+            {/* Main Content */}
+            <div className="lg:col-span-2 space-y-4 sm:space-y-6 md:space-y-8">
               {/* Stats Row */}
               <div className="grid grid-cols-3 gap-2 sm:gap-4">
-                {stats.map((stat, i) => (
+                {[
+                  { label: "Clients actifs", value: "1,204", icon: Users, trend: "+12.5%", color: "text-indigo-400", bg: "bg-indigo-500/10" },
+                  { label: "Passages (30j)", value: "458", icon: TrendingUp, trend: "+8.2%", color: "text-green-400", bg: "bg-green-500/10" },
+                  { label: "Récompenses", value: "89", icon: Gift, trend: "+24.1%", color: "text-purple-400", bg: "bg-purple-500/10" },
+                ].map((stat, i) => (
                   <motion.div
                     key={i}
-                    whileHover={{ y: -5 }}
-                    className={`${t.sectionBgAlt} border ${t.border} p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-lg transition-colors hover:border-indigo-500/30`}
+                    whileHover={{ y: -4, scale: 1.02 }}
+                    className={`${t.cardBg} ${t.cardBorder} p-3 sm:p-5 rounded-xl sm:rounded-2xl transition-all`}
                   >
-                    <div className={`${t.textSecondary} text-[10px] sm:text-sm mb-1 sm:mb-2`}>{stat.label}</div>
-                    <div className={`text-lg sm:text-3xl font-bold ${t.textPrimary}`}>{stat.value}</div>
+                    <div className="flex justify-between items-start mb-2 sm:mb-4">
+                      <div className={`p-1.5 sm:p-2 rounded-lg ${stat.bg} ${stat.color}`}>
+                        <stat.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </div>
+                      <div className="hidden sm:flex items-center gap-1 text-xs font-medium text-green-400 bg-green-400/10 px-2 py-1 rounded-full">
+                        <ArrowUpRight className="w-3 h-3" />
+                        {stat.trend}
+                      </div>
+                    </div>
+                    <div className={`text-xl sm:text-2xl md:text-3xl font-bold ${t.textPrimary} mb-0.5 sm:mb-1`}>{stat.value}</div>
+                    <div className={`${t.textSecondary} text-xs sm:text-sm`}>{stat.label}</div>
                   </motion.div>
                 ))}
               </div>
 
-              {/* Chart Mockup */}
-              <div className={`${t.sectionBgAlt} border ${t.border} p-6 rounded-2xl h-72 flex flex-col justify-end gap-2 relative overflow-hidden group`}>
-                <div className={`absolute top-6 left-6 ${t.textPrimary} font-medium`}>Visites des 30 derniers jours</div>
-
-                {/* Simulated Chart Bars */}
-                <div className="flex items-end justify-between h-48 mt-12 gap-2 relative z-10">
-                  {chartData.map((h, i) => (
+              {/* Chart */}
+              <div className={`${t.cardBg} ${t.cardBorder} p-4 sm:p-6 rounded-xl sm:rounded-2xl`}>
+                <div className="flex justify-between items-center mb-4 sm:mb-6">
+                  <div>
+                    <h3 className={`${t.textPrimary} font-semibold text-base sm:text-lg`}>Fréquentation</h3>
+                    <p className={`${t.textSecondary} text-xs sm:text-sm`}>Visites des 30 derniers jours</p>
+                  </div>
+                </div>
+                <div className="h-32 sm:h-48 flex items-end justify-between gap-1">
+                  {[40, 55, 45, 90, 65, 85, 120, 95, 110, 140, 100, 130, 80, 115, 75, 105, 125, 90].map((h, i) => (
                     <motion.div
                       key={i}
                       initial={{ height: 0 }}
-                      whileInView={{ height: `${(h / maxChart) * 100}%` }}
+                      whileInView={{ height: `${(h / 140) * 100}%` }}
                       viewport={{ once: true }}
-                      transition={{ delay: i * 0.05, type: "spring", stiffness: 100 }}
-                      className="w-full bg-gradient-to-t from-indigo-600/50 to-indigo-400/80 rounded-t-md hover:from-indigo-500 hover:to-indigo-300 transition-colors cursor-pointer shadow-[0_0_15px_rgba(99,102,241,0)] hover:shadow-[0_0_15px_rgba(99,102,241,0.5)]"
+                      transition={{ delay: i * 0.03, type: "spring" as const, stiffness: 100 }}
+                      className="w-full bg-gradient-to-t from-indigo-900/40 to-indigo-500/60 rounded-t-sm hover:to-indigo-400 transition-colors cursor-pointer"
                     />
+                  ))}
+                </div>
+              </div>
+
+              {/* Recent Activity */}
+              <div className={`${t.cardBg} ${t.cardBorder} rounded-xl sm:rounded-2xl overflow-hidden`}>
+                <div className={`px-4 sm:px-6 py-3 sm:py-4 border-b ${t.border} flex justify-between items-center`}>
+                  <h3 className={`${t.textPrimary} font-semibold text-sm sm:text-base`}>Activité Récente</h3>
+                  <span className="text-indigo-400 text-xs sm:text-sm hover:text-indigo-300 cursor-pointer">Voir tout</span>
+                </div>
+                <div className={`divide-y ${t.border}`}>
+                  {[
+                    { name: "Sophie Martin", action: "Nouveau scan", time: "Il y a 5 min", points: "+10 pts", positive: true },
+                    { name: "Thomas Dubois", action: "Récompense utilisée", time: "Il y a 22 min", points: "-50 pts", positive: false },
+                    { name: "Lucas Bernard", action: "Nouveau client", time: "Il y a 1 heure", points: "Carte créée", positive: null },
+                  ].map((item, i) => (
+                    <div key={i} className="px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors cursor-pointer">
+                      <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center text-white font-medium text-xs sm:text-sm">
+                          {item.name.charAt(0)}
+                        </div>
+                        <div>
+                          <div className={`${t.textPrimary} text-xs sm:text-sm font-medium`}>{item.name}</div>
+                          <div className={`${t.textSecondary} text-xs`}>{item.action} • {item.time}</div>
+                        </div>
+                      </div>
+                      <div className={`text-xs sm:text-sm font-medium ${item.positive === true ? 'text-green-400' : item.positive === false ? 'text-red-400' : 'text-indigo-400'}`}>
+                        {item.points}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Right Sidebar - Card Editor Mock */}
-            <div className={`border ${t.border} rounded-2xl p-6 flex flex-col items-center backdrop-blur-xl`} style={{ backgroundColor: t.pageBg.includes('bg-white') ? 'rgba(249,250,251,0.5)' : 'rgba(10,10,15,0.5)' }}>
-              <div className={`${t.textPrimary} font-medium w-full mb-6`}>Aperçu de la carte</div>
+            {/* Sidebar */}
+            <div className={`${t.cardBg} ${t.cardBorder} rounded-xl sm:rounded-2xl p-4 sm:p-6 flex flex-col`}>
+              <div className={`flex items-center gap-2 ${t.textPrimary} font-semibold mb-4 sm:mb-6 text-sm sm:text-base`}>
+                <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400" />
+                Votre Carte Digitale
+              </div>
 
-              <motion.div
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="w-[140px] h-[220px] sm:w-[200px] sm:h-[320px] bg-gradient-to-br from-indigo-900 via-slate-900 to-black rounded-2xl p-3 sm:p-5 shadow-2xl border border-indigo-500/30 flex flex-col relative"
-              >
-                <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-sm sm:text-lg shadow-[0_0_15px_rgba(99,102,241,0.5)]">C</div>
-                  <div className="text-white font-semibold text-sm sm:text-base">Le Club</div>
-                </div>
-
-                <div className="mt-auto bg-white/10 rounded-xl p-4 backdrop-blur-md border border-white/5">
-                  <div className="w-full h-1.5 bg-black/50 rounded-full mb-3 overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      whileInView={{ width: "60%" }}
-                      transition={{ delay: 0.5, duration: 1 }}
-                      className="h-full bg-indigo-400 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.8)]"
-                    />
+              {/* Card Preview */}
+              <div className="relative mx-auto w-full max-w-[200px] sm:max-w-[220px] rounded-2xl overflow-hidden border border-white/10 shadow-xl mb-6 sm:mb-8">
+                <div className="aspect-[9/16] bg-gradient-to-br from-indigo-900 via-slate-900 to-black flex flex-col items-center justify-center p-4">
+                  <div className="w-12 h-12 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-xl mb-4">
+                    C
                   </div>
-                  <div className={`text-xs ${t.pageText} flex justify-between font-medium`}>
-                    <span>500 pts</span>
-                    <span className={t.textPrimary}>1000 pts</span>
+                  <div className="text-white font-semibold text-center">Votre Enseigne</div>
+                  <div className="text-indigo-400 text-xs mt-1">Carte de fidélité</div>
+                  <div className="mt-auto w-full bg-white/5 rounded-lg p-3 backdrop-blur-md">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400 text-xs">Tampons</span>
+                      <span className="text-white font-bold">0 / 10</span>
+                    </div>
+                    <div className="w-full bg-black/50 rounded-full h-1.5 mt-2">
+                      <div className="bg-indigo-500 h-full rounded-full" style={{ width: "0%" }} />
+                    </div>
                   </div>
                 </div>
-              </motion.div>
+              </div>
 
-              <div className="w-full space-y-3 mt-8">
-                <div className={`w-full h-10 ${t.sectionBgAlt} rounded-lg border ${t.border} hover:${t.sectionBgAlt} transition-colors cursor-pointer`} />
-                <div className={`w-full h-10 ${t.sectionBgAlt} rounded-lg border ${t.border} hover:${t.sectionBgAlt} transition-colors cursor-pointer`} />
-                <div className="w-full h-10 bg-indigo-500/20 border border-indigo-500/50 rounded-lg hover:bg-indigo-500/30 transition-colors cursor-pointer" />
+              {/* Quick Actions */}
+              <div className="w-full flex flex-col gap-2 sm:gap-3 mt-auto">
+                <p className={`text-xs ${t.textMuted} font-medium uppercase tracking-wider mb-1`}>Actions rapides</p>
+                <button className="flex items-center gap-2 sm:gap-3 w-full bg-indigo-600 hover:bg-indigo-500 text-white p-2.5 sm:p-3.5 rounded-xl font-medium transition-all text-sm">
+                  <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
+                  Générer un QR Code
+                </button>
+                <button className={`flex items-center gap-2 sm:gap-3 w-full ${t.cardBg} border ${t.border} ${t.textSecondary} p-2.5 sm:p-3.5 rounded-xl font-medium transition-all text-sm hover:bg-white/10`}>
+                  <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
+                  Envoyer une Push Notif
+                </button>
+                <button className={`flex items-center gap-2 sm:gap-3 w-full ${t.cardBg} border ${t.border} ${t.textSecondary} p-2.5 sm:p-3.5 rounded-xl font-medium transition-all text-sm hover:bg-white/10`}>
+                  <Paintbrush className="w-4 h-4 sm:w-5 sm:h-5 text-sky-400" />
+                  Modifier le design
+                </button>
               </div>
             </div>
           </div>

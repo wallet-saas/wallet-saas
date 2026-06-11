@@ -166,7 +166,7 @@ export function Hero() {
                 <motion.div
                   initial={{ y: 50, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.6, type: "spring", stiffness: 100 }}
+                  transition={{ delay: 0.6, type: "spring" as const, stiffness: 100 }}
                   style={{ transform: 'translateZ(60px)', transformStyle: 'preserve-3d' }}
                   className="w-full h-[420px] bg-gradient-to-br from-indigo-900 via-slate-900 to-black rounded-2xl p-6 shadow-2xl border border-white/10 flex flex-col relative overflow-hidden"
                 >
@@ -194,7 +194,7 @@ export function Hero() {
                     <motion.div
                       initial={{ scale: 0.8 }}
                       animate={{ scale: 1 }}
-                      transition={{ delay: 1, type: "spring", stiffness: 200 }}
+                      transition={{ delay: 1, type: "spring" as const, stiffness: 200 }}
                       className="text-4xl lg:text-6xl font-bold text-white mb-2"
                     >
                       1,250
