@@ -74,17 +74,19 @@ def extract_token(body):
         if t: return t
     return ""
 
-def extract_commercant_id(body):
+def extract_commercant(body):
+    """Extract commercant object from API response, handling both {data: {commercant: {...}} and {commercant: {...}} formats"""
     if isinstance(body, dict):
         data = body.get("data", {})
-        if isinstance(data, dict):
-            c = data.get("commercant", {})
-            if isinstance(c, dict):
-                return c.get("id", "")
-        c = body.get("commercant", {})
-        if isinstance(c, dict):
-            return c.get("id", "")
-    return ""
+        if isinstance(data, dict) and "commercant" in data:
+            return data["commercant"]
+        if "commercant" in body:
+            return body["commercant"]
+    return {}
+
+def extract_commercant_id(body):
+    c = extract_commercant(body)
+    return c.get("id", "") if isinstance(c, dict) else ""
 
 log("")
 log("=" * 50)
@@ -147,7 +149,7 @@ if TOKEN:
     if code == 200:
         pass_("Profil HTTP " + str(code))
         # Check if commercant data is present
-        c = body.get("commercant", {}) if isinstance(body, dict) else {}
+        c = extract_commercant(body)
         info("Email: " + str(c.get("email", "N/A")))
     else:
         fail_("Profil HTTP " + str(code))
@@ -260,7 +262,7 @@ if TOKEN:
 
     code, body = get("/api/auth/me")
     if code == 200:
-        c = body.get("commercant", {}) if isinstance(body, dict) else {}
+        c = extract_commercant(body)
         geo_active = c.get("module_geolocalisation", False)
         geo_msg = c.get("geoloc_message", "")
         lat = c.get("latitude", ""); lng = c.get("longitude", "")
@@ -286,7 +288,13 @@ if TOKEN:
 
     code, body = get("/api/offres-flash")
     if code == 200:
-        count = len(body) if isinstance(body, list) else (body.get("count", "?") if isinstance(body, dict) else "?")
+        if isinstance(body, list):
+            count = len(body)
+        elif isinstance(body, dict):
+            data = body.get("data", body.get("offres", []))
+            count = len(data) if isinstance(data, list) else 0
+        else:
+            count = "?"
         if isinstance(count, int) and count > 0: pass_("Liste offres flash HTTP " + str(code) + " count=" + str(count))
         else: warn_("Liste offres vide count=" + str(count))
     else:
@@ -351,7 +359,7 @@ if TOKEN:
 
     code, body = get("/api/auth/me")
     if code == 200:
-        c = body.get("commercant", {}) if isinstance(body, dict) else {}
+        c = extract_commercant(body)
         avis_active = c.get("module_avis_google", False)
         if avis_active: pass_("Avis Google actif en base")
         else: warn_("Avis Google pas actif en base")

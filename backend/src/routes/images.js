@@ -163,4 +163,29 @@ router.get('/:commercantId', async (req, res) => {
   }
 });
 
+// ─── GET /api/images — Lister les images du commerçant ───────────────────────
+router.get('/', authMiddleware, async (req, res) => {
+  try {
+    const { id: commercantId } = req.commercant;
+    const folderPath = `merchant_${commercantId}`;
+
+    const { data, error } = await supabase.storage
+      .from('card-assets')
+      .list(folderPath, { limit: 50, offset: 0, sortBy: { column: 'created_at', order: 'desc' } });
+
+    if (error) throw error;
+
+    const images = (data || []).map(f => ({
+      name: f.name,
+      size: f.metadata?.size || 0,
+      created_at: f.created_at,
+    }));
+
+    res.json({ success: true, data: images });
+  } catch (err) {
+    console.error('[images] Erreur liste:', err);
+    res.status(500).json({ success: false, error: 'Erreur lors de la récupération des images.' });
+  }
+});
+
 module.exports = router;
