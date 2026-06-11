@@ -57,7 +57,9 @@ function loadCredentials() {
   const KEY_FILE_PATH = process.env.GOOGLE_WALLET_KEY_FILE;
 
   let creds = null;
+  const errors = [];
 
+  // Try JSON string first
   if (KEY_JSON_STRING) {
     try {
       creds = JSON.parse(KEY_JSON_STRING);
@@ -65,25 +67,38 @@ function loadCredentials() {
       try {
         creds = JSON.parse(KEY_JSON_STRING.replace(/\n/g, '\\n'));
       } catch (e2) {
-        throw new Error(`[Google Wallet] GOOGLE_WALLET_KEY_JSON invalide — JSON malformé: ${e1.message}`);
+        errors.push('GOOGLE_WALLET_KEY_JSON: ' + e1.message);
       }
     }
-  } else if (KEY_JSON_BASE64) {
+  }
+
+  // Try base64
+  if (!creds && KEY_JSON_BASE64) {
     try {
       const decoded = Buffer.from(KEY_JSON_BASE64, 'base64').toString('utf8');
       creds = JSON.parse(decoded);
     } catch (e) {
-      throw new Error(`[Google Wallet] GOOGLE_WALLET_KEY_JSON_BASE64 invalide — décodage échoué: ${e.message}`);
+      errors.push('GOOGLE_WALLET_KEY_JSON_BASE64: ' + e.message);
     }
-  } else if (KEY_FILE_PATH) {
-    const keyPath = path.resolve(process.cwd(), KEY_FILE_PATH);
-    if (!fs.existsSync(keyPath)) {
-      throw new Error(`[Google Wallet] Fichier clé introuvable : ${keyPath}`);
+  }
+
+  // Try file (dev only) - silently skip if file doesn't exist
+  if (!creds && KEY_FILE_PATH) {
+    try {
+      const keyPath = path.resolve(process.cwd(), KEY_FILE_PATH);
+      if (fs.existsSync(keyPath)) {
+        creds = JSON.parse(fs.readFileSync(keyPath, 'utf8'));
+      }
+    } catch (e) {
+      errors.push('GOOGLE_WALLET_KEY_FILE: ' + e.message);
     }
-    creds = JSON.parse(fs.readFileSync(keyPath, 'utf8'));
-  } else {
+  }
+
+  if (!creds) {
     throw new Error(
-      '[Google Wallet] Aucun credential — définir GOOGLE_WALLET_KEY_JSON, GOOGLE_WALLET_KEY_JSON_BASE64 ou GOOGLE_WALLET_KEY_FILE'
+      '[Google Wallet] Aucun credential valide. ' +
+      'Definir GOOGLE_WALLET_KEY_JSON, GOOGLE_WALLET_SERVICE_ACCOUNT_KEY, GOOGLE_WALLET_KEY_JSON_BASE64 ou GOOGLE_WALLET_KEY_FILE. ' +
+      'Erreurs: ' + errors.join(', ')
     );
   }
 
