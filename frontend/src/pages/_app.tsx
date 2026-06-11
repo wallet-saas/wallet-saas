@@ -4,9 +4,6 @@ import React from 'react';
 import '@/styles/globals.css';
 import { ToastProvider } from '@/components/ui/Toast';
 
-// Build timestamp — forces cache invalidation on each deploy
-const BUILD_ID = process.env.VERCEL_GIT_COMMIT_SHA || Date.now().toString();
-
 interface ErrorBoundaryState { error: Error | null }
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, ErrorBoundaryState> {
