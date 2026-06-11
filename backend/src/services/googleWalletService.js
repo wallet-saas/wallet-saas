@@ -42,7 +42,7 @@ let _tokenExpiry = 0;
 
 /** Vérifie si Google Wallet est configuré (lecture dynamique). */
 function isConfigured() {
-  return !!(process.env.GOOGLE_WALLET_ISSUER_ID && (process.env.GOOGLE_WALLET_KEY_JSON || process.env.GOOGLE_WALLET_KEY_JSON_BASE64 || process.env.GOOGLE_WALLET_KEY_FILE));
+  return !!(process.env.GOOGLE_WALLET_ISSUER_ID && (process.env.GOOGLE_WALLET_KEY_JSON || process.env.GOOGLE_WALLET_SERVICE_ACCOUNT_KEY || process.env.GOOGLE_WALLET_KEY_JSON_BASE64 || process.env.GOOGLE_WALLET_KEY_FILE));
 }
 
 /**
@@ -52,7 +52,7 @@ function isConfigured() {
  * Priorité 3 : fichier référencé par GOOGLE_WALLET_KEY_FILE (développement local)
  */
 function loadCredentials() {
-  const KEY_JSON_STRING = process.env.GOOGLE_WALLET_KEY_JSON;
+  const KEY_JSON_STRING = process.env.GOOGLE_WALLET_KEY_JSON || process.env.GOOGLE_WALLET_SERVICE_ACCOUNT_KEY;
   const KEY_JSON_BASE64 = process.env.GOOGLE_WALLET_KEY_JSON_BASE64;
   const KEY_FILE_PATH = process.env.GOOGLE_WALLET_KEY_FILE;
 
@@ -385,8 +385,8 @@ async function testConnection() {
   const report = {
     issuer_id_set: !!process.env.GOOGLE_WALLET_ISSUER_ID,
     issuer_id_value: process.env.GOOGLE_WALLET_ISSUER_ID || null,
-    key_json_set: !!process.env.GOOGLE_WALLET_KEY_JSON,
-    key_json_length: process.env.GOOGLE_WALLET_KEY_JSON?.length || 0,
+    key_json_set: !!(process.env.GOOGLE_WALLET_KEY_JSON || process.env.GOOGLE_WALLET_SERVICE_ACCOUNT_KEY),
+    key_json_length: (process.env.GOOGLE_WALLET_KEY_JSON || process.env.GOOGLE_WALLET_SERVICE_ACCOUNT_KEY || "").length,
     key_file_set: !!process.env.GOOGLE_WALLET_KEY_FILE,
     credentials_parsed: false,
     credentials_email: null,

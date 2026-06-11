@@ -35,7 +35,21 @@ router.post('/upload', authMiddleware, upload.single('file'), async (req, res) =
     const { id: commercantId } = req.commercant;
     const type = req.body.type || 'background';
     
-    if (!req.file) {
+    let fileBuffer;
+    let fileMimeType;
+    
+    if (req.file) {
+      // Multipart upload
+      fileBuffer = req.file.buffer;
+      fileMimeType = req.file.mimetype;
+    } else if (req.body.image) {
+      // Base64 upload from frontend
+      const base64Data = req.body.image.replace(/^data:image\/\w+;base64,/, '');
+      fileBuffer = Buffer.from(base64Data, 'base64');
+      const ext = req.body.filename ? req.body.filename.split('.').pop() : 'png';
+      const mimeMap = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
+      fileMimeType = mimeMap[ext.toLowerCase()] || 'image/png';
+    } else {
       return res.status(400).json({ success: false, error: 'Aucun fichier fourni.' });
     }
 
@@ -44,7 +58,7 @@ router.post('/upload', authMiddleware, upload.single('file'), async (req, res) =
     }
 
     // Nom fichier unique
-    const ext = req.file.mimetype.split('/')[1] || 'jpg';
+    const ext = fileMimeType.split('/')[1] || 'jpg';
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 8);
     const fileName = `merchant_${commercantId}/${type}_${timestamp}_${random}.${ext}`;
@@ -52,10 +66,10 @@ router.post('/upload', authMiddleware, upload.single('file'), async (req, res) =
     // Upload via Supabase Storage (service role = bypass RLS)
     const { data, error } = await supabase.storage
       .from(BUCKET)
-      .upload(fileName, req.file.buffer, {
+      .upload(fileName, fileBuffer, {
         cacheControl: '3600',
         upsert: false,
-        contentType: req.file.mimetype,
+        contentType: fileMimeType,
       });
 
     if (error) {
