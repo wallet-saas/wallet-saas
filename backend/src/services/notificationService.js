@@ -125,12 +125,31 @@ async function getTargetedClients(commercantId, cible) {
  * @returns {{ totalCible: number, totalEnvoyes: number, simulation: boolean }}
  */
 async function sendPushNotification(commercantId, titre, message, cible = 'tous') {
+  // 1️⃣ Récupérer le flag « mode simulation » du commerçant
+  const { data: commercant, error: commError } = await supabase
+    .from('commercants')
+    .select('notif_mode_simulation')
+    .eq('id', commercantId)
+    .single();
+
+  const modeSimulationFlag = commercant?.notif_mode_simulation ?? false;
+
+  // 2️⃣ Déterminer si on doit réellement envoyer ou simuler
+  const forceSimulation = (!APNS_ENABLED && !FCM_ENABLED) || modeSimulationFlag;
+
   const clients = await getTargetedClients(commercantId, cible);
 
   if (clients.length === 0) {
-    return { totalCible: 0, totalEnvoyes: 0, simulation: !APNS_ENABLED && !FCM_ENABLED };
+    return { totalCible: 0, totalEnvoyes: 0, simulation: forceSimulation };
   }
 
+  // 3️⃣ Si simulation, on log uniquement sans réellement appeler les fournisseurs
+  if (forceSimulation) {
+    console.log(`[NOTIFICATIONS] SIMULATION – ${clients.length} clients ciblés (cible: ${cible}) – pas d'envoi réel`);
+    return { totalCible: clients.length, totalEnvoyes: clients.length, simulation: true };
+  }
+
+  // 4️⃣ Envoi réel lorsque les providers sont actifs et que le flag est désactivé
   const results = await Promise.allSettled(
     clients.map(client => sendToDevice(client.device_token, client.platform, titre, message))
   );
@@ -139,13 +158,9 @@ async function sendPushNotification(commercantId, titre, message, cible = 'tous'
     r => r.status === 'fulfilled' && r.value.success
   ).length;
 
-  const simulation = !APNS_ENABLED && !FCM_ENABLED;
+  console.log(`[NOTIFICATIONS] Envoi terminé : ${totalEnvoyes}/${clients.length} (cible: ${cible})`);
 
-  console.log(
-    `[NOTIFICATIONS] ${simulation ? 'SIMULATION ' : ''}Envoi terminé : ${totalEnvoyes}/${clients.length} (cible: ${cible})`
-  );
-
-  return { totalCible: clients.length, totalEnvoyes, simulation };
+  return { totalCible: clients.length, totalEnvoyes, simulation: false };
 }
 
 // ---------------------------------------------------------------------------

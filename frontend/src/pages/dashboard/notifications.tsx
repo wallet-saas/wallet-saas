@@ -51,7 +51,7 @@ export default function NotificationsPage() {
   const [heureDebut, setHeureDebut] = useState(8);
   const [heureFin, setHeureFin] = useState(22);
   const [templateDefaut, setTemplateDefaut] = useState('');
-  const [modeSimulation, setModeSimulation] = useState(false);
+  const [modeSimulation, setModeSimulation] = useState(false); // sera écrasé par le useEffect
 
   useEffect(() => {
     if (commercant) {
@@ -60,6 +60,7 @@ export default function NotificationsPage() {
       setHeureDebut(commercant.notif_heure_debut ?? 8);
       setHeureFin(commercant.notif_heure_fin ?? 22);
       setTemplateDefaut(commercant.notif_template_defaut ?? '');
+      setModeSimulation(commercant.notif_mode_simulation ?? false);
     }
   }, [commercant]);
 
@@ -70,12 +71,13 @@ export default function NotificationsPage() {
       notif_heure_debut: heureDebut,
       notif_heure_fin: heureFin,
       notif_template_defaut: templateDefaut,
+      notif_mode_simulation: modeSimulation,
     });
     await refreshUser();
-  }, [moduleEnabled, maxPerDay, heureDebut, heureFin, templateDefaut, refreshUser]);
+  }, [moduleEnabled, maxPerDay, heureDebut, heureFin, templateDefaut, modeSimulation, refreshUser]);
 
   const { status: saveStatusSettings } = useAutoSave({
-    data: { moduleEnabled, maxPerDay, heureDebut, heureFin, templateDefaut },
+    data: { moduleEnabled, maxPerDay, heureDebut, heureFin, templateDefaut, modeSimulation },
     onSave: handleAutoSaveSettings,
     debounceMs: 800,
   });
