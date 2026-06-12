@@ -5,7 +5,10 @@ const {
   listMenus,
   updateMenu,
   deleteMenu,
-  toggleDisponibilite
+  toggleDisponibilite,
+  pushSelection,
+  listGroupes,
+  saveGroupes
 } = require('../controllers/menuController');
 const authMiddleware = require('../middleware/authMiddleware');
 
@@ -29,5 +32,14 @@ router.delete('/:id', authMiddleware, deleteMenu);
 
 /** PATCH /api/menus/:id/toggle — Basculer disponible/indisponible */
 router.patch('/:id/toggle', authMiddleware, toggleDisponibilite);
+
+/** POST /api/menus/push-selection — Pousser une sélection de plats */
+router.post('/push-selection', authMiddleware, pushSelection);
+
+/** GET /api/menus/groupes — Lister les menus groupés */
+router.get('/groupes', authMiddleware, listGroupes);
+
+/** PUT /api/menus/groupes — Sauvegarder les menus groupés */
+router.put('/groupes', authMiddleware, saveGroupes);
 
 module.exports = router;

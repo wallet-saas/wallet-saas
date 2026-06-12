@@ -196,6 +196,18 @@ export const menusApi = {
     request<{ success: boolean }>(`/api/menus/${id}`, { method: 'DELETE' }),
   toggle: (id: string) =>
     request<{ menu: Menu }>(`/api/menus/${id}/toggle`, { method: 'PATCH' }),
+  pushSelection: (menuIds: string[], groupeId?: string) =>
+    request<{ success: boolean; simulation: boolean; totalEnvoyes: number; message: string }>(
+      '/api/menus/push-selection',
+      { method: 'POST', body: JSON.stringify({ menu_ids: menuIds, groupe_id: groupeId }) }
+    ),
+  listGroupes: () =>
+    request<{ groupes: MenuGroupe[] }>('/api/menus/groupes'),
+  saveGroupes: (groupes: MenuGroupe[]) =>
+    request<{ success: boolean; message: string }>(
+      '/api/menus/groupes',
+      { method: 'PUT', body: JSON.stringify({ groupes }) }
+    ),
 };
 
 // ─── Offres ───────────────────────────────────────────────────────────────────
@@ -414,6 +426,12 @@ export interface Menu {
   image_url?: string;
   disponible: boolean;
   created_at: string;
+}
+
+export interface MenuGroupe {
+  id: string;
+  nom: string;
+  menu_ids: string[];
 }
 
 export interface Offre {

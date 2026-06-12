@@ -212,10 +212,148 @@ const toggleDisponibilite = async (req, res) => {
   }
 };
 
+// ---------------------------------------------------------------------------
+// POST /api/menus/push-selection
+// Pousser une sélection de plats en notification push
+// Body: { menu_ids: string[], groupe_id?: string }
+// ---------------------------------------------------------------------------
+const pushSelection = async (req, res) => {
+  try {
+    const { id: commercantId } = req.commercant;
+    const { menu_ids, groupe_id } = req.body;
+
+    if (!Array.isArray(menu_ids) || menu_ids.length === 0) {
+      return res.status(400).json({ success: false, error: 'menu_ids requis (tableau non vide).' });
+    }
+
+    // Récupérer les plats depuis Supabase pour avoir les titres/prix
+    const { data: menus, error: fetchErr } = await supabase
+      .from('menus')
+      .select('id, titre, prix, description')
+      .in('id', menu_ids)
+      .eq('commercant_id', commercantId)
+      .eq('disponible', true);
+
+    if (fetchErr) {
+      return res.status(500).json({ success: false, error: 'Erreur récupération des plats.' });
+    }
+
+    if (!menus || menus.length === 0) {
+      return res.status(400).json({ success: false, error: 'Aucun plat disponible trouvé dans la sélection.' });
+    }
+
+    const platsList = menus.map(m => `• ${m.titre}${m.prix ? ` — ${m.prix}€` : ''}`).join('\n');
+
+    let titre;
+    if (groupe_id) {
+      titre = `🍽️ Menu du jour`;
+    } else {
+      titre = `🍽️ Aujourd'hui chez nous`;
+    }
+    const message = `${platsList}\n\nPassez nous voir !`;
+
+    // Envoyer via le service de notifications existant
+    const { sendPushNotification } = require('../services/notificationService');
+    const result = await sendPushNotification(
+      commercantId,
+      titre,
+      message,
+      'tous'
+    );
+
+    return res.status(200).json({
+      success: true,
+      simulation: result?.simulation ?? true,
+      totalEnvoyes: result?.totalEnvoyes ?? 0,
+      message: result?.simulation
+        ? `${menus.length} plat(s) sélectionné(s) (mode simulation)`
+        : `${menus.length} plat(s) envoyé(s) à ${result.totalEnvoyes} client(s)`,
+      data: { menus, totalEnvoyes: result?.totalEnvoyes ?? 0 }
+    });
+
+  } catch (error) {
+    console.error('Erreur pushSelection:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ---------------------------------------------------------------------------
+// GET /api/menus/groupes
+// Lister les menus groupés du commerçant (stockés en JSONB)
+// ---------------------------------------------------------------------------
+const listGroupes = async (req, res) => {
+  try {
+    const { id: commercantId } = req.commercant;
+
+    const { data: commercant, error } = await supabase
+      .from('commercants')
+      .select('menus_groupes')
+      .eq('id', commercantId)
+      .single();
+
+    if (error) {
+      return res.status(500).json({ success: false, error: 'Erreur récupération groupes.' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: { groupes: commercant?.menus_groupes || [] }
+    });
+
+  } catch (error) {
+    console.error('Erreur listGroupes:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ---------------------------------------------------------------------------
+// PUT /api/menus/groupes
+// Sauvegarder les menus groupés (remplace tout)
+// Body: { groupes: MenuGroupe[] }
+// ---------------------------------------------------------------------------
+const saveGroupes = async (req, res) => {
+  try {
+    const { id: commercantId } = req.commercant;
+    const { groupes } = req.body;
+
+    if (!Array.isArray(groupes)) {
+      return res.status(400).json({ success: false, error: 'groupes doit être un tableau.' });
+    }
+
+    for (const g of groupes) {
+      if (!g.id || !g.nom || !Array.isArray(g.menu_ids)) {
+        return res.status(400).json({ success: false, error: 'Chaque groupe doit avoir id, nom et menu_ids.' });
+      }
+    }
+
+    const { error: updateErr } = await supabase
+      .from('commercants')
+      .update({ menus_groupes: groupes })
+      .eq('id', commercantId);
+
+    if (updateErr) {
+      return res.status(500).json({ success: false, error: error.message });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `${groupes.length} groupe(s) sauvegardé(s).`,
+      data: { groupes }
+    });
+
+  } catch (error) {
+    console.error('Erreur saveGroupes:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 module.exports = {
   createMenu,
   listMenus,
   updateMenu,
   deleteMenu,
-  toggleDisponibilite
+  toggleDisponibilite,
+  pushSelection,
+  listGroupes,
+  saveGroupes
 };

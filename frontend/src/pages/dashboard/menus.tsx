@@ -11,13 +11,13 @@ import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { Toggle } from '@/components/ui/Toggle';
 import { PageSpinner } from '@/components/ui/Spinner';
-import { menusApi, type Menu } from '@/services/api';
+import { menusApi, type Menu, type MenuGroupe } from '@/services/api';
 import { commercantApi } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/Toast';
 import { useAutoSave, SaveIndicator } from '@/hooks/useAutoSave';
 import { formatEuro } from '@/utils/format';
-import { Plus, Pencil, Trash2, UtensilsCrossed, ChevronDown, ChevronRight, Settings, Send, Bell, Check } from 'lucide-react';
+import { Plus, Pencil, Trash2, UtensilsCrossed, ChevronDown, ChevronRight, Settings, Bell, Check, Layers, FolderPlus, X, CheckSquare, Square } from 'lucide-react';
 
 const schema = z.object({
   titre: z.string().min(1, 'Titre requis'),
@@ -32,6 +32,50 @@ type FormData = z.infer<typeof schema>;
 
 const defaultCategories = ['Entrées', 'Plats', 'Desserts', 'Boissons', 'Snacks'];
 
+// ── Composant GroupeCard ──────────────────────────────────────────────────────
+function GroupeCard({ groupe, menus, onPush, onDelete, pushing }: {
+  groupe: MenuGroupe;
+  menus: Menu[];
+  onPush: (g: MenuGroupe) => void;
+  onDelete: (id: string) => void;
+  pushing: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const platsDuGroupe = menus.filter(m => groupe.menu_ids.includes(m.id));
+  return (
+    <Card>
+      <button className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors" onClick={() => setOpen(!open)}>
+        <div className="flex items-center gap-3">
+          <Layers className="h-5 w-5 text-indigo-500" />
+          <span className="font-semibold text-gray-900">{groupe.nom}</span>
+          <Badge variant="purple">{platsDuGroupe.length} plat{platsDuGroupe.length !== 1 ? 's' : ''}</Badge>
+        </div>
+        {open ? <ChevronDown className="h-4 w-4 text-gray-400" /> : <ChevronRight className="h-4 w-4 text-gray-400" />}
+      </button>
+      {open && (
+        <div className="border-t border-gray-100 px-6 py-3 space-y-2">
+          {platsDuGroupe.length === 0 && <p className="text-xs text-gray-400 py-2">Aucun plat dans ce groupe</p>}
+          {platsDuGroupe.map(m => (
+            <div key={m.id} className="flex items-center gap-2 text-sm">
+              <span className="text-gray-600">• {m.titre}</span>
+              {m.prix && <span className="text-gray-400 font-medium">{m.prix}€</span>}
+            </div>
+          ))}
+          <div className="flex gap-2 pt-2">
+            <Button size="sm" onClick={() => onPush(groupe)} disabled={pushing || platsDuGroupe.length === 0}>
+              <Bell className="h-3.5 w-3.5" /> Pousser ce menu
+            </Button>
+            <Button size="sm" variant="danger" onClick={() => onDelete(groupe.id)}>
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+// ── Page principale ───────────────────────────────────────────────────────────
 export default function MenusPage() {
   const { commercant, refreshUser } = useAuth();
   const { show: toast } = useToast();
@@ -40,9 +84,17 @@ export default function MenusPage() {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [modal, setModal] = useState<{ open: boolean; menu?: Menu }>({ open: false });
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'menu' | 'settings'>('menu');
+  const [activeTab, setActiveTab] = useState<'menu' | 'groupes' | 'settings'>('menu');
   const [pushingMenu, setPushingMenu] = useState(false);
   const [pushResult, setPushResult] = useState<{ success?: boolean; message?: string } | null>(null);
+
+  // Sélection multi-plats
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Groupes
+  const [groupes, setGroupes] = useState<MenuGroupe[]>([]);
+  const [showGroupeForm, setShowGroupeForm] = useState(false);
+  const [groupeNom, setGroupeNom] = useState('');
 
   const [moduleEnabled, setModuleEnabled] = useState(true);
   const [categories, setCategories] = useState('Entrées,Plats,Desserts,Boissons');
@@ -93,7 +145,14 @@ export default function MenusPage() {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchMenus(); }, []);
+  const fetchGroupes = async () => {
+    try {
+      const data = await menusApi.listGroupes();
+      setGroupes(data.groupes || []);
+    } catch {}
+  };
+
+  useEffect(() => { fetchMenus(); fetchGroupes(); }, []);
 
   const openCreate = () => { reset({ disponible: true, menu_du_jour: false }); setModal({ open: true }); };
   const openEdit = (menu: Menu) => {
@@ -126,27 +185,95 @@ export default function MenusPage() {
     catch (e: any) { toast(e?.message || 'Erreur', 'error'); }
   };
 
-  const handlePushMenuDuJour = async () => {
+  // ── Sélection multi-plats ───────────────────────────────────────────────────
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAllVisible = () => {
+    const allVisible = Object.values(parCategorie).flat().filter(m => m.disponible).map(m => m.id);
+    setSelectedIds(new Set(allVisible));
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  // ── Push notifications ──────────────────────────────────────────────────────
+  const handlePushSelection = async () => {
+    if (selectedIds.size === 0) { toast('Sélectionnez au moins un plat', 'error'); return; }
     setPushingMenu(true);
     setPushResult(null);
     try {
-      const allMenus = Object.values(parCategorie).flat().filter(m => m.disponible);
-      if (allMenus.length === 0) {
-        setPushResult({ success: false, message: 'Aucun plat disponible à pousser' });
-        return;
-      }
-      const platsList = allMenus.slice(0, 5).map(m => `• ${m.titre}${m.prix ? ` — ${formatEuro(m.prix)}` : ''}`).join('\n');
-      const titre = '🍽️ Menu du jour';
-      const message = `Découvrez notre menu du jour !\n\n${platsList}\n\nPassez nous voir !`;
-      const { notificationsApi } = await import('@/services/api');
-      const res = await notificationsApi.send(titre, message, 'tous');
-      setPushResult({ success: true, message: `Menu du jour envoyé à ${res.totalEnvoyes} client(s) !` });
+      const res = await menusApi.pushSelection(Array.from(selectedIds));
+      setPushResult({ success: true, message: res.message });
+      clearSelection();
     } catch (e: any) {
       setPushResult({ success: false, message: e?.message || 'Erreur' });
     } finally { setPushingMenu(false); }
   };
 
+  const handlePushGroupe = async (groupe: MenuGroupe) => {
+    if (groupe.menu_ids.length === 0) { toast('Ce groupe est vide', 'error'); return; }
+    setPushingMenu(true);
+    setPushResult(null);
+    try {
+      const res = await menusApi.pushSelection(groupe.menu_ids, groupe.id);
+      setPushResult({ success: true, message: res.message });
+    } catch (e: any) {
+      setPushResult({ success: false, message: e?.message || 'Erreur' });
+    } finally { setPushingMenu(false); }
+  };
+
+  // ── Groupes CRUD ──────────────────────────────────────────────────────────
+  const handleCreateGroupe = async () => {
+    if (!groupeNom.trim()) { toast('Nom du groupe requis', 'error'); return; }
+    const newGroupe: MenuGroupe = {
+      id: 'grp-' + Date.now(),
+      nom: groupeNom.trim(),
+      menu_ids: [],
+    };
+    const newGroupes = [...groupes, newGroupe];
+    setGroupes(newGroupes);
+    try {
+      await menusApi.saveGroupes(newGroupes);
+      setGroupeNom('');
+      setShowGroupeForm(false);
+      toast('Groupe créé');
+    } catch (e: any) {
+      toast(e?.message || 'Erreur', 'error');
+      fetchGroupes();
+    }
+  };
+
+  const handleDeleteGroupe = async (id: string) => {
+    if (!confirm('Supprimer ce groupe ?')) return;
+    const newGroupes = groupes.filter(g => g.id !== id);
+    setGroupes(newGroupes);
+    try { await menusApi.saveGroupes(newGroupes); }
+    catch (e: any) { toast(e?.message || 'Erreur', 'error'); fetchGroupes(); }
+  };
+
+  const handleToggleGroupeMenu = async (groupeIndex: number, menuId: string) => {
+    const newGroupes = [...groupes];
+    const g = { ...newGroupes[groupeIndex] };
+    if (g.menu_ids.includes(menuId)) {
+      g.menu_ids = g.menu_ids.filter(id => id !== menuId);
+    } else {
+      g.menu_ids = [...g.menu_ids, menuId];
+    }
+    newGroupes[groupeIndex] = g;
+    setGroupes(newGroupes);
+    try { await menusApi.saveGroupes(newGroupes); }
+    catch (e: any) { toast(e?.message || 'Erreur', 'error'); fetchGroupes(); }
+  };
+
+  // ── Données dérivées ──────────────────────────────────────────────────────
   const allMenus = Object.values(parCategorie).flat();
+  const allAvailable = allMenus.filter(m => m.disponible);
+  const selectedCount = selectedIds.size;
   const deviseSymbol = devise === 'USD' ? '$' : devise === 'CHF' ? 'CHF' : '€';
 
   return (
@@ -160,9 +287,6 @@ export default function MenusPage() {
             <p className="page-subtitle">{allMenus.length} plat{allMenus.length !== 1 ? 's' : ''} au total</p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={handlePushMenuDuJour} disabled={loading || allMenus.length === 0} variant="secondary">
-              <Bell className="h-4 w-4" /> Push Menu du Jour
-            </Button>
             <Button onClick={openCreate}>
               <Plus className="h-4 w-4" /> Ajouter un plat
             </Button>
@@ -170,48 +294,65 @@ export default function MenusPage() {
         </div>
       </div>
 
-      <div className={`flex items-center gap-4 px-5 py-4 rounded-xl border mb-6 ${moduleEnabled ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100'}`}>
-        <UtensilsCrossed className={`h-5 w-5 ${moduleEnabled ? 'text-green-600' : 'text-gray-400'}`} />
-        <div className="flex-1">
-          <p className="text-sm font-medium text-gray-900">Module Menu du Jour</p>
-          <p className="text-xs text-gray-500">{moduleEnabled ? 'Activé — vos clients peuvent voir votre menu' : 'Désactivé — le menu est masqué'}</p>
+      {/* Barre de sélection multi-plats */}
+      {allMenus.length > 0 && (
+        <div className={`flex items-center gap-4 px-5 py-3 rounded-xl border mb-4 ${selectedCount > 0 ? 'bg-indigo-50 border-indigo-200' : 'bg-gray-50 border-gray-100'}`}>
+          <UtensilsCrossed className={`h-5 w-5 ${selectedCount > 0 ? 'text-indigo-600' : 'text-gray-400'}`} />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-gray-900">
+              {selectedCount === 0
+                ? 'Cochez les plats à pousser en notification'
+                : `${selectedCount} plat${selectedCount !== 1 ? 's' : ''} sélectionné${selectedCount !== 1 ? 's' : ''}`}
+            </p>
+          </div>
+          <div className="flex gap-2 items-center">
+            {selectedCount > 0 && (
+              <>
+                <Button onClick={handlePushSelection} disabled={pushingMenu} variant="primary" size="sm">
+                  <Bell className="h-4 w-4" /> Pousser la sélection
+                </Button>
+                <Button onClick={clearSelection} variant="ghost" size="sm">
+                  <X className="h-4 w-4" /> Annuler
+                </Button>
+              </>
+            )}
+            {selectedCount === 0 && (
+              <>
+                <Button onClick={selectAllVisible} variant="ghost" size="sm">
+                  <CheckSquare className="h-4 w-4" /> Tout sélectionner
+                </Button>
+              </>
+            )}
+          </div>
         </div>
-        <Toggle checked={moduleEnabled} onChange={async (val) => {
-          const prev = moduleEnabled;
-          setModuleEnabled(val);
-          try {
-            await commercantApi.update({ module_menu_jour: val });
-            await refreshUser();
-          } catch (e: any) {
-            setModuleEnabled(prev);
-            toast(e?.message || 'Erreur lors de la sauvegarde', 'error');
-          }
-        }} />
-      </div>
+      )}
 
       {pushResult && (
         <div className={`flex items-center gap-2 px-4 py-3 rounded-xl mb-4 ${pushResult.success ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'}`}>
-          {pushResult.success ? <Check className="h-4 w-4 text-green-600" /> : <Pencil className="h-4 w-4 text-red-500" />}
+          {pushResult.success ? <Check className="h-4 w-4 text-green-600" /> : <Bell className="h-4 w-4 text-red-500" />}
           <p className={`text-sm ${pushResult.success ? 'text-green-700' : 'text-red-600'}`}>{pushResult.message}</p>
         </div>
       )}
 
       <div className="flex gap-2 mb-6">
         {([
-          { id: 'menu', label: 'Mon Menu', icon: UtensilsCrossed },
-          { id: 'settings', label: 'Paramètres', icon: Settings },
-        ] as const).map(tab => (
+          { id: 'menu' as const, label: 'Mes plats', icon: UtensilsCrossed, count: allMenus.length },
+          { id: 'groupes' as const, label: 'Menus groupés', icon: Layers, count: groupes.length },
+          { id: 'settings' as const, label: 'Paramètres', icon: Settings },
+        ]).map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:text-gray-700'}`}>
             <tab.icon className="h-4 w-4" /> {tab.label}
+            {'count' in tab && (tab as any).count > 0 && <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">{(tab as any).count}</span>}
           </button>
         ))}
       </div>
 
       {loading ? <PageSpinner /> : (
         <>
+          {/* ── ONGLET PLATS ──────────────────────────────────────────────────── */}
           {activeTab === 'menu' && (
-            Object.keys(parCategorie).length === 0 ? (
+            allMenus.length === 0 ? (
               <Card>
                 <CardBody>
                   <div className="py-12 text-center">
@@ -235,12 +376,20 @@ export default function MenusPage() {
                     {!collapsed[categorie] && (
                       <div className="border-t border-gray-100 divide-y divide-gray-50">
                         {items.map(menu => (
-                          <div key={menu.id} className="flex items-center gap-4 px-6 py-4">
+                          <div key={menu.id} className={`flex items-center gap-4 px-6 py-4 ${selectedIds.has(menu.id) ? 'bg-indigo-50/50' : ''}`}>
+                            {/* Checkbox */}
+                            <button onClick={() => toggleSelect(menu.id)} className="flex-shrink-0">
+                              {selectedIds.has(menu.id)
+                                ? <CheckSquare className="h-5 w-5 text-indigo-600" />
+                                : <Square className="h-5 w-5 text-gray-300" />
+                              }
+                            </button>
                             {menu.image_url && <img src={menu.image_url} alt={menu.titre} className="w-12 h-12 rounded-lg object-cover flex-shrink-0 bg-gray-100" />}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <p className="text-sm font-medium text-gray-900">{menu.titre}</p>
                                 {!menu.disponible && <Badge variant="gray">Indisponible</Badge>}
+                                {(menu as any).menu_du_jour && <Badge variant="yellow">⭐ Menu du jour</Badge>}
                               </div>
                               {menu.description && <p className="text-xs text-gray-500 mt-0.5 truncate">{menu.description}</p>}
                               {menu.prix && afficherPrix && <p className="text-sm font-semibold text-primary-600 mt-1">{menu.prix}{deviseSymbol}</p>}
@@ -260,8 +409,106 @@ export default function MenusPage() {
             )
           )}
 
+          {/* ── ONGLET GROUPES ───────────────────────────────────────────────── */}
+          {activeTab === 'groupes' && (
+            <div className="space-y-4">
+              {groupes.length === 0 && !showGroupeForm ? (
+                <Card>
+                  <CardBody>
+                    <div className="py-12 text-center">
+                      <Layers className="h-10 w-10 text-gray-200 mx-auto mb-3" />
+                      <p className="text-sm text-gray-500 mb-4">Créez des menus groupés pour pousser plusieurs plats d'un coup</p>
+                      <Button onClick={() => setShowGroupeForm(true)}><FolderPlus className="h-4 w-4" /> Créer un groupe</Button>
+                    </div>
+                  </CardBody>
+                </Card>
+              ) : (
+                <>
+                  {groupes.map((groupe, idx) => (
+                    <Card key={groupe.id}>
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <CardTitle><Layers className="h-5 w-5 inline mr-2 text-indigo-500" />{groupe.nom}</CardTitle>
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={() => handlePushGroupe(groupe)} disabled={pushingMenu || groupe.menu_ids.length === 0}>
+                              <Bell className="h-3.5 w-3.5" /> Pousser
+                            </Button>
+                            <Button size="sm" variant="danger" onClick={() => handleDeleteGroupe(groupe.id)}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardBody>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {allMenus.map(m => (
+                            <label key={m.id} className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${groupe.menu_ids.includes(m.id) ? 'bg-indigo-50 border border-indigo-200' : 'hover:bg-gray-50 border border-transparent'}`}>
+                              <input
+                                type="checkbox"
+                                checked={groupe.menu_ids.includes(m.id)}
+                                onChange={() => handleToggleGroupeMenu(idx, m.id)}
+                                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                              />
+                              <span className="text-sm text-gray-700">{m.titre}</span>
+                              {m.prix && <span className="text-xs text-gray-400 ml-auto">{m.prix}€</span>}
+                            </label>
+                          ))}
+                        </div>
+                        {groupe.menu_ids.length === 0 && <p className="text-xs text-gray-400 mt-3 text-center">Cochez les plats à inclure dans ce groupe</p>}
+                      </CardBody>
+                    </Card>
+                  ))}
+                  {!showGroupeForm && (
+                    <Button variant="secondary" onClick={() => setShowGroupeForm(true)}>
+                      <FolderPlus className="h-4 w-4" /> Créer un groupe
+                    </Button>
+                  )}
+                </>
+              )}
+
+              {/* Formulaire nouveau groupe */}
+              {showGroupeForm && (
+                <Card>
+                  <CardBody>
+                    <div className="flex items-center gap-3">
+                      <Input label="Nom du groupe" placeholder="Ex: Menu déjeuner" value={groupeNom} onChange={e => setGroupeNom(e.target.value)} />
+                      <div className="flex gap-2 mt-6">
+                        <Button onClick={handleCreateGroupe}><Check className="h-4 w-4" /> Créer</Button>
+                        <Button variant="secondary" onClick={() => { setShowGroupeForm(false); setGroupeNom(''); }}>Annuler</Button>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+              )}
+            </div>
+          )}
+
+          {/* ── ONGLET SETTINGS ──────────────────────────────────────────────── */}
           {activeTab === 'settings' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader><CardTitle>Module</CardTitle></CardHeader>
+                <CardBody>
+                  <div className={`flex items-start justify-between p-3 rounded-lg border ${moduleEnabled ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100'}`}>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Menu du Jour</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{moduleEnabled ? 'Activé — vos clients peuvent voir votre menu' : 'Désactivé — le menu est masqué'}</p>
+                    </div>
+                    <Toggle checked={moduleEnabled} onChange={async (val) => {
+                      const prev = moduleEnabled;
+                      setModuleEnabled(val);
+                      try {
+                        await commercantApi.update({ module_menu_jour: val });
+                        await refreshUser();
+                      } catch (e: any) {
+                        setModuleEnabled(prev);
+                        toast(e?.message || 'Erreur lors de la sauvegarde', 'error');
+                      }
+                    }} />
+                  </div>
+                </CardBody>
+              </Card>
+
               <Card>
                 <CardHeader><CardTitle>Catégories</CardTitle></CardHeader>
                 <CardBody className="space-y-4">
@@ -298,6 +545,7 @@ export default function MenusPage() {
         </>
       )}
 
+      {/* Modal ajout/édition plat */}
       <Modal open={modal.open} onClose={() => setModal({ open: false })} title={modal.menu ? 'Modifier le plat' : 'Ajouter un plat'} size="md">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Input label="Titre" placeholder="Salade César" error={errors.titre?.message} {...register('titre')} />
