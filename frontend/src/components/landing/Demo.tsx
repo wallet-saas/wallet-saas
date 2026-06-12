@@ -5,6 +5,7 @@ import {
   Bell, QrCode, ArrowUpRight, Search, Menu, Zap
 } from "lucide-react";
 import { ImageWithFallback } from "./ImageWithFallback";
+const cardImage = "/landing-card.png";
 
 export function Demo() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -209,7 +210,7 @@ export function Demo() {
                    </span>
                 </div>
                 <ImageWithFallback 
-                  src="/landing-card.png" 
+                  src={cardImage} 
                   alt="Aperçu de votre carte de fidélité" 
                   className="w-full h-auto object-cover"
                 />
