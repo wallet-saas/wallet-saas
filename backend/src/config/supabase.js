@@ -4,13 +4,14 @@ require('dotenv').config();
 // Vérifier que les variables d'environnement sont définies
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   console.error('❌ ERREUR: SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY manquants dans .env');
-  process.exit(1);
+  // Ne pas process.exit() dans un module — laisser le caller gérer l'erreur
+  // Le premier appel à Supabase échouera avec un message clair
 }
 
 // Créer le client Supabase avec la clé SERVICE_ROLE (accès complet backend)
 const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  process.env.SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   {
     auth: {
       autoRefreshToken: false,

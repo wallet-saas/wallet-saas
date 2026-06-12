@@ -144,11 +144,9 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log('[LOGIN] ① Requête reçue — email:', email, '| password fourni:', !!password);
 
     // Validation des champs
     if (!email || !password) {
-      console.log('[LOGIN] ✗ Champs manquants');
       return res.status(400).json({
         success: false,
         error: 'Email et mot de passe requis.'
@@ -156,32 +154,23 @@ const login = async (req, res) => {
     }
 
     // Récupérer le commerçant depuis Supabase
-    console.log('[LOGIN] ② Requête Supabase pour email:', email);
     const { data: commercant, error: fetchError } = await supabase
       .from('commercants')
       .select('*')
       .eq('email', email)
       .single();
 
-    console.log('[LOGIN] ③ Résultat Supabase — trouvé:', !!commercant, '| erreur:', fetchError?.message || 'aucune');
-
     if (fetchError || !commercant) {
-      console.log('[LOGIN] ✗ Commerçant introuvable pour email:', email);
       return res.status(401).json({
         success: false,
         error: 'Email ou mot de passe incorrect.'
       });
     }
 
-    console.log('[LOGIN] ④ Commerçant trouvé — id:', commercant.id, '| abonnement_statut:', commercant.abonnement_statut);
-
     // Vérifier le mot de passe
-    console.log('[LOGIN] ⑤ Comparaison bcrypt...');
     const isPasswordValid = await bcrypt.compare(password, commercant.password);
-    console.log('[LOGIN] ⑥ bcrypt résultat:', isPasswordValid);
 
     if (!isPasswordValid) {
-      console.log('[LOGIN] ✗ Mot de passe incorrect');
       return res.status(401).json({
         success: false,
         error: 'Email ou mot de passe incorrect.'
@@ -189,18 +178,15 @@ const login = async (req, res) => {
     }
 
     // Générer le token JWT
-    console.log('[LOGIN] ⑦ JWT_SECRET défini:', !!process.env.JWT_SECRET);
     const token = jwt.sign(
       { id: commercant.id, email: commercant.email },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
-    console.log('[LOGIN] ⑧ JWT généré — début:', token.substring(0, 20) + '...');
 
     // Return all commercant fields (SELECT * was used), minus password
     const responseData = { ...commercant };
     delete responseData.password;
-    console.log('[LOGIN] ⑨ Réponse envoyée — abonnement_statut:', responseData.abonnement_statut);
 
     res.status(200).json({
       success: true,
@@ -211,7 +197,7 @@ const login = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('[LOGIN] ✗ Exception:', error);
+    console.error('Erreur login:', error);
     res.status(500).json({
       success: false,
       error: 'Erreur lors de la connexion.'

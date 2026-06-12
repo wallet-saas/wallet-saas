@@ -11,10 +11,23 @@ const PORT = process.env.PORT || 3000;
 const stripeWebhookRoutes = require('./routes/stripe');
 app.use('/api/webhooks', stripeWebhookRoutes);
 
+// CORS — restreindre aux origines autorisées en production
+const corsOptions = {
+  origin: process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map(s => s.trim())
+    : process.env.NODE_ENV === 'production'
+      ? []  // en prod sans CORS_ORIGIN, on bloque tout
+      : '*', // en dev on autorise tout
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  maxAge: 86400, // 24h de cache preflight
+};
+
 // Middlewares de sécurité et logging
 app.use(helmet());
 app.use(morgan('dev'));
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

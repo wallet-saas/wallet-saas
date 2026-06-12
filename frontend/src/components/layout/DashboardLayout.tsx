@@ -71,7 +71,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       router.push('/dashboard/setup-card');
       return;
     }
-  }, [loading, isAuthenticated, commercant, router, isAbonnementPage, isSetupCardPage]);
+  }, [loading, isAuthenticated, commercant, isAbonnementPage, isSetupCardPage]);
 
   if (loading) {
     return (

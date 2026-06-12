@@ -78,7 +78,7 @@ const scanQR = async (req, res) => {
       carte = data;
     }
 
-    if (!carte.actif) {
+    if (carte.actif === false) {
       return res.status(403).json({
         success: false,
         error: 'Cette carte est désactivée.'
