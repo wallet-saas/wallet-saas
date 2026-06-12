@@ -2,7 +2,8 @@ const { supabase } = require('../config/supabase');
 const {
   sendReviewRequest,
   handleReviewSubmission,
-  generateAIResponse,
+  getTemplatesForAvis,
+  saveTemplates,
   sendGoogleResponse,
   SEUIL_SATISFACTION
 } = require('../services/avisService');
@@ -20,7 +21,6 @@ const requestAvis = async (req, res) => {
       return res.status(400).json({ success: false, error: 'carte_id requis.' });
     }
 
-    // Vérifier que la carte appartient bien à ce commerçant
     const { data: carte } = await supabase
       .from('cartes')
       .select('id')
@@ -33,7 +33,6 @@ const requestAvis = async (req, res) => {
     }
 
     const result = await sendReviewRequest(carte_id, delai_minutes ?? undefined);
-
     return res.status(200).json({ success: true, data: result });
 
   } catch (error) {
@@ -70,7 +69,6 @@ const listAvis = async (req, res) => {
       return res.status(500).json({ success: false, error: 'Erreur lors de la récupération des avis.' });
     }
 
-    // Stats rapides
     const notesMoyenne = avis.length > 0
       ? Math.round((avis.reduce((s, a) => s + (a.note || 0), 0) / avis.length) * 10) / 10
       : null;
@@ -102,7 +100,6 @@ const getTemplates = async (req, res) => {
       return res.status(400).json({ success: false, error: 'avis_id requis.' });
     }
 
-    // Vérifier que l'avis appartient à ce commerçant
     const { data: avis } = await supabase
       .from('avis')
       .select('id')
@@ -116,10 +113,7 @@ const getTemplates = async (req, res) => {
 
     const result = await getTemplatesForAvis(avis_id);
 
-    return res.status(200).json({
-      success: true,
-      data: result
-    });
+    return res.status(200).json({ success: true, data: result });
 
   } catch (error) {
     console.error('Erreur getTemplates:', error.message);
@@ -140,7 +134,6 @@ const updateTemplates = async (req, res) => {
       return res.status(400).json({ success: false, error: 'templates doit être un tableau.' });
     }
 
-    // Valider chaque template
     for (const t of templates) {
       if (!t.id || !t.nom || !t.texte) {
         return res.status(400).json({ success: false, error: 'Chaque template doit avoir id, nom et texte.' });
@@ -163,7 +156,7 @@ const updateTemplates = async (req, res) => {
 
 // ---------------------------------------------------------------------------
 // POST /api/avis/send-response
-// Valider et envoyer la réponse sur Google My Business
+// Valider et envoyer la réponse
 // ---------------------------------------------------------------------------
 const sendResponse = async (req, res) => {
   try {
@@ -174,7 +167,6 @@ const sendResponse = async (req, res) => {
       return res.status(400).json({ success: false, error: 'avis_id et reponse requis.' });
     }
 
-    // Vérifier appartenance
     const { data: avis } = await supabase
       .from('avis')
       .select('id')
@@ -204,106 +196,79 @@ const sendResponse = async (req, res) => {
 };
 
 // ---------------------------------------------------------------------------
-// GET /api/avis/form/:carteId  (PUBLIC)
-// Formulaire d'avis client (page HTML)
+// GET /api/avis/collecte/:commercantId  (PUBLIC)
+// Formulaire d'avis simple par commerçant (pas besoin de carte)
+// Le client donne une note + commentaire optionnel
 // ---------------------------------------------------------------------------
-const getAvisForm = async (req, res) => {
+const getCollecteForm = async (req, res) => {
   try {
-    const { carteId } = req.params;
+    const { commercantId } = req.params;
 
-    const { data: carte, error } = await supabase
-      .from('cartes')
-      .select(`
-        id,
-        commercants (
-          nom_enseigne,
-          carte_couleur_primaire,
-          google_place_id
-        )
-      `)
-      .eq('id', carteId)
+    const { data: commercant, error } = await supabase
+      .from('commercants')
+      .select('id, nom_enseigne, carte_couleur_primaire, google_place_url')
+      .eq('id', commercantId)
       .single();
 
-    if (error || !carte) {
-      return res.status(404).send('<h1>Formulaire introuvable</h1>');
+    if (error || !commercant) {
+      return res.status(404).send('<h1>Commerce introuvable</h1>');
     }
 
-    const { nom_enseigne, carte_couleur_primaire, google_place_id } = carte.commercants;
-    const color = carte_couleur_primaire || '#5856D6';
-    const submitUrl = `/api/avis/submit`;
+    const nom = commercant.nom_enseigne || 'notre commerce';
+    const color = commercant.carte_couleur_primaire || '#6366f1';
+    const googleUrl = commercant.google_place_url || '';
+    const submitUrl = '/api/avis/submit-collecte';
 
     res.send(`<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Votre avis — ${nom_enseigne}</title>
+  <title>Votre avis — ${nom}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: linear-gradient(135deg, ${color} 0%, #764ba2 100%);
       min-height: 100dvh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      display: flex; justify-content: center; align-items: center;
       padding: 1.5rem;
     }
     .card {
-      background: white;
-      border-radius: 24px;
-      padding: 2rem;
-      max-width: 400px;
-      width: 100%;
-      text-align: center;
+      background: white; border-radius: 24px; padding: 2rem;
+      max-width: 420px; width: 100%; text-align: center;
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     }
-    h1 { font-size: 1.4rem; color: #1c1c1e; margin-bottom: 0.5rem; }
-    p  { color: #6c6c70; font-size: 0.95rem; margin-bottom: 1.5rem; }
-    .stars { display: flex; justify-content: center; gap: 0.6rem; margin: 1.5rem 0; }
-    .star {
-      font-size: 2.8rem;
-      cursor: pointer;
-      transition: transform 0.15s;
-      filter: grayscale(1);
-      opacity: 0.4;
-    }
+    h1 { font-size: 1.3rem; color: #1c1c1e; margin-bottom: 0.5rem; }
+    p  { color: #6c6c70; font-size: 0.9rem; margin-bottom: 1.5rem; }
+    .stars { display: flex; justify-content: center; gap: 0.5rem; margin: 1.5rem 0; }
+    .star { font-size: 2.5rem; cursor: pointer; transition: transform 0.15s; filter: grayscale(1); opacity: 0.4; }
     .star.active, .star:hover { filter: none; opacity: 1; transform: scale(1.15); }
     textarea {
-      width: 100%;
-      border: 1px solid #e0e0e6;
-      border-radius: 12px;
-      padding: 0.8rem;
-      font-size: 0.95rem;
-      font-family: inherit;
-      resize: none;
-      height: 100px;
-      margin-bottom: 1.2rem;
-      color: #1c1c1e;
+      width: 100%; border: 1px solid #e0e0e6; border-radius: 12px;
+      padding: 0.8rem; font-size: 0.95rem; font-family: inherit;
+      resize: none; height: 90px; margin-bottom: 1rem; color: #1c1c1e;
     }
     textarea::placeholder { color: #c0c0c8; }
-    button {
-      width: 100%;
-      background: ${color};
-      color: white;
-      border: none;
-      padding: 1rem;
-      border-radius: 14px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
+    .btn {
+      width: 100%; background: ${color}; color: white; border: none;
+      padding: 0.9rem; border-radius: 14px; font-size: 1rem; font-weight: 600; cursor: pointer;
     }
-    button:active { opacity: 0.8; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     #merci { display: none; }
-    #merci h2 { font-size: 1.6rem; margin: 1rem 0 0.5rem; color: #1c1c1e; }
+    #merci h2 { font-size: 1.5rem; margin: 1rem 0 0.5rem; color: #1c1c1e; }
+    .google-link {
+      display: none; margin-top: 1rem; padding: 0.8rem;
+      background: #f0f0f5; border-radius: 12px;
+      color: ${color}; font-weight: 600; text-decoration: none; font-size: 0.9rem;
+    }
   </style>
 </head>
 <body>
 <div class="card">
   <div id="form-view">
     <h1>Comment s'est passée votre visite ?</h1>
-    <p>Chez <strong>${nom_enseigne}</strong></p>
+    <p>Chez <strong>${nom}</strong></p>
     <div class="stars">
       <span class="star" data-v="1">⭐</span>
       <span class="star" data-v="2">⭐</span>
@@ -312,22 +277,21 @@ const getAvisForm = async (req, res) => {
       <span class="star" data-v="5">⭐</span>
     </div>
     <textarea id="contenu" placeholder="Un commentaire ? (optionnel)"></textarea>
-    <button id="submit-btn" disabled>Envoyer mon avis</button>
+    <button class="btn" id="submit-btn" disabled>Envoyer mon avis</button>
   </div>
   <div id="merci">
     <div style="font-size:4rem">🙏</div>
     <h2 id="merci-title">Merci !</h2>
     <p id="merci-text">Votre avis a été enregistré.</p>
-    <a id="google-link" href="#" style="display:none;margin-top:1rem;display:block;color:${color};font-weight:600">
-      ⭐ Laisser un avis sur Google
+    <a id="google-link" class="google-link" href="#" target="_blank" rel="noopener">
+      ⭐ Laisser aussi un avis sur Google
     </a>
   </div>
 </div>
 <script>
   let selectedNote = 0;
-  const carteId = '${carteId}';
-  const googlePlaceId = '${google_place_id || ''}';
-  const seuil = ${SEUIL_SATISFACTION};
+  const commercantId = '${commercantId}';
+  const googleUrl = '${googleUrl}';
 
   document.querySelectorAll('.star').forEach(star => {
     star.addEventListener('click', () => {
@@ -349,7 +313,7 @@ const getAvisForm = async (req, res) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        carte_id: carteId,
+        commercant_id: commercantId,
         note: selectedNote,
         contenu: document.getElementById('contenu').value
       })
@@ -359,11 +323,11 @@ const getAvisForm = async (req, res) => {
     document.getElementById('form-view').style.display = 'none';
     document.getElementById('merci').style.display = 'block';
 
-    if (selectedNote >= seuil && googlePlaceId) {
+    if (googleUrl && selectedNote >= 4) {
       document.getElementById('merci-title').textContent = 'Merci pour votre avis 🌟';
       document.getElementById('merci-text').textContent = 'Partagez votre expérience sur Google pour aider d\\'autres clients !';
       const link = document.getElementById('google-link');
-      link.href = 'https://search.google.com/local/writereview?placeid=' + googlePlaceId;
+      link.href = googleUrl;
       link.style.display = 'block';
     } else {
       document.getElementById('merci-title').textContent = 'Merci pour votre retour';
@@ -375,32 +339,57 @@ const getAvisForm = async (req, res) => {
 </html>`);
 
   } catch (error) {
-    console.error('Erreur getAvisForm:', error);
+    console.error('Erreur getCollecteForm:', error);
     res.status(500).send('<h1>Erreur</h1>');
   }
 };
 
 // ---------------------------------------------------------------------------
-// POST /api/avis/submit  (PUBLIC)
-// Soumission du formulaire avis par le client
+// POST /api/avis/submit-collecte  (PUBLIC)
+// Soumission d'un avis via le formulaire de collecte (par commerçant)
 // ---------------------------------------------------------------------------
-const submitAvis = async (req, res) => {
+const submitCollecte = async (req, res) => {
   try {
-    const { carte_id, note, contenu } = req.body;
+    const { commercant_id, note, contenu } = req.body;
 
-    if (!carte_id || !note) {
-      return res.status(400).json({ success: false, error: 'carte_id et note requis.' });
+    if (!commercant_id || !note) {
+      return res.status(400).json({ success: false, error: 'commercant_id et note requis.' });
     }
     if (note < 1 || note > 5) {
       return res.status(400).json({ success: false, error: 'Note invalide (1-5).' });
     }
 
-    const result = await handleReviewSubmission(carte_id, parseInt(note), contenu);
+    const { data: commercant } = await supabase
+      .from('commercants')
+      .select('id, nom_enseigne')
+      .eq('id', commercant_id)
+      .single();
 
-    return res.status(201).json({ success: true, data: result });
+    if (!commercant) {
+      return res.status(404).json({ success: false, error: 'Commerce introuvable.' });
+    }
+
+    const { data: avis, error: insertError } = await supabase
+      .from('avis')
+      .insert([{
+        commercant_id,
+        note: parseInt(note),
+        contenu: contenu?.trim() || null,
+        source: 'stamply'
+      }])
+      .select()
+      .single();
+
+    if (insertError) throw new Error(`Erreur enregistrement: ${insertError.message}`);
+
+    return res.status(201).json({
+      success: true,
+      message: 'Merci pour votre avis !',
+      data: { avisId: avis.id }
+    });
 
   } catch (error) {
-    console.error('Erreur submitAvis:', error.message);
+    console.error('Erreur submitCollecte:', error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -411,6 +400,6 @@ module.exports = {
   getTemplates,
   updateTemplates,
   sendResponse,
-  getAvisForm,
-  submitAvis
+  getCollecteForm,
+  submitCollecte
 };

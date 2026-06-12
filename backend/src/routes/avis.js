@@ -6,8 +6,8 @@ const {
   getTemplates,
   updateTemplates,
   sendResponse,
-  getAvisForm,
-  submitAvis
+  getCollecteForm,
+  submitCollecte
 } = require('../controllers/avisController');
 const authMiddleware = require('../middleware/authMiddleware');
 
@@ -28,15 +28,15 @@ router.post('/get-templates', authMiddleware, getTemplates);
 /** PUT /api/avis/templates — Sauvegarde les templates du commerçant */
 router.put('/templates', authMiddleware, updateTemplates);
 
-/** POST /api/avis/send-response — Valider et envoyer la réponse sur Google */
+/** POST /api/avis/send-response — Valider et envoyer la réponse */
 router.post('/send-response', authMiddleware, sendResponse);
 
 // --- Routes publiques (client) ---
 
-/** GET /api/avis/form/:carteId — Formulaire HTML d'évaluation client */
-router.get('/form/:carteId', getAvisForm);
+/** GET /api/avis/collecte/:commercantId — Formulaire d'avis public par commerçant */
+router.get('/collecte/:commercantId', getCollecteForm);
 
-/** POST /api/avis/submit — Soumission de l'avis depuis le formulaire client */
-router.post('/submit', submitAvis);
+/** POST /api/avis/submit-collecte — Soumission d'un avis via le formulaire de collecte */
+router.post('/submit-collecte', submitCollecte);
 
 module.exports = router;
