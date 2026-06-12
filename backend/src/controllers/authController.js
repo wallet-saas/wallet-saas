@@ -109,6 +109,42 @@ const register = async (req, res) => {
       .update({ qr_code_install_url: installUrl })
       .eq('id', newCommercant.id);
 
+    // ── Créer la boutique par défaut ──
+    // Tout commerçant inscrit a automatiquement 1 boutique (la principale).
+    // Freemium : 1 boutique gratuite, illimitées en Pro.
+    // TODO: brancher la limite quand Stripe sera activé.
+    const { data: defaultBoutique, error: boutiqueError } = await supabase
+      .from('boutiques')
+      .insert([{
+        commercant_id: newCommercant.id,
+        nom: nom_enseigne,
+        adresse: adresse || null,
+        ville: ville || null,
+        code_postal: code_postal || null,
+        telephone: telephone || null,
+        carte_couleur_primaire: '#6366f1',
+        carte_couleur_secondaire: '#764ba2',
+        carte_programme_nom: `Fidélité ${nom_enseigne}`,
+        carte_recompense_description: '10 visites = 1 récompense',
+        points_recompense: 10,
+        module_avis_google: false,
+        delai_notif_avis_minutes: 60,
+        actif: true
+      }])
+      .select()
+      .single();
+
+    if (boutiqueError) {
+      console.error('Erreur création boutique par défaut:', boutiqueError);
+      // Non bloquant : le commerçant existe déjà, il pourra créer sa boutique manuellement
+    } else {
+      // Définir cette boutique comme boutique principale par défaut
+      await supabase
+        .from('commercants')
+        .update({ boutique_defaut_id: defaultBoutique.id })
+        .eq('id', newCommercant.id);
+    }
+
     // Générer le token JWT
     const token = jwt.sign(
       { id: newCommercant.id, email: newCommercant.email },

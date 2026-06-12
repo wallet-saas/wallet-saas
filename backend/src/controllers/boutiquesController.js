@@ -61,6 +61,36 @@ const createBoutique = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Le nom de la boutique est requis.' });
     }
 
+    // ── Logique Freemium ──
+    // Gratuit : 1 boutique. Pro (Stripe) : illimitées.
+    // TODO: quand Stripe sera branché, décommenter la vérification ci-dessous
+    // pour limiter les boutiques gratuites à 1.
+    /*
+    const { data: existingBoutiques, error: countErr } = await supabase
+      .from('boutiques')
+      .select('id', { count: 'exact' })
+      .eq('commercant_id', commercantId)
+      .eq('actif', true);
+
+    if (!countErr && existingBoutiques && existingBoutiques.length >= 1) {
+      // Vérifier si le commerçant est en plan Pro
+      const { data: commercant } = await supabase
+        .from('commercants')
+        .select('abonnement_statut')
+        .eq('id', commercantId)
+        .single();
+
+      if (!commercant || commercant.abonnement_statut !== 'actif') {
+        return res.status(403).json({
+          success: false,
+          error: 'Plan gratuit limité à 1 boutique. Passez en Pro pour créer des boutiques supplémentaires.',
+          code: 'LIMIT_REACHED'
+        });
+      }
+    }
+    */
+    // ── Fin logique Freemium (pour l'instant, tout le monde peut créer) ──
+
     const { data, error } = await supabase
       .from('boutiques')
       .insert([{

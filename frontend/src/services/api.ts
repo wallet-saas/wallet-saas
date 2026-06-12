@@ -247,6 +247,7 @@ export interface Commercant {
   notif_heure_debut?: number;
   notif_heure_fin?: number;
   notif_template_defaut?: string;
+  notif_mode_simulation?: boolean;
   // Avis settings
   avis_seuil_reponse?: number;
   avis_template_auto?: string;

@@ -5,7 +5,6 @@ import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PageSpinner } from '@/components/ui/Spinner';
-import { Toggle } from '@/components/ui/Toggle';
 import { boutiquesApi, type Boutique } from '@/services/api';
 import { commercantApi } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,22 +19,15 @@ export default function BoutiquesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Boutique | null>(null);
   const [form, setForm] = useState({
-    nom: '', adresse: '', ville: '', code_postal: '', telephone: '', email: '',
+    nom: '', adresse: '', ville: '', code_postal: '', telephone: '',
     google_place_url: '', carte_couleur_primaire: '#6366f1', carte_couleur_secondaire: '#764ba2',
     carte_programme_nom: '', points_recompense: 10, module_avis_google: true, delai_notif_avis_minutes: 60,
   });
   const [saving, setSaving] = useState(false);
   const [stats, setStats] = useState<Record<string, any>>({});
   const [activeTab, setActiveTab] = useState<'list' | 'settings'>('list');
-
-  const [moduleEnabled, setModuleEnabled] = useState(false);
-  const [savingModule, setSavingModule] = useState(false);
-
-  useEffect(() => {
-    if (commercant) {
-      setModuleEnabled(commercant.module_boutiques ?? false);
-    }
-  }, [commercant]);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [savingDefault, setSavingDefault] = useState(false);
 
   useEffect(() => { loadBoutiques(); }, []);
 
@@ -54,10 +46,15 @@ export default function BoutiquesPage() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); setSaving(true);
+    e.preventDefault();
+    if (!form.nom.trim()) { toast('Le nom de la boutique est requis', 'error'); return; }
+    setSaving(true);
     try {
-      if (editing) { await boutiquesApi.update(editing.id, form); }
-      else { await boutiquesApi.create(form); }
+      if (editing) {
+        await boutiquesApi.update(editing.id, form);
+      } else {
+        await boutiquesApi.create(form);
+      }
       setShowForm(false); setEditing(null); resetForm(); await loadBoutiques();
     } catch (err: any) { toast(err.message || 'Erreur', 'error'); }
     finally { setSaving(false); }
@@ -67,7 +64,7 @@ export default function BoutiquesPage() {
     setEditing(b);
     setForm({
       nom: b.nom, adresse: b.adresse || '', ville: b.ville || '', code_postal: b.code_postal || '',
-      telephone: b.telephone || '', email: b.email || '', google_place_url: b.google_place_url || '',
+      telephone: b.telephone || '', google_place_url: b.google_place_url || '',
       carte_couleur_primaire: b.carte_couleur_primaire, carte_couleur_secondaire: b.carte_couleur_secondaire,
       carte_programme_nom: b.carte_programme_nom || '', points_recompense: b.points_recompense,
       module_avis_google: b.module_avis_google, delai_notif_avis_minutes: b.delai_notif_avis_minutes,
@@ -77,33 +74,25 @@ export default function BoutiquesPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Désactiver cette boutique ?')) return;
+    setDeleting(id);
     try { await boutiquesApi.delete(id); await loadBoutiques(); }
     catch (err: any) { toast(err.message || 'Erreur', 'error'); }
+    finally { setDeleting(null); }
   };
 
   const handleSetDefault = async (id: string) => {
-    setSavingModule(true);
+    setSavingDefault(true);
     try {
       await commercantApi.update({ boutique_defaut_id: id });
       await refreshUser();
       toast('Boutique principale mise à jour');
     } catch (err: any) { toast(err.message || 'Erreur', 'error'); }
-    finally { setSavingModule(false); }
-  };
-
-  const handleToggleModule = async (val: boolean) => {
-    setSavingModule(true);
-    try {
-      await commercantApi.update({ module_boutiques: val });
-      setModuleEnabled(val);
-      await refreshUser();
-    } catch (err: any) { toast(err.message || 'Erreur', 'error'); }
-    finally { setSavingModule(false); }
+    finally { setSavingDefault(false); }
   };
 
   const resetForm = () => {
     setForm({
-      nom: '', adresse: '', ville: '', code_postal: '', telephone: '', email: '',
+      nom: '', adresse: '', ville: '', code_postal: '', telephone: '',
       google_place_url: '', carte_couleur_primaire: '#6366f1', carte_couleur_secondaire: '#764ba2',
       carte_programme_nom: '', points_recompense: 10, module_avis_google: true, delai_notif_avis_minutes: 60,
     });
@@ -121,21 +110,12 @@ export default function BoutiquesPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="page-title">Mes boutiques</h1>
-            <p className="page-subtitle">Gérez vos différents points de vente</p>
+            <p className="page-subtitle">{boutiques.length} boutique{boutiques.length !== 1 ? 's' : ''} — 1 gratuite, illimitées en Pro</p>
           </div>
           <Button onClick={() => { setShowForm(true); setEditing(null); resetForm(); }}>
             <Plus className="h-4 w-4" /> Ajouter une boutique
           </Button>
         </div>
-      </div>
-
-      <div className={`flex items-center gap-4 px-5 py-4 rounded-xl border mb-6 ${moduleEnabled ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100'}`}>
-        <Store className={`h-5 w-5 ${moduleEnabled ? 'text-green-600' : 'text-gray-400'}`} />
-        <div className="flex-1">
-          <p className="text-sm font-medium text-gray-900">Mode multi-boutiques</p>
-          <p className="text-xs text-gray-500">{moduleEnabled ? 'Activé — vous pouvez gérer plusieurs points de vente' : 'Désactivé — activez pour ajouter des boutiques'}</p>
-        </div>
-        <Toggle checked={moduleEnabled} onChange={handleToggleModule} disabled={savingModule} />
       </div>
 
       <div className="flex gap-2 mb-6">
@@ -185,7 +165,7 @@ export default function BoutiquesPage() {
                           </button>
                         )}
                         <button onClick={() => handleEdit(b)} className="p-1.5 rounded-lg hover:bg-gray-100"><Edit3 className="h-4 w-4 text-gray-400" /></button>
-                        <button onClick={() => handleDelete(b.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 className="h-4 w-4 text-red-400" /></button>
+                        <button onClick={() => handleDelete(b.id)} className="p-1.5 rounded-lg hover:bg-red-50" disabled={deleting === b.id}><Trash2 className="h-4 w-4 text-red-400" /></button>
                       </div>
                     </div>
                     {s && (
@@ -209,15 +189,16 @@ export default function BoutiquesPage() {
       {activeTab === 'settings' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
-            <CardHeader><CardTitle>Mode multi-boutiques</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Freemium</CardTitle></CardHeader>
             <CardBody className="space-y-4">
               <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Activer les multi-boutiques</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Permet de gérer plusieurs points de vente avec des cartes de fidélité séparées</p>
+                  <p className="text-sm font-medium text-gray-900">Plan actuel</p>
+                  <p className="text-xs text-gray-500 mt-0.5">1 boutique gratuite • Boutiques illimitées en Pro</p>
                 </div>
-                <Toggle checked={moduleEnabled} onChange={handleToggleModule} disabled={savingModule} />
+                <span className="bg-green-50 text-green-600 text-xs px-2 py-0.5 rounded-full font-medium">Gratuit</span>
               </div>
+              {/* TODO: quand Stripe sera branché, afficher le bouton "Passer en Pro" ici */}
             </CardBody>
           </Card>
 
@@ -256,6 +237,7 @@ export default function BoutiquesPage() {
                 <Input label="Ville" value={form.ville} onChange={e => setForm({ ...form, ville: e.target.value })} />
                 <Input label="Code postal" value={form.code_postal} onChange={e => setForm({ ...form, code_postal: e.target.value })} />
               </div>
+              <Input label="Téléphone" value={form.telephone} onChange={e => setForm({ ...form, telephone: e.target.value })} />
               <Input label="URL Google Place" placeholder="https://g.page/..." value={form.google_place_url} onChange={e => setForm({ ...form, google_place_url: e.target.value })} />
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="label">Couleur primaire</label><input type="color" value={form.carte_couleur_primaire} onChange={e => setForm({ ...form, carte_couleur_primaire: e.target.value })} className="h-9 w-full rounded-lg border border-gray-200 cursor-pointer" /></div>
