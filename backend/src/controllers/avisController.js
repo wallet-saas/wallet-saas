@@ -375,7 +375,7 @@ const submitCollecte = async (req, res) => {
         commercant_id,
         note: parseInt(note),
         contenu: contenu?.trim() || null,
-        source: 'stamply'
+        source: 'google'
       }])
       .select()
       .single();
