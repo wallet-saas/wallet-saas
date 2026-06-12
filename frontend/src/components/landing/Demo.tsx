@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from "framer-motion";
 import { Users, TrendingUp, Gift, QrCode, Bell, Paintbrush, Zap, ArrowUpRight, CreditCard } from "lucide-react";
 import { useLandingTheme } from "./theme";
 
@@ -8,14 +7,9 @@ export function Demo() {
   const t = useLandingTheme();
 
   return (
-    <section className={`py-20 sm:py-32 overflow-hidden ${t.sectionBg}`}>
+    <section className={`py-20 sm:py-32 overflow-hidden ${t.sectionBg}`} id="demo">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center max-w-2xl mx-auto mb-12 sm:mb-20"
-        >
+        <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-20">
           <div className={`inline-flex items-center justify-center gap-2 p-1.5 mb-4 rounded-full ${t.badgeBg}`}>
             <Zap className="w-3 h-3" /> Espace Commerçant
           </div>
@@ -25,14 +19,9 @@ export function Demo() {
           <p className={`${t.textSecondary} text-base sm:text-lg`}>
             Une interface puissante pour analyser votre trafic, engager vos clients et personnaliser votre programme de fidélité.
           </p>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className={`relative mx-auto max-w-5xl rounded-2xl border ${t.cardBorder} ${t.cardBg} shadow-2xl overflow-hidden`}
-        >
+        <div className={`relative mx-auto max-w-5xl rounded-2xl border ${t.cardBorder} ${t.cardBg} shadow-2xl overflow-hidden demo-reveal`}>
           {/* Dashboard Header */}
           <div className={`h-12 sm:h-16 border-b ${t.border} flex items-center px-4 sm:px-6 justify-between`}>
             <div className="flex items-center gap-4 sm:gap-6">
@@ -43,8 +32,8 @@ export function Demo() {
               </div>
               <div className="hidden sm:flex gap-1 text-sm font-medium">
                 <span className="text-white bg-indigo-500/20 border border-indigo-500/30 px-3 py-1.5 rounded-lg">Vue d'ensemble</span>
-                <span className={`${t.textSecondary} hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer`}>Clients</span>
-                <span className={`${t.textSecondary} hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer`}>Campagnes</span>
+                <span className={`${t.textSecondary} hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer transition-colors`}>Clients</span>
+                <span className={`${t.textSecondary} hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer transition-colors`}>Campagnes</span>
               </div>
             </div>
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-xs sm:text-sm">
@@ -63,10 +52,10 @@ export function Demo() {
                   { label: "Passages (30j)", value: "458", icon: TrendingUp, trend: "+8.2%", color: "text-green-400", bg: "bg-green-500/10" },
                   { label: "Récompenses", value: "89", icon: Gift, trend: "+24.1%", color: "text-purple-400", bg: "bg-purple-500/10" },
                 ].map((stat, i) => (
-                  <motion.div
+                  <div
                     key={i}
-                    whileHover={{ y: -4, scale: 1.02 }}
-                    className={`${t.cardBg} ${t.cardBorder} p-3 sm:p-5 rounded-xl sm:rounded-2xl transition-all`}
+                    className={`${t.cardBg} ${t.cardBorder} p-3 sm:p-5 rounded-xl sm:rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] stat-card`}
+                    style={{ animationDelay: `${i * 100}ms` }}
                   >
                     <div className="flex justify-between items-start mb-2 sm:mb-4">
                       <div className={`p-1.5 sm:p-2 rounded-lg ${stat.bg} ${stat.color}`}>
@@ -79,7 +68,7 @@ export function Demo() {
                     </div>
                     <div className={`text-xl sm:text-2xl md:text-3xl font-bold ${t.textPrimary} mb-0.5 sm:mb-1`}>{stat.value}</div>
                     <div className={`${t.textSecondary} text-xs sm:text-sm`}>{stat.label}</div>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
 
@@ -93,13 +82,10 @@ export function Demo() {
                 </div>
                 <div className="h-32 sm:h-48 flex items-end justify-between gap-1">
                   {[40, 55, 45, 90, 65, 85, 120, 95, 110, 140, 100, 130, 80, 115, 75, 105, 125, 90].map((h, i) => (
-                    <motion.div
+                    <div
                       key={i}
-                      initial={{ height: 0 }}
-                      whileInView={{ height: `${(h / 140) * 100}%` }}
-                      viewport={{ once: true }}
-                      transition={{ delay: i * 0.03, type: "spring" as const, stiffness: 100 }}
-                      className="w-full bg-gradient-to-t from-indigo-900/40 to-indigo-500/60 rounded-t-sm hover:to-indigo-400 transition-colors cursor-pointer"
+                      className="w-full bg-gradient-to-t from-indigo-900/40 to-indigo-500/60 rounded-t-sm hover:to-indigo-400 transition-colors cursor-pointer chart-bar"
+                      style={{ height: `${(h / 140) * 100}%`, animationDelay: `${i * 30}ms` }}
                     />
                   ))}
                 </div>
@@ -109,7 +95,7 @@ export function Demo() {
               <div className={`${t.cardBg} ${t.cardBorder} rounded-xl sm:rounded-2xl overflow-hidden`}>
                 <div className={`px-4 sm:px-6 py-3 sm:py-4 border-b ${t.border} flex justify-between items-center`}>
                   <h3 className={`${t.textPrimary} font-semibold text-sm sm:text-base`}>Activité Récente</h3>
-                  <span className="text-indigo-400 text-xs sm:text-sm hover:text-indigo-300 cursor-pointer">Voir tout</span>
+                  <span className="text-indigo-400 text-xs sm:text-sm hover:text-indigo-300 cursor-pointer transition-colors">Voir tout</span>
                 </div>
                 <div className={`divide-y ${t.border}`}>
                   {[
@@ -166,22 +152,22 @@ export function Demo() {
               {/* Quick Actions */}
               <div className="w-full flex flex-col gap-2 sm:gap-3 mt-auto">
                 <p className={`text-xs ${t.textMuted} font-medium uppercase tracking-wider mb-1`}>Actions rapides</p>
-                <button className="flex items-center gap-2 sm:gap-3 w-full bg-indigo-600 hover:bg-indigo-500 text-white p-2.5 sm:p-3.5 rounded-xl font-medium transition-all text-sm">
+                <button className="flex items-center gap-2 sm:gap-3 w-full bg-indigo-600 hover:bg-indigo-500 text-white p-2.5 sm:p-3.5 rounded-xl font-medium transition-all duration-200 text-sm active:scale-[0.98]">
                   <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
                   Générer un QR Code
                 </button>
-                <button className={`flex items-center gap-2 sm:gap-3 w-full ${t.cardBg} border ${t.border} ${t.textSecondary} p-2.5 sm:p-3.5 rounded-xl font-medium transition-all text-sm hover:bg-white/10`}>
+                <button className={`flex items-center gap-2 sm:gap-3 w-full ${t.cardBg} border ${t.border} ${t.textSecondary} p-2.5 sm:p-3.5 rounded-xl font-medium transition-all duration-200 text-sm hover:bg-white/10 active:scale-[0.98]`}>
                   <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
                   Envoyer une Push Notif
                 </button>
-                <button className={`flex items-center gap-2 sm:gap-3 w-full ${t.cardBg} border ${t.border} ${t.textSecondary} p-2.5 sm:p-3.5 rounded-xl font-medium transition-all text-sm hover:bg-white/10`}>
+                <button className={`flex items-center gap-2 sm:gap-3 w-full ${t.cardBg} border ${t.border} ${t.textSecondary} p-2.5 sm:p-3.5 rounded-xl font-medium transition-all duration-200 text-sm hover:bg-white/10 active:scale-[0.98]`}>
                   <Paintbrush className="w-4 h-4 sm:w-5 sm:h-5 text-sky-400" />
                   Modifier le design
                 </button>
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );

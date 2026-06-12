@@ -9,7 +9,7 @@ export function FAQ() {
 
   const faqs = [
     {
-      question: "Mes clients doivent-ils télécharger une application ?",
+      question: "Mes clients doivent-ils télécharger une app ?",
       answer: "Non, c'est tout l'avantage ! La carte s'ajoute directement dans Apple Wallet ou Google Wallet, qui sont déjà installés sur 99% des smartphones."
     },
     {
@@ -17,20 +17,16 @@ export function FAQ() {
       answer: "Vous pouvez utiliser n'importe quel smartphone. Connectez-vous à votre espace Stamply depuis le navigateur de votre téléphone et utilisez notre scanner intégré en un clic."
     },
     {
-      question: "Est-ce que je peux changer le design de ma carte plus tard ?",
+      question: "Puis-je changer le design de ma carte plus tard ?",
       answer: "Oui, vous pouvez modifier les couleurs, le logo ou les règles de fidélité à tout moment depuis votre dashboard. Les cartes de vos clients se mettront à jour automatiquement."
     },
     {
-      question: "Que se passe-t-il si je veux annuler mon abonnement ?",
+      question: "Que se passe-t-il si j'annule mon abonnement ?",
       answer: "Stamply est sans engagement. Si vous annulez, les cartes de vos clients resteront actives jusqu'à la fin de votre période de facturation, puis elles expireront."
-    },
-    {
-      question: "Combien de temps pour configurer ma carte ?",
-      answer: "Moins de 2 minutes ! Choisissez un template, personnalisez les couleurs et le logo, et votre carte est prête à être partagée avec vos clients."
     }
   ];
 
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
     <section className={`py-16 sm:py-24 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8`}>
@@ -47,7 +43,7 @@ export function FAQ() {
         {faqs.map((faq, i) => (
           <div
             key={i}
-            className={`${t.cardBg} ${t.cardBorder} rounded-xl sm:rounded-2xl overflow-hidden transition-colors`}
+            className={`${t.cardBg} ${t.cardBorder} rounded-xl sm:rounded-2xl overflow-hidden transition-colors duration-200`}
           >
             <button
               onClick={() => setOpenIndex(openIndex === i ? null : i)}
@@ -55,7 +51,7 @@ export function FAQ() {
             >
               <span className={`text-sm sm:text-lg font-medium ${t.textPrimary} pr-4`}>{faq.question}</span>
               <ChevronDown
-                className={`w-4 h-4 sm:w-5 sm:h-5 ${t.textSecondary} transition-transform duration-200 shrink-0 ${openIndex === i ? "rotate-180" : ""}`}
+                className={`w-4 h-4 sm:w-5 sm:h-5 ${t.textSecondary} transition-transform duration-300 shrink-0 ${openIndex === i ? "rotate-180" : ""}`}
               />
             </button>
 
