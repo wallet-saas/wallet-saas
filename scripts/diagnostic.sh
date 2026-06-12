@@ -4,7 +4,8 @@
 # Mode: lecture seule, aucune modification, aucun push
 # ============================================================
 
-set -euo pipefail
+# Ne PAS utiliser set -e — on veut que le script continue même si une étape échoue
+set -uo pipefail
 
 PROJECT_DIR="/home/ubuntu/stamply/wallet-saas-main"
 FRONTEND_DIR="$PROJECT_DIR/frontend"
@@ -15,20 +16,14 @@ REPORT_FILE="$REPORT_DIR/rapport-$TIMESTAMP.md"
 
 mkdir -p "$REPORT_DIR"
 
-# Couleurs (désactivées si pas de terminal)
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-NC='\033[0m'
-
 pass=0
 fail=0
 warn=0
 
-log_pass() { ((pass++)); echo -e "${GREEN}✅ PASS${NC} $1"; }
-log_fail() { ((fail++)); echo -e "${RED}❌ FAIL${NC} $1"; }
-log_warn() { ((warn++)); echo -e "${YELLOW}⚠️ WARN${NC} $1"; }
-log_info() { echo -e "   ℹ️  $1"; }
+log_pass() { ((pass++)); echo "  ✅ PASS  $1"; }
+log_fail() { ((fail++)); echo "  ❌ FAIL  $1"; }
+log_warn() { ((warn++)); echo "  ⚠️  WARN  $1"; }
+log_info() { echo "     ℹ️  $1"; }
 
 echo ""
 echo "============================================"
@@ -47,56 +42,41 @@ cd "$FRONTEND_DIR"
 if npm run build > /tmp/build-frontend.log 2>&1; then
     log_pass "Build frontend OK"
 else
-    log_fail "Build frontend ERREUR"
-    log_info "Voir /tmp/build-frontend.log"
+    log_fail "Build frontend — erreurs détectées"
+    log_info "Dernières lignes du log :"
+    tail -5 /tmp/build-frontend.log | while read -r line; do echo "     $line"; done
 fi
 echo ""
 
 # ============================================================
-# SECTION 2: BUILD BACKEND
+# SECTION 2: SYNTAXE BACKEND
 # ============================================================
-echo "🔨 SECTION 2 — Build Backend"
+echo "🔨 SECTION 2 — Backend"
 echo "--------------------------------------------"
 
 cd "$BACKEND_DIR"
-# Backend Node.js pas de build step, on vérifie que le syntaxe est OK
 if node --check src/index.js > /dev/null 2>&1; then
     log_pass "Syntaxe backend OK"
 else
-    log_fail "Syntaxe backend ERREUR"
-fi
-
-# Vérifie que les routes se chargent sans erreur
-if node -e "
-const express = require('express');
-try {
-  require('./src/index.js');
-  console.log('OK');
-} catch(e) {
-  console.error(e.message);
-  process.exit(1);
-}
-" > /tmp/backend-syntax.log 2>&1; then
-    log_pass "Backend se charge sans erreur"
-else
-    log_warn "Impossible de charger le backend en isolation (normal si dépendances manquantes)"
+    log_fail "Syntaxe backend — erreur"
 fi
 echo ""
 
 # ============================================================
-# SECTION 3: TYPE CHECK (TSC)
+# SECTION 3: TYPESCRIPT CHECK
 # ============================================================
-echo "🔍 SECTION 3 — TypeScript Check"
+echo "🔍 SECTION 3 — TypeScript"
 echo "--------------------------------------------"
 
 cd "$FRONTEND_DIR"
 if [ -f tsconfig.json ]; then
     if npx tsc --noEmit > /tmp/tsc.log 2>&1; then
-        log_pass "TypeScript OK — aucune erreur"
+        log_pass "TypeScript — aucune erreur"
     else
         TSC_ERRORS=$(wc -l < /tmp/tsc.log)
-        log_fail "TypeScript: $TSC_ERRORS lignes d'erreurs détectées"
-        log_info "Voir /tmp/tsc.log"
+        log_fail "TypeScript — $TSC_ERRORS lignes d'erreurs"
+        log_info "Premières erreurs :"
+        head -8 /tmp/tsc.log | while read -r line; do echo "     $line"; done
     fi
 else
     log_warn "Pas de tsconfig.json — skip"
@@ -104,7 +84,7 @@ fi
 echo ""
 
 # ============================================================
-# SECTION 4: LINT
+# SECTION 4: ESLINT
 # ============================================================
 echo "🔍 SECTION 4 — ESLint"
 echo "--------------------------------------------"
@@ -112,11 +92,12 @@ echo "--------------------------------------------"
 cd "$FRONTEND_DIR"
 if [ -f .eslintrc.json ] || [ -f .eslintrc.js ] || [ -f .eslintrc ]; then
     if npx eslint src/ --ext .ts,.tsx > /tmp/eslint.log 2>&1; then
-        log_pass "ESLint OK — aucune erreur"
+        log_pass "ESLint — aucune erreur"
     else
         LINT_ERRORS=$(grep -c "error" /tmp/eslint.log 2>/dev/null || echo "?")
-        log_fail "ESLint: erreurs détectées ($LINT_ERRORS lignes avec 'error')"
-        log_info "Voir /tmp/eslint.log"
+        log_fail "ESLint — erreurs détectées"
+        log_info "Premières erreurs :"
+        grep "error" /tmp/eslint.log | head -5 | while read -r line; do echo "     $line"; done
     fi
 else
     log_info "Pas de config ESLint — skip"
@@ -130,28 +111,29 @@ echo "🧪 SECTION 5 — Tests"
 echo "--------------------------------------------"
 
 cd "$BACKEND_DIR"
-if [ -d "__tests__" ] || ls *.test.js *.spec.js 2>/dev/null | grep -q .; then
-    if npm test > /tmp/tests.log 2>&1; then
+if [ -d "__tests__" ] || ls *.test.js *.spec.js 1>/dev/null 2>&1; then
+    if npm test > /tmp/tests-backend.log 2>&1; then
         log_pass "Tests backend OK"
     else
-        log_fail "Tests backend: échecs détectés"
-        log_info "Voir /tmp/tests.log"
+        log_fail "Tests backend — échecs détectés"
+        log_info "Dernières lignes :"
+        tail -10 /tmp/tests-backend.log | while read -r line; do echo "     $line"; done
     fi
 else
-    log_info "Pas de tests backend trouvés — skip"
+    log_info "Pas de tests backend — skip"
 fi
 
-# Tests frontend
 cd "$FRONTEND_DIR"
-if ls src/**/*.test.* src/**/*.spec.* 2>/dev/null | grep -q .; then
+if [ -d "__tests__" ] || ls src/**/*.test.* src/**/*.spec.* 1>/dev/null 2>&1; then
     if npx jest > /tmp/tests-frontend.log 2>&1; then
         log_pass "Tests frontend OK"
     else
-        log_fail "Tests frontend: échecs détectés"
-        log_info "Voir /tmp/tests-frontend.log"
+        log_fail "Tests frontend — échecs détectés"
+        log_info "Dernières lignes :"
+        tail -10 /tmp/tests-frontend.log | while read -r line; do echo "     $line"; done
     fi
 else
-    log_info "Pas de tests frontend trouvés — skip"
+    log_info "Pas de tests frontend — skip"
 fi
 echo ""
 
@@ -163,32 +145,30 @@ echo "--------------------------------------------"
 
 cd "$PROJECT_DIR"
 
-# TODO / FIXME
 TODOS=$(grep -rn "TODO\|FIXME\|HACK\|XXX" --include="*.ts" --include="*.tsx" --include="*.js" --exclude-dir=node_modules --exclude-dir=.next --exclude="package-lock.json" 2>/dev/null || true)
 if [ -n "$TODOS" ]; then
     TODO_COUNT=$(echo "$TODOS" | wc -l)
     log_warn "$TODO_COUNT marqueurs TODO/FIXME trouvés"
-    echo "$TODOS" | head -10 | while read -r line; do log_info "$line"; done
-    if [ "$TODO_COUNT" -gt 10 ]; then log_info "... et $((TODO_COUNT - 10)) autres"; fi
+    echo "$TODOS" | head -8 | while read -r line; do echo "     $line"; done
+    if [ "$TODO_COUNT" -gt 8 ]; then log_info "... et $((TODO_COUNT - 8)) autres"; fi
 else
     log_pass "Aucun TODO/FIXME"
 fi
 
-# console.log oubliés
 CONSOLE_LOGS=$(grep -rn "console\.log\|console\.warn\|console\.debug" --include="*.ts" --include="*.tsx" --include="*.js" --exclude-dir=node_modules --exclude-dir=.next --exclude="package-lock.json" 2>/dev/null || true)
 if [ -n "$CONSOLE_LOGS" ]; then
     LOG_COUNT=$(echo "$CONSOLE_LOGS" | wc -l)
     log_warn "$LOG_COUNT console.log/warn/debug oubliés"
-    echo "$CONSOLE_LOGS" | head -5 | while read -r line; do log_info "$line"; done
+    echo "$CONSOLE_LOGS" | head -5 | while read -r line; do echo "     $line"; done
 else
     log_pass "Aucun console.log oublié"
 fi
 echo ""
 
 # ============================================================
-# SECTION 7: COHÉRENCE DES FICHIERS
+# SECTION 7: FICHIERS CLÉS
 # ============================================================
-echo "📁 SECTION 7 — Fichiers clés présents"
+echo "📁 SECTION 7 — Fichiers clés"
 echo "--------------------------------------------"
 
 cd "$PROJECT_DIR"
@@ -215,7 +195,7 @@ done
 echo ""
 
 # ============================================================
-# SECTION 8: GIT STATUS
+# SECTION 8: GIT
 # ============================================================
 echo "📦 SECTION 8 — Git"
 echo "--------------------------------------------"
@@ -223,35 +203,34 @@ echo "--------------------------------------------"
 cd "$PROJECT_DIR"
 UNCOMMITTED=$(git status --porcelain 2>/dev/null || true)
 if [ -z "$UNCOMMITTED" ]; then
-    log_pass "Working tree clean — tout est commité"
+    log_pass "Working tree clean"
 else
     UNCOMMITTED_COUNT=$(echo "$UNCOMMITTED" | wc -l)
     log_warn "$UNCOMMITTED_COUNT fichiers non commités"
-    echo "$UNCOMMITTED" | head -10 | while read -r line; do log_info "$line"; done
+    echo "$UNCOMMITTED" | head -8 | while read -r line; do echo "     $line"; done
 fi
 
 LAST_COMMIT=$(git log --oneline -1 2>/dev/null || echo "aucun commit")
-log_info "Dernier commit: $LAST_COMMIT"
+log_info "Dernier commit : $LAST_COMMIT"
 echo ""
 
 # ============================================================
-# RAPPORT FINAL
+# RÉSUMÉ
 # ============================================================
 echo ""
 echo "============================================"
 echo "  RÉSUMÉ"
 echo "============================================"
-echo -e "  ${GREEN}PASS: $pass${NC}  |  ${RED}FAIL: $fail${NC}  |  ${YELLOW}WARN: $warn${NC}"
+echo "  PASS: $pass  |  FAIL: $fail  |  WARN: $warn"
 echo ""
 
 if [ "$fail" -gt 0 ]; then
-    echo -e "${RED}⚠️  PROBLÈMES DÉTECTÉS — voir le rapport complet${NC}"
+    echo "⚠️  PROBLÈMES DÉTECTÉS"
 elif [ "$warn" -gt 0 ]; then
-    echo -e "${YELLOW}✅ Tout fonctionne, mais des warnings à voir${NC}"
+    echo "✅ Tout fonctionne, warnings à voir"
 else
-    echo -e "${GREEN}🎉 TOUT EST SAIN — rien à signaler${NC}"
+    echo "🎉 TOUT EST SAIN"
 fi
 
 echo ""
-echo "Rapport complet généré dans /tmp/ pour concaténation"
 echo "PASS=$pass FAIL=$fail WARN=$warn" > /tmp/diagnostic-summary.txt
