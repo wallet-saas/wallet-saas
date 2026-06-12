@@ -4,17 +4,13 @@ import Link from "next/link";
 
 export function Navbar() {
   const { scrollY } = useScroll();
-  const y = useTransform(scrollY, [0, 50], [0, 10]);
-  const width = useTransform(scrollY, [0, 50], ["100%", "70%"]);
-  const borderRadius = useTransform(scrollY, [0, 50], ["0px", "32px"]);
+  const background = useTransform(scrollY, [0, 50], ["rgba(10,10,15,0.8)", "rgba(10,10,15,0.95)"]);
   const border = useTransform(scrollY, [0, 50], ["rgba(255,255,255,0.05)", "rgba(255,255,255,0.1)"]);
-  const background = useTransform(scrollY, [0, 50], ["rgba(10,10,15,0.8)", "rgba(15,15,22,0.6)"]);
-  const marginTop = useTransform(scrollY, [0, 50], ["0px", "24px"]);
 
   return (
     <motion.nav
-      style={{ y, width, borderRadius, borderColor: border, backgroundColor: background, marginTop }}
-      className="fixed top-0 left-1/2 -translate-x-1/2 z-50 border-b backdrop-blur-xl transition-all duration-300"
+      style={{ backgroundColor: background, borderColor: border }}
+      className="fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-xl transition-all duration-300"
     >
       <div className="max-w-7xl mx-auto px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Logo à gauche */}
@@ -46,7 +42,7 @@ export function Navbar() {
           >
             <span className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 group-hover:opacity-100 transition-opacity opacity-70" />
             <div className="relative bg-black text-white px-4 py-2 rounded-xl text-sm font-medium group-hover:bg-opacity-0 transition-all">
-              Essayer gratuitement
+              Démarrer le projet
             </div>
           </Link>
         </div>

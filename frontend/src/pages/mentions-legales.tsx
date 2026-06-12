@@ -14,17 +14,14 @@ export default function MentionsLegales() {
           <div className="space-y-8 text-slate-400 leading-relaxed">
             <div>
               <h2 className="text-lg font-semibold text-white mb-2">Éditeur du site</h2>
-              <p>Stamply SASU</p>
-              <p>123 Rue de la République, 75001 Paris, France</p>
-              <p>SIRET : 123 456 789 00010</p>
-              <p>TVA intracommunautaire : FR12345678901</p>
-              <p>Capital social : 1 000 €</p>
-              <p>RCS Paris B 123 456 789</p>
+              <p>Stamply — Projet développé par BOZO</p>
+              <p>France</p>
+              <p>Email : <a href="mailto:support@stamply.fr" className="text-indigo-400 hover:text-indigo-300 underline">support@stamply.fr</a></p>
             </div>
 
             <div>
               <h2 className="text-lg font-semibold text-white mb-2">Directeur de la publication</h2>
-              <p>BOZO, fondateur et président de Stamply SASU</p>
+              <p>BOZO, fondateur de Stamply</p>
             </div>
 
             <div>

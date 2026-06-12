@@ -1,4 +1,5 @@
 import { Wallet } from "lucide-react";
+import Link from "next/link";
 
 export function Footer() {
   return (
@@ -12,10 +13,10 @@ export function Footer() {
         </div>
         
         <div className="flex items-center gap-6 text-sm text-slate-400">
-          <a href="#" className="hover:text-white transition-colors">Mentions légales</a>
-          <a href="#" className="hover:text-white transition-colors">CGV</a>
-          <a href="#" className="hover:text-white transition-colors">Confidentialité</a>
-          <a href="#" className="hover:text-white transition-colors">Contact</a>
+          <Link href="/mentions-legales" className="hover:text-white transition-colors">Mentions légales</Link>
+          <Link href="/cgu" className="hover:text-white transition-colors">CGV</Link>
+          <Link href="/politique-confidentialite" className="hover:text-white transition-colors">Confidentialité</Link>
+          <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
         </div>
         
         <div className="text-sm text-slate-500">

@@ -15,7 +15,7 @@ export default function PolitiqueConfidentialite() {
           <div className="space-y-8 text-slate-400 leading-relaxed">
             <div>
               <h2 className="text-lg font-semibold text-white mb-2">1. Responsable de traitement</h2>
-              <p>Le responsable du traitement des données est Stamply SASU, 123 Rue de la République, 75001 Paris, France. Contact : <a href="mailto:support@stamply.fr" className="text-indigo-400 hover:text-indigo-300 underline">support@stamply.fr</a></p>
+              <p>Le responsable du traitement des données est Stamply, représenté par BOZO. Contact : <a href="mailto:support@stamply.fr" className="text-indigo-400 hover:text-indigo-300 underline">support@stamply.fr</a></p>
             </div>
 
             <div>
