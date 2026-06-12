@@ -3,7 +3,8 @@ const router = express.Router();
 const {
   requestAvis,
   listAvis,
-  suggestResponse,
+  getTemplates,
+  updateTemplates,
   sendResponse,
   getAvisForm,
   submitAvis
@@ -21,8 +22,11 @@ router.post('/request', authMiddleware, requestAvis);
 /** GET /api/avis/list — Alias liste des avis */
 router.get('/list', authMiddleware, listAvis);
 
-/** POST /api/avis/suggest-response — Générer une réponse IA via Anthropic */
-router.post('/suggest-response', authMiddleware, suggestResponse);
+/** POST /api/avis/get-templates — Récupère les templates remplis pour un avis */
+router.post('/get-templates', authMiddleware, getTemplates);
+
+/** PUT /api/avis/templates — Sauvegarde les templates du commerçant */
+router.put('/templates', authMiddleware, updateTemplates);
 
 /** POST /api/avis/send-response — Valider et envoyer la réponse sur Google */
 router.post('/send-response', authMiddleware, sendResponse);

@@ -184,37 +184,76 @@ async function handleReviewSubmission(carteId, note, contenu = '') {
 }
 
 // ---------------------------------------------------------------------------
-// Génération de réponse IA pour un avis existant
+// Templates de réponses pré-remplis (zéro coût, zéro IA)
 // ---------------------------------------------------------------------------
-async function generateAIResponse(avisId) {
+
+/**
+ * Remplace les variables dans un template avec les données de l'avis.
+ * Variables supportées : {prenom_client}, {nom_commerce}, {note}, {contenu_avis}
+ */
+function fillTemplate(template, { nom_enseigne = '', note = 0, contenu = '', prenom_client = 'Client' }) {
+  return template
+    .replace(/\{prenom_client\}/g, prenom_client)
+    .replace(/\{nom_commerce\}/g, nom_enseigne)
+    .replace(/\{note\}/g, String(note))
+    .replace(/\{contenu_avis\}/g, contenu || '(aucun commentaire)');
+}
+
+/**
+ * Récupère les templates d'un commerçant et les remplit avec les données de l'avis.
+ * Retourne un objet { templates: [{ id, nom, texte_rempli }], template_defaut_id }
+ */
+async function getTemplatesForAvis(avisId) {
+  // Récupérer l'avis + les infos du commerçant
   const { data: avis, error } = await supabase
     .from('avis')
     .select(`
       id,
       contenu,
       note,
-      reponse_suggeree,
-      commercants (nom_enseigne)
+      commercants (
+        nom_enseigne,
+        avis_templates
+      )
     `)
     .eq('id', avisId)
     .single();
 
   if (error || !avis) throw new Error('Avis introuvable.');
 
-  const suggestion = await generateReviewResponse(
-    avis.contenu,
-    avis.note,
-    avis.commercants.nom_enseigne
-  );
+  const templates = avis.commercants?.avis_templates || [];
+  const nom_enseigne = avis.commercants?.nom_enseigne || 'notre commerce';
+  const note = avis.note || 0;
+  const contenu = avis.contenu || '';
 
-  const { error: updateError } = await supabase
-    .from('avis')
-    .update({ reponse_suggeree: suggestion })
-    .eq('id', avisId);
+  // Remplir chaque template avec les variables
+  const filledTemplates = Array.isArray(templates) ? templates.map(t => ({
+    id: t.id,
+    nom: t.nom,
+    texte_original: t.texte,
+    texte_rempli: fillTemplate(t.texte, { nom_enseigne, note, contenu })
+  })) : [];
 
-  if (updateError) throw new Error(`Erreur sauvegarde suggestion : ${updateError.message}`);
+  return {
+    templates: filledTemplates,
+    nom_enseigne,
+    note,
+    contenu
+  };
+}
 
-  return { avisId, reponse_suggeree: suggestion };
+/**
+ * Sauvegarde les templates d'un commerçant dans avis_templates (jsonb).
+ * Remplace tous les templates existants.
+ */
+async function saveTemplates(commercantId, templates) {
+  const { error } = await supabase
+    .from('commercants')
+    .update({ avis_templates: templates })
+    .eq('id', commercantId);
+
+  if (error) throw new Error(`Erreur sauvegarde templates: ${error.message}`);
+  return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -271,7 +310,8 @@ async function sendGoogleResponse(avisId, reponseEnvoyee) {
 module.exports = {
   sendReviewRequest,
   handleReviewSubmission,
-  generateAIResponse,
+  getTemplatesForAvis,
+  saveTemplates,
   sendGoogleResponse,
   SEUIL_SATISFACTION
 };

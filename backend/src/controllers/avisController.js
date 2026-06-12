@@ -90,10 +90,10 @@ const listAvis = async (req, res) => {
 };
 
 // ---------------------------------------------------------------------------
-// POST /api/avis/suggest-response
-// Générer une réponse IA pour un avis
+// POST /api/avis/get-templates
+// Récupère les templates du commerçant remplis avec les données de l'avis
 // ---------------------------------------------------------------------------
-const suggestResponse = async (req, res) => {
+const getTemplates = async (req, res) => {
   try {
     const { id: commercantId } = req.commercant;
     const { avis_id } = req.body;
@@ -114,7 +114,7 @@ const suggestResponse = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Avis introuvable ou non autorisé.' });
     }
 
-    const result = await generateAIResponse(avis_id);
+    const result = await getTemplatesForAvis(avis_id);
 
     return res.status(200).json({
       success: true,
@@ -122,7 +122,41 @@ const suggestResponse = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erreur suggestResponse:', error.message);
+    console.error('Erreur getTemplates:', error.message);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ---------------------------------------------------------------------------
+// PUT /api/avis/templates
+// Sauvegarde les templates du commerçant (remplace tous les templates existants)
+// ---------------------------------------------------------------------------
+const updateTemplates = async (req, res) => {
+  try {
+    const { id: commercantId } = req.commercant;
+    const { templates } = req.body;
+
+    if (!Array.isArray(templates)) {
+      return res.status(400).json({ success: false, error: 'templates doit être un tableau.' });
+    }
+
+    // Valider chaque template
+    for (const t of templates) {
+      if (!t.id || !t.nom || !t.texte) {
+        return res.status(400).json({ success: false, error: 'Chaque template doit avoir id, nom et texte.' });
+      }
+    }
+
+    await saveTemplates(commercantId, templates);
+
+    return res.status(200).json({
+      success: true,
+      message: `${templates.length} template(s) sauvegardé(s).`,
+      data: { templates }
+    });
+
+  } catch (error) {
+    console.error('Erreur updateTemplates:', error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -374,7 +408,8 @@ const submitAvis = async (req, res) => {
 module.exports = {
   requestAvis,
   listAvis,
-  suggestResponse,
+  getTemplates,
+  updateTemplates,
   sendResponse,
   getAvisForm,
   submitAvis

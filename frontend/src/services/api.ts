@@ -138,6 +138,24 @@ export const notificationsApi = {
 };
 
 // ─── Avis ─────────────────────────────────────────────────────────────────────
+export interface AvisTemplate {
+  id: string;
+  nom: string;
+  texte: string;
+}
+
+export interface AvisTemplatesFilled {
+  templates: Array<{
+    id: string;
+    nom: string;
+    texte_original: string;
+    texte_rempli: string;
+  }>;
+  nom_enseigne: string;
+  note: number;
+  contenu: string;
+}
+
 export const avisApi = {
   list: (params?: { note?: number; source?: string }) => {
     const q = new URLSearchParams(params as Record<string, string>).toString();
@@ -145,10 +163,15 @@ export const avisApi = {
       `/api/avis/list${q ? '?' + q : ''}`
     );
   },
-  suggestResponse: (avisId: string) =>
-    request<{ reponse_suggeree: string }>('/api/avis/suggest-response', {
+  getTemplates: (avisId: string) =>
+    request<AvisTemplatesFilled>('/api/avis/get-templates', {
       method: 'POST',
       body: JSON.stringify({ avis_id: avisId }),
+    }),
+  saveTemplates: (templates: AvisTemplate[]) =>
+    request<{ templates: AvisTemplate[] }>('/api/avis/templates', {
+      method: 'PUT',
+      body: JSON.stringify({ templates }),
     }),
   sendResponse: (avisId: string, reponse: string) =>
     request<{ success: boolean }>('/api/avis/send-response', {
