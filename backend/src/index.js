@@ -16,7 +16,7 @@ const corsOptions = {
   origin: process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map(s => s.trim())
     : process.env.NODE_ENV === 'production'
-      ? []  // en prod sans CORS_ORIGIN, on bloque tout
+      ? ['https://stamply-gamma.vercel.app', 'https://stamply.vercel.app']  // défaut prod
       : '*', // en dev on autorise tout
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
