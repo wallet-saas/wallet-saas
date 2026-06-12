@@ -12,7 +12,7 @@ export function Pricing() {
   ];
 
   return (
-    <section className="py-32 relative overflow-hidden">
+    <section id="pricing" className="py-32 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -58,13 +58,14 @@ export function Pricing() {
                 Sans engagement. Annulez à tout moment.
               </p>
 
-              <motion.button 
+              <motion.a
+                href="/register"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full py-4 text-lg font-semibold rounded-2xl bg-white text-black hover:bg-slate-200 transition-colors mb-10 shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+                className="w-full py-4 text-lg font-semibold rounded-2xl bg-white text-black hover:bg-slate-200 transition-colors mb-10 shadow-[0_0_30px_rgba(255,255,255,0.2)] inline-block text-center"
               >
                 Commencer maintenant
-              </motion.button>
+              </motion.a>
 
               <div className="space-y-5">
                 {features.map((feature, i) => (

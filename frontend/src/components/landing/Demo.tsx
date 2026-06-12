@@ -20,7 +20,7 @@ export function Demo() {
   const rotateX = useTransform(scrollYProgress, [0, 0.4], [20, 0]);
 
   return (
-    <section ref={containerRef} className="py-32 overflow-hidden perspective-[2000px] relative">
+    <section ref={containerRef} id="demo" className="py-32 overflow-hidden perspective-[2000px] relative">
       {/* Dynamic Background glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[500px] bg-indigo-500/10 blur-[150px] rounded-[100%] pointer-events-none" />
 
