@@ -12,12 +12,12 @@ import { CardEditor, CardDesign, DEFAULT_CARD_DESIGN, CardProgramData, DEFAULT_C
 import { PremiumCardPreview } from '@/components/PremiumCardPreview';
 import { uploadCardImage } from '@/lib/cardUpload';
 import { Store, Save, Sparkles } from 'lucide-react';
+import { useAutoSave, SaveIndicator } from '@/hooks/useAutoSave';
 
 export default function ParametresPage() {
   const { commercant, refreshUser } = useAuth();
   const { show: toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<'commerce' | 'design'>('commerce');
 
@@ -72,6 +72,17 @@ export default function ParametresPage() {
     }
   }, [commercant]);
 
+  const handleAutoSaveCommerce = async () => {
+    await commercantApi.update({
+      nom_enseigne: nomEnseigne,
+      telephone,
+      adresse,
+      ville,
+      code_postal: codePostal,
+    });
+    await refreshUser();
+  };
+
   const handleImageUpload = useCallback(async (file: File, type: 'background' | 'logo') => {
     setIsUploading(true);
     try {
@@ -87,7 +98,6 @@ export default function ParametresPage() {
   }, [commercant?.id, toast]);
 
   const handleSaveCommerce = async () => {
-    setSaving(true);
     try {
       await commercantApi.update({
         nom_enseigne: nomEnseigne,
@@ -99,11 +109,9 @@ export default function ParametresPage() {
       await refreshUser();
       toast('Informations enregistrées');
     } catch (e: any) { toast(e?.message || 'Erreur', 'error'); }
-    finally { setSaving(false); }
   };
 
   const handleSaveDesign = async () => {
-    setSaving(true);
     try {
       await commercantApi.update({
         card_design: JSON.stringify(cardDesign),
@@ -116,8 +124,31 @@ export default function ParametresPage() {
       await refreshUser();
       toast('Design enregistré avec succès');
     } catch (e: any) { toast(e?.message || 'Erreur', 'error'); }
-    finally { setSaving(false); }
   };
+
+  const handleAutoSaveDesign = async () => {
+    await commercantApi.update({
+      card_design: JSON.stringify(cardDesign),
+      carte_logo_url: cardDesign.logo_url || undefined,
+      carte_programme_nom: cardData.programmeNom,
+      carte_recompense_description: cardData.recompense,
+      points_recompense: cardData.tamponsPalier,
+      nom_enseigne: cardData.commercantNom,
+    });
+    await refreshUser();
+  };
+
+  const { status: saveStatusCommerce } = useAutoSave({
+    data: { nomEnseigne, telephone, adresse, ville, codePostal },
+    onSave: handleAutoSaveCommerce,
+    debounceMs: 800,
+  });
+
+  const { status: saveStatusDesign } = useAutoSave({
+    data: { cardDesign, cardData },
+    onSave: handleAutoSaveDesign,
+    debounceMs: 800,
+  });
 
   if (loading) return <DashboardLayout><PageSpinner /></DashboardLayout>;
 
@@ -164,9 +195,9 @@ export default function ParametresPage() {
                 <Input label="Ville" value={ville} onChange={e => setVille(e.target.value)} />
                 <Input label="Code postal" value={codePostal} onChange={e => setCodePostal(e.target.value)} />
               </div>
-              <Button onClick={handleSaveCommerce} loading={saving}>
-                <Save className="h-4 w-4" /> Enregistrer
-              </Button>
+              <div className="flex items-center">
+                <SaveIndicator status={saveStatusCommerce} />
+              </div>
             </div>
           </CardBody>
         </Card>
@@ -199,9 +230,9 @@ export default function ParametresPage() {
           </Card>
 
           <div className="flex justify-end">
-            <Button onClick={handleSaveDesign} loading={saving} size="lg">
-              <Save className="h-4 w-4 mr-2" /> Enregistrer le design
-            </Button>
+            <div className="flex items-center">
+              <SaveIndicator status={saveStatusDesign} />
+            </div>
           </div>
         </div>
       )}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Head from 'next/head';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,6 +15,7 @@ import { menusApi, type Menu } from '@/services/api';
 import { commercantApi } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/Toast';
+import { useAutoSave, SaveIndicator } from '@/hooks/useAutoSave';
 import { formatEuro } from '@/utils/format';
 import { Plus, Pencil, Trash2, UtensilsCrossed, ChevronDown, ChevronRight, Settings, Send, Bell, Check } from 'lucide-react';
 
@@ -40,7 +41,6 @@ export default function MenusPage() {
   const [modal, setModal] = useState<{ open: boolean; menu?: Menu }>({ open: false });
   const [deleting, setDeleting] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'menu' | 'settings'>('menu');
-  const [saving, setSaving] = useState(false);
   const [pushingMenu, setPushingMenu] = useState(false);
   const [pushResult, setPushResult] = useState<{ success?: boolean; message?: string } | null>(null);
 
@@ -67,6 +67,22 @@ export default function MenusPage() {
       setAfficherPrix(commercant.menu_afficher_prix ?? true);
     }
   }, [commercant]);
+
+  const handleAutoSaveSettings = useCallback(async () => {
+    await commercantApi.update({
+      module_menu_jour: moduleEnabled,
+      menu_categories: JSON.stringify(categories.split(',').map(c => c.trim()).filter(Boolean)),
+      menu_devise: devise,
+      menu_afficher_prix: afficherPrix,
+    });
+    await refreshUser();
+  }, [moduleEnabled, categories, devise, afficherPrix, refreshUser]);
+
+  const { status: saveStatusSettings } = useAutoSave({
+    data: { moduleEnabled, categories, devise, afficherPrix },
+    onSave: handleAutoSaveSettings,
+    debounceMs: 800,
+  });
 
   const fetchMenus = async () => {
     setLoading(true);
@@ -108,21 +124,6 @@ export default function MenusPage() {
   const handleToggle = async (menu: Menu) => {
     try { await menusApi.toggle(menu.id); fetchMenus(); }
     catch (e: any) { toast(e?.message || 'Erreur', 'error'); }
-  };
-
-  const handleSaveSettings = async () => {
-    setSaving(true);
-    try {
-      await commercantApi.update({
-        module_menu_jour: moduleEnabled,
-        menu_categories: JSON.stringify(categories.split(',').map(c => c.trim()).filter(Boolean)),
-        menu_devise: devise,
-        menu_afficher_prix: afficherPrix,
-      });
-      await refreshUser();
-      toast('Paramètres enregistrés');
-    } catch (e: any) { toast(e?.message || 'Erreur', 'error'); }
-    finally { setSaving(false); }
   };
 
   const handlePushMenuDuJour = async () => {
@@ -288,9 +289,9 @@ export default function MenusPage() {
               </Card>
 
               <div className="lg:col-span-2">
-                <Button onClick={handleSaveSettings} loading={saving} size="lg">
-                  <Settings className="h-4 w-4" /> Enregistrer les paramètres
-                </Button>
+                <div className="flex items-center">
+                  <SaveIndicator status={saveStatusSettings} />
+                </div>
               </div>
             </div>
           )}

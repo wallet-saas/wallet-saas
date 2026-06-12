@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Head from 'next/head';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,6 +15,7 @@ import { notificationsApi, type Notification, type NotifStats } from '@/services
 import { commercantApi } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/Toast';
+import { useAutoSave, SaveIndicator } from '@/hooks/useAutoSave';
 import { formatDateTime, formatPercent, formatNumber } from '@/utils/format';
 import { Bell, Send, Users, Eye, TrendingUp, CheckCircle, AlertCircle, Settings, Zap } from 'lucide-react';
 
@@ -38,7 +39,6 @@ export default function NotificationsPage() {
   const [stats, setStats] = useState<NotifStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [sendResult, setSendResult] = useState<{ success?: boolean; message?: string } | null>(null);
-  const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'send' | 'history' | 'settings'>('send');
 
   const { register, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
@@ -63,6 +63,23 @@ export default function NotificationsPage() {
     }
   }, [commercant]);
 
+  const handleAutoSaveSettings = useCallback(async () => {
+    await commercantApi.update({
+      module_notifications: moduleEnabled,
+      notif_max_par_jour: maxPerDay,
+      notif_heure_debut: heureDebut,
+      notif_heure_fin: heureFin,
+      notif_template_defaut: templateDefaut,
+    });
+    await refreshUser();
+  }, [moduleEnabled, maxPerDay, heureDebut, heureFin, templateDefaut, refreshUser]);
+
+  const { status: saveStatusSettings } = useAutoSave({
+    data: { moduleEnabled, maxPerDay, heureDebut, heureFin, templateDefaut },
+    onSave: handleAutoSaveSettings,
+    debounceMs: 800,
+  });
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -85,23 +102,6 @@ export default function NotificationsPage() {
     } catch (e: any) {
       setSendResult({ success: false, message: e?.message || 'Erreur envoi' });
     }
-  };
-
-  const handleSaveSettings = async () => {
-    setSaving(true);
-    try {
-      await commercantApi.update({
-        module_notifications: moduleEnabled,
-        notif_max_par_jour: maxPerDay,
-        notif_heure_debut: heureDebut,
-        notif_heure_fin: heureFin,
-        notif_template_defaut: templateDefaut,
-      });
-      await refreshUser();
-      toast('Paramètres enregistrés');
-    } catch (e: any) {
-      toast(e?.message || 'Erreur', 'error');
-    } finally { setSaving(false); }
   };
 
   const useTemplate = () => {
@@ -282,9 +282,9 @@ export default function NotificationsPage() {
               </Card>
 
               <div className="lg:col-span-2">
-                <Button onClick={handleSaveSettings} loading={saving} size="lg">
-                  <Settings className="h-4 w-4" /> Enregistrer les paramètres
-                </Button>
+                <div className="flex items-center">
+                  <SaveIndicator status={saveStatusSettings} />
+                </div>
               </div>
             </div>
           )}

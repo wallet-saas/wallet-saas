@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Head from 'next/head';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,6 +15,7 @@ import { offresApi, type Offre } from '@/services/api';
 import { commercantApi } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/Toast';
+import { useAutoSave, SaveIndicator } from '@/hooks/useAutoSave';
 import { formatDate } from '@/utils/format';
 import { Plus, Send, Tag, Percent, Euro, Calendar, BarChart2, Settings, Bell, Zap } from 'lucide-react';
 
@@ -46,7 +47,6 @@ export default function OffresPage() {
   const [sendCible, setSendCible] = useState('tous');
   const [sending, setSending] = useState(false);
   const [activeTab, setActiveTab] = useState<'offres' | 'settings'>('offres');
-  const [saving, setSaving] = useState(false);
 
   const [moduleEnabled, setModuleEnabled] = useState(true);
   const [dureeDefaut, setDureeDefaut] = useState(7);
@@ -65,6 +65,23 @@ export default function OffresPage() {
       setCodeAuto(commercant.offres_code_auto ?? true);
     }
   }, [commercant]);
+
+  const handleAutoSaveSettings = useCallback(async () => {
+    await commercantApi.update({
+      module_offres_flash: moduleEnabled,
+      offres_duree_defaut: dureeDefaut,
+      offres_limite_client: limiteClient,
+      offres_notif_auto: notifAuto,
+      offres_code_auto: codeAuto,
+    });
+    await refreshUser();
+  }, [moduleEnabled, dureeDefaut, limiteClient, notifAuto, codeAuto, refreshUser]);
+
+  const { status: saveStatusSettings } = useAutoSave({
+    data: { moduleEnabled, dureeDefaut, limiteClient, notifAuto, codeAuto },
+    onSave: handleAutoSaveSettings,
+    debounceMs: 800,
+  });
 
   const fetchOffres = async () => {
     setLoading(true);
@@ -93,22 +110,6 @@ export default function OffresPage() {
   const handleStats = async (offre: Offre) => {
     try { const stats = await offresApi.stats(offre.id); setStatsModal({ open: true, offre, stats }); }
     catch (e: any) { toast(e?.message || 'Erreur', 'error'); }
-  };
-
-  const handleSaveSettings = async () => {
-    setSaving(true);
-    try {
-      await commercantApi.update({
-        module_offres_flash: moduleEnabled,
-        offres_duree_defaut: dureeDefaut,
-        offres_limite_client: limiteClient,
-        offres_notif_auto: notifAuto,
-        offres_code_auto: codeAuto,
-      });
-      await refreshUser();
-      toast('Paramètres enregistrés');
-    } catch (e: any) { toast(e?.message || 'Erreur', 'error'); }
-    finally { setSaving(false); }
   };
 
   const actives = offres.filter(o => !o.expiree);
@@ -223,9 +224,9 @@ export default function OffresPage() {
               </Card>
 
               <div className="lg:col-span-2">
-                <Button onClick={handleSaveSettings} loading={saving} size="lg">
-                  <Settings className="h-4 w-4" /> Enregistrer les paramètres
-                </Button>
+                <div className="flex items-center">
+                  <SaveIndicator status={saveStatusSettings} />
+                </div>
               </div>
             </div>
           )}

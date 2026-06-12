@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Head from 'next/head';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
@@ -13,6 +13,7 @@ import { avisApi, type Avis } from '@/services/api';
 import { commercantApi } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/Toast';
+import { useAutoSave, SaveIndicator } from '@/hooks/useAutoSave';
 import { formatDate } from '@/utils/format';
 import { Star, MessageSquare, Send, Sparkles, CheckCircle, Filter, Settings, AlertTriangle } from 'lucide-react';
 
@@ -37,7 +38,6 @@ export default function AvisPage() {
   const [filterNote, setFilterNote] = useState<number | undefined>();
   const [modal, setModal] = useState<{ open: boolean; avis?: Avis; reponse?: string; aiLoading?: boolean; sending?: boolean }>({ open: false });
   const [activeTab, setActiveTab] = useState<'avis' | 'settings'>('avis');
-  const [saving, setSaving] = useState(false);
 
   // Settings
   const [moduleEnabled, setModuleEnabled] = useState(false);
@@ -55,6 +55,23 @@ export default function AvisPage() {
       setReponseAuto(commercant.avis_reponse_auto ?? false);
     }
   }, [commercant]);
+
+  const handleAutoSaveSettings = useCallback(async () => {
+    await commercantApi.update({
+      module_avis_google: moduleEnabled,
+      google_place_url: googlePlaceUrl,
+      avis_seuil_reponse: seuilReponse,
+      avis_template_auto: templateAuto,
+      avis_reponse_auto: reponseAuto,
+    });
+    await refreshUser();
+  }, [moduleEnabled, googlePlaceUrl, seuilReponse, templateAuto, reponseAuto, refreshUser]);
+
+  const { status: saveStatusSettings } = useAutoSave({
+    data: { moduleEnabled, googlePlaceUrl, seuilReponse, templateAuto, reponseAuto },
+    onSave: handleAutoSaveSettings,
+    debounceMs: 800,
+  });
 
   const fetchAvis = async (note?: number) => {
     setLoading(true);
@@ -92,22 +109,6 @@ export default function AvisPage() {
       setModal({ open: false });
       fetchAvis(filterNote);
     } catch (e: any) { toast(e?.message || 'Erreur envoi', 'error'); setModal(m => ({ ...m, sending: false })); }
-  };
-
-  const handleSaveSettings = async () => {
-    setSaving(true);
-    try {
-      await commercantApi.update({
-        module_avis_google: moduleEnabled,
-        google_place_url: googlePlaceUrl,
-        avis_seuil_reponse: seuilReponse,
-        avis_template_auto: templateAuto,
-        avis_reponse_auto: reponseAuto,
-      });
-      await refreshUser();
-      toast('Paramètres enregistrés');
-    } catch (e: any) { toast(e?.message || 'Erreur', 'error'); }
-    finally { setSaving(false); }
   };
 
   const repondus = avis.filter(a => a.reponse_envoyee).length;
@@ -234,9 +235,9 @@ export default function AvisPage() {
               </Card>
 
               <div className="lg:col-span-2">
-                <Button onClick={handleSaveSettings} loading={saving} size="lg">
-                  <Settings className="h-4 w-4" /> Enregistrer les paramètres
-                </Button>
+                <div className="flex items-center">
+                  <SaveIndicator status={saveStatusSettings} />
+                </div>
               </div>
             </div>
           )}

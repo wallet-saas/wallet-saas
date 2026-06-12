@@ -11,6 +11,7 @@ import { commercantApi } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/Toast';
 import { Star, MessageSquare, Settings, AlertTriangle, CheckCircle, Clock, Save, Bell } from 'lucide-react';
+import { useAutoSave, SaveIndicator } from '@/hooks/useAutoSave';
 
 function Stars({ note }: { note: number }) {
   return (
@@ -27,7 +28,6 @@ export default function AutoReviewPage() {
   const { show: toast } = useToast();
   const [feedback, setFeedback] = useState<Avis[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'settings' | 'feedback'>('settings');
 
   // Core settings
@@ -51,6 +51,24 @@ export default function AutoReviewPage() {
     }
   }, [commercant]);
 
+  const handleAutoSave = async () => {
+    await commercantApi.update({
+      module_avis_google: moduleEnabled,
+      delai_notif_avis_minutes: delaiMinutes,
+      google_place_url: googlePlaceUrl,
+      auto_review_message: autoMessage,
+      auto_review_seuil_etoiles: seuilEtoiles,
+      auto_review_alerte_email: alerteEmail,
+    });
+    await refreshUser();
+  };
+
+  const { status: saveStatus } = useAutoSave({
+    data: { moduleEnabled, delaiMinutes, googlePlaceUrl, autoMessage, seuilEtoiles, alerteEmail },
+    onSave: handleAutoSave,
+    debounceMs: 800,
+  });
+
   const loadData = async () => {
     setLoading(true);
     try {
@@ -61,25 +79,6 @@ export default function AutoReviewPage() {
   };
 
   useEffect(() => { loadData(); }, []);
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      // Save all settings via commercants API (single source of truth)
-      await commercantApi.update({
-        module_avis_google: moduleEnabled,
-        delai_notif_avis_minutes: delaiMinutes,
-        google_place_url: googlePlaceUrl,
-        auto_review_message: autoMessage,
-        auto_review_seuil_etoiles: seuilEtoiles,
-        auto_review_alerte_email: alerteEmail,
-      });
-      await refreshUser();
-      toast('Paramètres enregistrés');
-    } catch (err: any) {
-      toast(err.message || 'Erreur', 'error');
-    } finally { setSaving(false); }
-  };
 
   if (loading && !commercant) return <DashboardLayout><PageSpinner /></DashboardLayout>;
 
@@ -164,9 +163,9 @@ export default function AutoReviewPage() {
           </div>
 
           <div className="lg:col-span-2">
-            <Button onClick={handleSave} loading={saving} size="lg">
-              <Save className="h-4 w-4" /> Enregistrer les paramètres
-            </Button>
+            <div className="flex items-center">
+              <SaveIndicator status={saveStatus} />
+            </div>
           </div>
         </div>
       )}

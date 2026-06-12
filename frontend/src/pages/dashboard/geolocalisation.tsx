@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Head from 'next/head';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/Toast';
 import { formatPercent, formatNumber } from '@/utils/format';
 import { MapPin, Bell, TrendingUp, Radio, CheckCircle, XCircle, Info, Settings, BarChart3, Navigation, Clock, MessageSquare, Save, Loader2 } from 'lucide-react';
+import { useAutoSave, SaveIndicator } from '@/hooks/useAutoSave';
 
 type Tab = 'statistiques' | 'parametres';
 
@@ -21,7 +22,6 @@ export default function GeolocalisationPage() {
   const { show: toast } = useToast();
   const [stats, setStats] = useState<GeoStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('statistiques');
   const [toggling, setToggling] = useState(false);
 
@@ -46,6 +46,24 @@ export default function GeolocalisationPage() {
     }
   }, [commercant?.id]); // Only re-sync when commercant ID changes (login), not on every refresh
 
+  const handleAutoSaveSettings = useCallback(async () => {
+    await commercantApi.update({
+      rayon_geoloc_metres: rayon,
+      latitude: latitude ? parseFloat(latitude) : undefined,
+      longitude: longitude ? parseFloat(longitude) : undefined,
+      geoloc_message: message,
+      geoloc_heure_debut: heureDebut,
+      geoloc_heure_fin: heureFin,
+    });
+    await refreshUser();
+  }, [rayon, latitude, longitude, message, heureDebut, heureFin, refreshUser]);
+
+  const { status: saveStatusSettings } = useAutoSave({
+    data: { rayon, latitude, longitude, message, heureDebut, heureFin },
+    onSave: handleAutoSaveSettings,
+    debounceMs: 800,
+  });
+
   // Load stats
   useEffect(() => {
     geolocationApi.stats()
@@ -65,28 +83,6 @@ export default function GeolocalisationPage() {
       toast(err.message || 'Erreur', 'error');
     } finally {
       setToggling(false);
-    }
-  }
-
-  async function handleSaveSettings() {
-    setSaving(true);
-    try {
-      await commercantApi.update({
-        rayon_geoloc_metres: rayon,
-        latitude: latitude ? parseFloat(latitude) : undefined,
-        longitude: longitude ? parseFloat(longitude) : undefined,
-        geoloc_message: message,
-        geoloc_heure_debut: heureDebut,
-        geoloc_heure_fin: heureFin,
-      });
-      await refreshUser();
-      const newStats = await geolocationApi.stats();
-      setStats(newStats);
-      toast('Paramètres enregistrés');
-    } catch (err: any) {
-      toast(err.message || 'Erreur', 'error');
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -279,10 +275,9 @@ export default function GeolocalisationPage() {
               </Card>
 
               <div className="flex justify-end">
-                <Button onClick={handleSaveSettings} disabled={saving} className="min-w-[200px]">
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  {saving ? 'Enregistrement...' : 'Enregistrer les paramètres'}
-                </Button>
+                <div className="flex items-center gap-3">
+                  <SaveIndicator status={saveStatusSettings} />
+                </div>
               </div>
             </div>
           )}
