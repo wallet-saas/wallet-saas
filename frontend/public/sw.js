@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stamply-v1';
+const CACHE_NAME = 'stamply-v' + Date.now();
 const STATIC_ASSETS = [
   '/',
   '/login',
@@ -19,7 +19,6 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(STATIC_ASSETS).catch(() => {
-        // Non-critical: some pages may not be available at install time
         console.log('[SW] Partial cache install');
       });
     })
@@ -49,7 +48,6 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // Cache successful GET requests
           if (request.method === 'GET' && response.ok) {
             const clone = response.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
@@ -65,7 +63,6 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(request).then((cached) => {
       return cached || fetch(request).then((response) => {
-        // Cache new static assets
         if (response.ok) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
@@ -73,7 +70,6 @@ self.addEventListener('fetch', (event) => {
         return response;
       });
     }).catch(() => {
-      // Offline fallback for navigation requests
       if (request.mode === 'navigate') {
         return caches.match('/');
       }
@@ -116,13 +112,11 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // Focus existing window if open
       for (const client of windowClients) {
         if (client.url.includes(url) && 'focus' in client) {
           return client.focus();
         }
       }
-      // Open new window
       if (clients.openWindow) {
         return clients.openWindow(url);
       }
@@ -138,7 +132,6 @@ self.addEventListener('sync', (event) => {
 });
 
 async function syncPendingScans() {
-  // Get pending scans from IndexedDB and retry them
   const db = await openDB();
   const pending = await db.getAll('pendingScans');
 

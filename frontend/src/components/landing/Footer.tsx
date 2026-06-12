@@ -1,31 +1,26 @@
-'use client';
-
 import { Wallet } from "lucide-react";
 import Link from "next/link";
-import { useLandingTheme } from "./theme";
 
 export function Footer() {
-  const t = useLandingTheme();
-
   return (
-    <footer className={`py-10 sm:py-12 border-t ${t.border} ${t.sectionBg}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-500 flex items-center justify-center group-hover:bg-indigo-400 transition-colors">
-              <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
-            </div>
-            <span className={`text-lg sm:text-xl font-bold tracking-tight ${t.textPrimary}`}>Stamply</span>
-          </Link>
-          <div className={`flex items-center gap-4 sm:gap-6 text-xs sm:text-sm ${t.textSecondary} flex-wrap justify-center`}>
-            <Link href="/mentions-legales" className="hover:text-white transition-colors duration-200">Mentions légales</Link>
-            <Link href="/cgu" className="hover:text-white transition-colors duration-200">CGV</Link>
-            <Link href="/politique-confidentialite" className="hover:text-white transition-colors duration-200">Confidentialité</Link>
-            <Link href="/contact" className="hover:text-white transition-colors duration-200">Contact</Link>
+    <footer className="py-12 border-t border-white/10 bg-transparent relative z-10">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+        <Link href="/" className="flex items-center gap-2 text-white">
+          <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center">
+            <Wallet className="w-4 h-4 text-white" />
           </div>
-          <div className={`text-xs sm:text-sm ${t.textMuted}`}>
-            © 2026 Stamply. Tous droits réservés.
-          </div>
+          <span className="text-xl font-bold tracking-tight">Stamply</span>
+        </Link>
+        
+        <div className="flex items-center gap-6 text-sm text-slate-400">
+          <Link href="/mentions-legales" className="hover:text-white transition-colors">Mentions légales</Link>
+          <Link href="/cgu" className="hover:text-white transition-colors">CGV</Link>
+          <Link href="/politique-confidentialite" className="hover:text-white transition-colors">Confidentialité</Link>
+          <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
+        </div>
+        
+        <div className="text-sm text-slate-500">
+          © {new Date().getFullYear()} Stamply. Tous droits réservés.
         </div>
       </div>
     </footer>

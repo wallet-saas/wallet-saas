@@ -1,8 +1,17 @@
 import App, { AppContext, AppInitialProps } from 'next/app';
 import type { AppProps } from 'next/app';
-import React from 'react';
+import React, { useEffect } from 'react';
 import '@/styles/globals.css';
 import { ToastProvider } from '@/components/ui/Toast';
+
+// Unregister old service workers to prevent stale cache
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) {
+      registration.unregister();
+    }
+  });
+}
 
 interface ErrorBoundaryState { error: Error | null }
 

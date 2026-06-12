@@ -7,17 +7,17 @@
  * - Images: Cache First with expiration
  */
 
-const CACHE_NAME = 'stamply-merchant-v1';
-const STATIC_CACHE = 'stamply-static-v1';
-const API_CACHE = 'stamply-api-v1';
+const CACHE_NAME = 'stamply-merchant-v' + Date.now();
+const STATIC_CACHE = 'stamply-static-v' + Date.now();
+const API_CACHE = 'stamply-api-v' + Date.now();
 
 // App shell files to cache immediately
 const SHELL_FILES = [
   '/',
-  '//dashboard',
-  '//scan',
-  '//boutiques',
-  '//analytics',
+  '/dashboard',
+  '/scan',
+  '/boutiques',
+  '/analytics',
   '/manifest-merchant.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
@@ -88,7 +88,6 @@ async function cacheFirst(request, cacheName) {
     }
     return response;
   } catch (err) {
-    // Return offline fallback if available
     return new Response('Hors ligne', { status: 503, statusText: 'Service Unavailable' });
   }
 }
@@ -123,7 +122,6 @@ self.addEventListener('sync', (event) => {
 });
 
 async function syncPendingScans() {
-  // Get pending scans from IndexedDB and retry
   const db = await openDB();
   const pending = await db.getAll('pendingScans');
 
@@ -177,13 +175,11 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     clients.matchAll({ type: 'window' }).then((clientList) => {
-      // Focus existing window
       for (const client of clientList) {
         if (client.url.includes('/') && 'focus' in client) {
           return client.focus();
         }
       }
-      // Open new window
       if (clients.openWindow) {
         return clients.openWindow('/');
       }
