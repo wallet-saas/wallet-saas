@@ -309,7 +309,7 @@ export default function MenusPage() {
             {selectedCount > 0 && (
               <>
                 <Button onClick={handlePushSelection} disabled={pushingMenu} variant="primary" size="sm">
-                  <Bell className="h-4 w-4" /> Pousser la sélection
+                  <Bell className="h-4 w-4" /> Notifier mes clients
                 </Button>
                 <Button onClick={clearSelection} variant="ghost" size="sm">
                   <X className="h-4 w-4" /> Annuler

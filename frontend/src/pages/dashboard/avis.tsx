@@ -29,9 +29,9 @@ function Stars({ note, size = 'sm' }: { note: number; size?: 'sm' | 'md' }) {
 
 // Templates par défaut proposés au premier chargement
 const DEFAULT_TEMPLATES: AvisTemplate[] = [
-  { id: 'positif', nom: '⭐ Avis positif (4-5★)', texte: 'Merci {prenom_client} pour votre avis {note}/5 ! Nous sommes ravis que votre expérience chez {nom_commerce} vous ait plu. À très bientôt !' },
-  { id: 'negatif', nom: '😔 Avis négatif (1-3★)', texte: 'Bonjour {prenom_client}, merci pour votre retour. Nous sommes désolés que votre expérience n\'ait pas été à la hauteur. Nous aimerions en savoir plus pour nous améliorer — n\'hésitez pas à nous contacter.' },
-  { id: 'remerciement', nom: '🙏 Simple remerciement', texte: 'Merci {prenom_client} pour votre avis ! Votre retour est précieux pour nous. À bientôt chez {nom_commerce} !' },
+  { id: 'positif', nom: '⭐ Avis positif (4-5★)', texte: 'Merci {initiale_client} pour votre avis {note}/5 ! Nous sommes ravis que votre expérience chez {nom_commerce} vous ait plu. À très bientôt !' },
+  { id: 'negatif', nom: '😔 Avis négatif (1-3★)', texte: 'Bonjour {initiale_client}, merci pour votre retour. Nous sommes désolés que votre expérience n\'ait pas été à la hauteur. Nous aimerions en savoir plus pour nous améliorer — n\'hésitez pas à nous contacter.' },
+  { id: 'remerciement', nom: '🙏 Simple remerciement', texte: 'Merci {initiale_client} pour votre avis ! Votre retour est précieux pour nous. À bientôt chez {nom_commerce} !' },
 ];
 
 export default function AvisPage() {
@@ -268,7 +268,7 @@ export default function AvisPage() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Créez vos modèles de réponses avec des variables automatiques : <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">{'{prenom_client}'}</code> <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">{'{nom_commerce}'}</code> <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">{'{note}'}</code> <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">{'{contenu_avis}'}</code></p>
+                  <p className="text-sm text-gray-500">Créez vos modèles de réponses avec des variables automatiques : <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">{'{initiale_client}'}</code> <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">{'{nom_commerce}'}</code> <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">{'{note}'}</code> <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">{'{contenu_avis}'}</code></p>
                 </div>
                 <Button onClick={handleAddTemplate}><Plus className="h-4 w-4" /> Nouveau template</Button>
               </div>
@@ -449,10 +449,10 @@ export default function AvisPage() {
       <Modal open={showTemplateForm} onClose={() => setShowTemplateForm(false)} title={editingTemplate ? 'Modifier le template' : 'Nouveau template'} size="md">
         <div className="space-y-4">
           <Input label="Nom du template" placeholder="Ex: Réponse avis positif" value={templateForm.nom} onChange={e => setTemplateForm({ ...templateForm, nom: e.target.value })} />
-          <Textarea label="Texte du template" placeholder="Merci {prenom_client} pour votre avis {note}/5..." rows={5} value={templateForm.texte} onChange={e => setTemplateForm({ ...templateForm, texte: e.target.value })} />
+          <Textarea label="Texte du template" placeholder="Merci {initiale_client} pour votre avis {note}/5..." rows={5} value={templateForm.texte} onChange={e => setTemplateForm({ ...templateForm, texte: e.target.value })} />
           <div className="bg-blue-50 rounded-lg p-3 text-xs text-blue-700">
             <p className="font-semibold mb-1">Variables disponibles :</p>
-            <p><code>{'{prenom_client}'}</code> — Nom du client</p>
+            <p><code>{'{initiale_client}'}</code> — Initiale du client (ex: "J.")</p>
             <p><code>{'{nom_commerce}'}</code> — Nom de votre commerce</p>
             <p><code>{'{note}'}</code> — Note de l'avis (1-5)</p>
             <p><code>{'{contenu_avis}'}</code> — Texte de l'avis</p>

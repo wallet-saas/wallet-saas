@@ -73,8 +73,8 @@ export default function NotificationsPage() {
       notif_template_defaut: templateDefaut,
       notif_mode_simulation: modeSimulation,
     });
-    await refreshUser();
-  }, [moduleEnabled, maxPerDay, heureDebut, heureFin, templateDefaut, modeSimulation, refreshUser]);
+    // Pas de refreshUser ici — le state local est déjà à jour
+  }, [moduleEnabled, maxPerDay, heureDebut, heureFin, templateDefaut, modeSimulation]);
 
   const { status: saveStatusSettings } = useAutoSave({
     data: { moduleEnabled, maxPerDay, heureDebut, heureFin, templateDefaut, modeSimulation },

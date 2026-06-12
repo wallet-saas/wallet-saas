@@ -189,11 +189,11 @@ async function handleReviewSubmission(carteId, note, contenu = '') {
 
 /**
  * Remplace les variables dans un template avec les données de l'avis.
- * Variables supportées : {prenom_client}, {nom_commerce}, {note}, {contenu_avis}
+ * Variables supportées : {initiale_client}, {nom_commerce}, {note}, {contenu_avis}
  */
-function fillTemplate(template, { nom_enseigne = '', note = 0, contenu = '', prenom_client = 'Client' }) {
+function fillTemplate(template, { nom_enseigne = '', note = 0, contenu = '', initiale_client = '?' }) {
   return template
-    .replace(/\{prenom_client\}/g, prenom_client)
+    .replace(/\{initiale_client\}/g, initiale_client)
     .replace(/\{nom_commerce\}/g, nom_enseigne)
     .replace(/\{note\}/g, String(note))
     .replace(/\{contenu_avis\}/g, contenu || '(aucun commentaire)');

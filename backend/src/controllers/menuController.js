@@ -261,13 +261,44 @@ const pushSelection = async (req, res) => {
       'tous'
     );
 
+    // ── Insérer dans l'historique des notifications ──
+    const { data: nomsGroupes } = await supabase
+      .from('commercants')
+      .select('menus_groupes')
+      .eq('id', commercantId)
+      .single();
+
+    let nomGroupe = null;
+    if (groupe_id && nomsGroupes?.menus_groupes) {
+      const groupes = nomsGroupes.menus_groupes || [];
+      const found = groupes.find(g => g.id === groupe_id);
+      if (found) nomGroupe = found.nom;
+    }
+
+    const notifTitre = nomGroupe
+      ? `🍽️ Menu "${nomGroupe}" pushé`
+      : `🍽️ ${menus.length} plat(s) pushé(s)`;
+
+    await supabase.from('notifications').insert([{
+      commercant_id: commercantId,
+      titre: notifTitre,
+      message: `${platsList}\n\n${result.simulation ? '(mode simulation)' : `${result.totalEnvoyes} client(s) notifié(s)`}`,
+      type: 'menu_push',
+      cible: 'tous',
+      total_envoyes: result?.totalEnvoyes ?? 0,
+      total_ouverts: 0,
+      envoyee: true,
+    }]);
+
+    const msgSimulation = result?.simulation
+      ? `🍽️ Notification simulée pour ${menus.length} plat(s)${nomGroupe ? ` (groupe "${nomGroupe}")` : ''}. Connectez FCM/APNS pour l'envoi réel.`
+      : `🍽️ Notification envoyée pour ${menus.length} plat(s) à ${result.totalEnvoyes} client(s)${nomGroupe ? ` (groupe "${nomGroupe}")` : ''}.`;
+
     return res.status(200).json({
       success: true,
       simulation: result?.simulation ?? true,
       totalEnvoyes: result?.totalEnvoyes ?? 0,
-      message: result?.simulation
-        ? `${menus.length} plat(s) sélectionné(s) (mode simulation)`
-        : `${menus.length} plat(s) envoyé(s) à ${result.totalEnvoyes} client(s)`,
+      message: msgSimulation,
       data: { menus, totalEnvoyes: result?.totalEnvoyes ?? 0 }
     });
 

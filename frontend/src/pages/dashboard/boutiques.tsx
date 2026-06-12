@@ -110,7 +110,7 @@ export default function BoutiquesPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="page-title">Mes boutiques</h1>
-            <p className="page-subtitle">{boutiques.length} boutique{boutiques.length !== 1 ? 's' : ''} — 1 gratuite, illimitées en Pro</p>
+            <p className="page-subtitle">{boutiques.length} boutique{boutiques.length !== 1 ? 's' : ''}</p>
           </div>
           <Button onClick={() => { setShowForm(true); setEditing(null); resetForm(); }}>
             <Plus className="h-4 w-4" /> Ajouter une boutique
@@ -189,16 +189,15 @@ export default function BoutiquesPage() {
       {activeTab === 'settings' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
-            <CardHeader><CardTitle>Freemium</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Plan</CardTitle></CardHeader>
             <CardBody className="space-y-4">
               <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Plan actuel</p>
-                  <p className="text-xs text-gray-500 mt-0.5">1 boutique gratuite • Boutiques illimitées en Pro</p>
+                  <p className="text-sm font-medium text-gray-900">Plan Stamply</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Toutes vos boutiques sont incluses. Fonctionnalités complètes.</p>
                 </div>
-                <span className="bg-green-50 text-green-600 text-xs px-2 py-0.5 rounded-full font-medium">Gratuit</span>
+                <span className="bg-green-50 text-green-600 text-xs px-2 py-0.5 rounded-full font-medium">Actif</span>
               </div>
-              {/* TODO: quand Stripe sera branché, afficher le bouton "Passer en Pro" ici */}
             </CardBody>
           </Card>
 

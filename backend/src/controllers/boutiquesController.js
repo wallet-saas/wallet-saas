@@ -61,36 +61,6 @@ const createBoutique = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Le nom de la boutique est requis.' });
     }
 
-    // ── Logique Freemium ──
-    // Gratuit : 1 boutique. Pro (Stripe) : illimitées.
-    // TODO: quand Stripe sera branché, décommenter la vérification ci-dessous
-    // pour limiter les boutiques gratuites à 1.
-    /*
-    const { data: existingBoutiques, error: countErr } = await supabase
-      .from('boutiques')
-      .select('id', { count: 'exact' })
-      .eq('commercant_id', commercantId)
-      .eq('actif', true);
-
-    if (!countErr && existingBoutiques && existingBoutiques.length >= 1) {
-      // Vérifier si le commerçant est en plan Pro
-      const { data: commercant } = await supabase
-        .from('commercants')
-        .select('abonnement_statut')
-        .eq('id', commercantId)
-        .single();
-
-      if (!commercant || commercant.abonnement_statut !== 'actif') {
-        return res.status(403).json({
-          success: false,
-          error: 'Plan gratuit limité à 1 boutique. Passez en Pro pour créer des boutiques supplémentaires.',
-          code: 'LIMIT_REACHED'
-        });
-      }
-    }
-    */
-    // ── Fin logique Freemium (pour l'instant, tout le monde peut créer) ──
-
     const { data, error } = await supabase
       .from('boutiques')
       .insert([{
@@ -100,7 +70,8 @@ const createBoutique = async (req, res) => {
         ville: ville?.trim() || null,
         code_postal: code_postal?.trim() || null,
         telephone: telephone?.trim() || null,
-        carte_couleur_primaire: carte_couleur_primaire || null,
+        google_place_url: google_place_url?.trim() || null,
+        carte_couleur_primaire: carte_couleur_primaire || '#6366f1',
         carte_couleur_secondaire: carte_couleur_secondaire || '#764ba2',
         carte_programme_nom: carte_programme_nom?.trim() || null,
         carte_recompense_description: carte_recompense_description?.trim() || null,
@@ -114,6 +85,21 @@ const createBoutique = async (req, res) => {
       .single();
 
     if (error) throw error;
+
+    // Si c'est la première boutique, la définir comme défaut
+    const { data: existingBoutiques } = await supabase
+      .from('boutiques')
+      .select('id')
+      .eq('commercant_id', commercantId)
+      .eq('actif', true);
+
+    if (existingBoutiques && existingBoutiques.length === 1) {
+      await supabase
+        .from('commercants')
+        .update({ boutique_defaut_id: data.id })
+        .eq('id', commercantId);
+    }
+
     res.status(201).json({ success: true, data });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
