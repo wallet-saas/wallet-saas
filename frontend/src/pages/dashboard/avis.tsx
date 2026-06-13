@@ -8,13 +8,12 @@ import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { StatCard } from '@/components/ui/StatCard';
 import { PageSpinner } from '@/components/ui/Spinner';
-import { avisApi, type Avis, type AvisTemplate, type AvisTemplatesFilled } from '@/services/api';
-import { commercantApi } from '@/services/api';
+import { avisApi, commercantApi, type Avis, type AvisTemplate, type AvisTemplatesFilled } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/Toast';
 import { useAutoSave, SaveIndicator } from '@/hooks/useAutoSave';
 import { formatDate } from '@/utils/format';
-import { Star, MessageSquare, Send, CheckCircle, Filter, AlertTriangle, Plus, Trash2, Edit3, FileText, QrCode, ExternalLink, Copy } from 'lucide-react';
+import { Star, MessageSquare, Send, CheckCircle, Filter, AlertTriangle, Plus, Trash2, Edit3, FileText } from 'lucide-react';
 
 function Stars({ note, size = 'sm' }: { note: number; size?: 'sm' | 'md' }) {
   const s = size === 'sm' ? 'h-3.5 w-3.5' : 'h-5 w-5';
@@ -43,7 +42,7 @@ export default function AvisPage() {
   const [loading, setLoading] = useState(true);
   const [filterNote, setFilterNote] = useState<number | undefined>();
   const [modal, setModal] = useState<{ open: boolean; avis?: Avis; reponse?: string; templates?: AvisTemplatesFilled; selectedTemplateId?: string; sending?: boolean; loadingTemplates?: boolean }>({ open: false });
-  const [activeTab, setActiveTab] = useState<'avis' | 'templates' | 'collecte'>('avis');
+  const [activeTab, setActiveTab] = useState<'avis' | 'templates'>('avis');
 
   // Templates state
   const [templates, setTemplates] = useState<AvisTemplate[]>([]);
@@ -54,11 +53,13 @@ export default function AvisPage() {
   // Settings
   const [moduleEnabled, setModuleEnabled] = useState(false);
   const [googlePlaceUrl, setGooglePlaceUrl] = useState('');
+  const [seuilEtoiles, setSeuilEtoiles] = useState(4);
 
   useEffect(() => {
     if (commercant) {
       setModuleEnabled(commercant.module_avis_google ?? false);
       setGooglePlaceUrl(commercant.google_place_url ?? '');
+      setSeuilEtoiles(commercant.auto_review_seuil_etoiles ?? 4);
       // Charger les templates du commerçant, ou utiliser les defaults
       const saved = (commercant as any).avis_templates;
       if (saved && Array.isArray(saved) && saved.length > 0) {
@@ -68,7 +69,6 @@ export default function AvisPage() {
           texte: t.texte.replace(/\{prenom_client\}/g, '{initiale_client}'),
         }));
         setTemplates(migrated);
-        // Si des templates ont été migrés, sauvegarder silencieusement
         if (JSON.stringify(migrated) !== JSON.stringify(saved)) {
           commercantApi.update({ avis_templates: migrated }).catch(() => {});
         }
@@ -82,12 +82,12 @@ export default function AvisPage() {
     await commercantApi.update({
       module_avis_google: moduleEnabled,
       google_place_url: googlePlaceUrl,
+      auto_review_seuil_etoiles: seuilEtoiles,
     });
-    await refreshUser();
-  }, [moduleEnabled, googlePlaceUrl, refreshUser]);
+  }, [moduleEnabled, googlePlaceUrl, seuilEtoiles]);
 
   const { status: saveStatusSettings } = useAutoSave({
-    data: { moduleEnabled, googlePlaceUrl },
+    data: { moduleEnabled, googlePlaceUrl, seuilEtoiles },
     onSave: handleAutoSaveSettings,
     debounceMs: 800,
   });
@@ -191,24 +191,82 @@ export default function AvisPage() {
       <Head><title>Avis — Stamply</title></Head>
 
       <div className="page-header">
-        <h1 className="page-title">Avis</h1>
-        <p className="page-subtitle">Gérez les avis de vos clients et répondez avec vos templates personnalisés</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="page-title">Avis</h1>
+            <p className="page-subtitle">Gérez les avis de vos clients et répondez avec vos templates personnalisés</p>
+          </div>
+          <SaveIndicator status={saveStatusSettings} />
+        </div>
       </div>
 
+      {/* Bannière module avis automatiques */}
       <div className={`flex items-center gap-4 px-5 py-4 rounded-xl border mb-6 ${moduleEnabled ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100'}`}>
         <Star className={`h-5 w-5 ${moduleEnabled ? 'text-green-600' : 'text-gray-400'}`} />
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-900">Collecte d'avis</p>
-          <p className="text-xs text-gray-500">{moduleEnabled ? 'Activé — les avis sont collectés via QR code' : 'Désactivé — activez pour collecter les avis'}</p>
+          <p className="text-sm font-medium text-gray-900">Collecte d'avis automatique</p>
+          <p className="text-xs text-gray-500">{moduleEnabled ? 'Activé — les avis sont collectés via les notifications push après installation de la carte' : 'Désactivé — activez pour collecter automatiquement les avis'}</p>
         </div>
         <Badge variant={moduleEnabled ? 'green' : 'gray'}>{moduleEnabled ? 'Actif' : 'Inactif'}</Badge>
       </div>
 
+      {/* Settings rapides */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        <Card>
+          <CardHeader><CardTitle>Paramètres de collecte</CardTitle></CardHeader>
+          <CardBody className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Activer la collecte automatique</p>
+                <p className="text-xs text-gray-500">Envoie une notification au client après installation de la carte</p>
+              </div>
+              <input type="checkbox" checked={moduleEnabled} onChange={e => setModuleEnabled(e.target.checked)} className="toggle" />
+            </div>
+            <Input label="URL de votre fiche Google Business" placeholder="https://g.page/votre-commerce" value={googlePlaceUrl} onChange={e => setGooglePlaceUrl(e.target.value)} />
+            <div>
+              <label className="label">Seuil étoiles pour Google</label>
+              <select value={seuilEtoiles} onChange={e => setSeuilEtoiles(Number(e.target.value))} className="input">
+                <option value={5}>5 étoiles — Uniquement les avis 5★</option>
+                <option value={4}>4 étoiles et plus — Avis 4★ et 5★</option>
+                <option value={3}>3 étoiles et plus — Avis 3★, 4★ et 5★</option>
+                <option value={2}>2 étoiles et plus — Avis 2★ à 5★</option>
+                <option value={1}>Tous les avis — Tous les avis vont sur Google</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">Les avis avec note ≥ ce seuil seront redirigés vers Google. Les autres restent en feedback interne.</p>
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Comment ça marche ?</CardTitle></CardHeader>
+          <CardBody>
+            <ol className="space-y-3 text-sm text-gray-600">
+              <li className="flex gap-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center">1</span>
+                <span>Le client installe votre carte de fidélité dans Google Wallet</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center">2</span>
+                <span>Après le délai défini, il reçoit une notification pour laisser un avis</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center">3</span>
+                <span>Si note ≥ seuil → redirection vers Google. Sinon → feedback interne</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center">4</span>
+                <span>Vous répondez avec vos templates personnalisés</span>
+              </li>
+            </ol>
+          </CardBody>
+        </Card>
+      </div>
+
+      {/* Onglets */}
       <div className="flex gap-2 mb-6">
         {([
           { id: 'avis' as const, label: 'Avis reçus', icon: MessageSquare, count: total },
           { id: 'templates' as const, label: 'Mes templates', icon: FileText, count: templates.length },
-          { id: 'collecte' as const, label: 'Collecte QR', icon: QrCode },
         ]).map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:text-gray-700'}`}>
@@ -244,7 +302,7 @@ export default function AvisPage() {
                   <div className="md:col-span-2 card p-12 text-center">
                     <Star className="h-10 w-10 text-gray-200 mx-auto mb-3" />
                     <p className="text-sm text-gray-400">Aucun avis reçu pour le moment</p>
-                    <p className="text-xs text-gray-300 mt-1">Activez la collecte d'avis et partagez votre QR code</p>
+                    <p className="text-xs text-gray-300 mt-1">Activez la collecte automatique et attendez que vos clients installent leur carte</p>
                   </div>
                 ) : avis.map(a => (
                   <Card key={a.id} className="hover:shadow-md transition-shadow">
@@ -304,109 +362,6 @@ export default function AvisPage() {
                   </Card>
                 ))}
               </div>
-            </div>
-          )}
-
-          {activeTab === 'collecte' && (
-            <div className="space-y-6">
-              {/* Option 1 : QR code vers le formulaire Stamply */}
-              <Card>
-                <CardHeader><CardTitle><QrCode className="h-5 w-5 inline mr-2" />QR Code — Formulaire d'avis Stamply</CardTitle></CardHeader>
-                <CardBody>
-                  <p className="text-sm text-gray-600 mb-4">Vos clients scannent ce QR code pour laisser un avis directement. L'avis arrive dans votre dashboard.</p>
-                  <div className="flex items-start gap-6">
-                    <div className="bg-white border-2 border-dashed border-gray-200 rounded-2xl p-6 flex flex-col items-center justify-center min-w-[180px]">
-                      <div className="w-32 h-32 bg-gray-100 rounded-xl flex items-center justify-center mb-3">
-                        <QrCode className="h-16 w-16 text-gray-400" />
-                      </div>
-                      <p className="text-xs text-gray-400 text-center">QR Code<br/>à imprimer</p>
-                    </div>
-                    <div className="flex-1 space-y-3">
-                      <div>
-                        <label className="label">Lien du formulaire</label>
-                        <div className="flex gap-2">
-                          <input readOnly value={`${window.location.origin}/api/avis/collecte/${commercant?.id || 'VOTRE_ID'}`} className="input flex-1 font-mono text-xs" />
-                          <Button variant="secondary" size="sm" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/api/avis/collecte/${commercant?.id}`); toast('Lien copié !'); }}>
-                            <Copy className="h-4 w-4" /> Copier
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="bg-green-50 border border-green-100 rounded-lg p-3 text-xs text-green-700">
-                        <p className="font-semibold mb-1">✅ Avantages</p>
-                        <ul className="list-disc list-inside space-y-0.5">
-                          <li>100% gratuit, zéro API externe</li>
-                          <li>Les avis arrivent directement dans votre dashboard</li>
-                          <li>Répondez avec vos templates personnalisés</li>
-                          <li>Si note ≥ 4★ : proposition de laisser aussi un avis Google</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </CardBody>
-              </Card>
-
-              {/* Option 2 : QR code vers Google Business */}
-              <Card>
-                <CardHeader><CardTitle><ExternalLink className="h-5 w-5 inline mr-2" />QR Code — Lien Google Business</CardTitle></CardHeader>
-                <CardBody>
-                  <p className="text-sm text-gray-600 mb-4">Pour les commerçants qui préfèrent envoyer leurs clients directement sur leur fiche Google (plus de visibilité).</p>
-                  <div className="space-y-4">
-                    <Input label="URL de votre fiche Google Business" placeholder="https://g.page/votre-commerce ou https://search.google.com/local/writereview?placeid=..." value={googlePlaceUrl} onChange={e => setGooglePlaceUrl(e.target.value)} />
-                    {googlePlaceUrl ? (
-                      <div className="flex items-start gap-6">
-                        <div className="bg-white border-2 border-dashed border-gray-200 rounded-2xl p-6 flex flex-col items-center justify-center min-w-[180px]">
-                          <div className="w-32 h-32 bg-gray-100 rounded-xl flex items-center justify-center mb-3">
-                            <QrCode className="h-16 w-16 text-gray-400" />
-                          </div>
-                          <p className="text-xs text-gray-400 text-center">QR Code<br/>Google</p>
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex gap-2 mb-3">
-                            <input readOnly value={googlePlaceUrl} className="input flex-1 font-mono text-xs" />
-                            <Button variant="secondary" size="sm" onClick={() => { navigator.clipboard.writeText(googlePlaceUrl); toast('Lien copié !'); }}>
-                              <Copy className="h-4 w-4" /> Copier
-                            </Button>
-                          </div>
-                          <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700">
-                            <p className="font-semibold mb-1">💡 Conseil</p>
-                            <p>Utilisez ce QR code en complément du formulaire Stamply. Les avis Google améliorent votre référencement local.</p>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-3 text-xs text-yellow-700">
-                        <p>Collez l'URL de votre fiche Google ci-dessus pour générer le QR code.</p>
-                      </div>
-                    )}
-                  </div>
-                </CardBody>
-              </Card>
-
-              {/* Conseils */}
-              <Card>
-                <CardHeader><CardTitle>💡 Conseils d'utilisation</CardTitle></CardHeader>
-                <CardBody>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-                    <div>
-                      <p className="font-semibold text-gray-900 mb-1">Où placer le QR code ?</p>
-                      <ul className="list-disc list-inside space-y-0.5">
-                        <li>Sur le comptoir de caisse</li>
-                        <li>Sur les tables (restaurant)</li>
-                        <li>Sur la porte d'entrée</li>
-                        <li>Sur les tickets de caisse</li>
-                      </ul>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900 mb-1">Quand demander l'avis ?</p>
-                      <ul className="list-disc list-inside space-y-0.5">
-                        <li>Après un achat satisfaisant</li>
-                        <li>À la fin d'un service</li>
-                        <li>Par message après la visite</li>
-                      </ul>
-                    </div>
-                  </div>
-                </CardBody>
-              </Card>
             </div>
           )}
         </>
