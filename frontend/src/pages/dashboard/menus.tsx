@@ -96,7 +96,6 @@ export default function MenusPage() {
   const [showGroupeForm, setShowGroupeForm] = useState(false);
   const [groupeNom, setGroupeNom] = useState('');
 
-  const [moduleEnabled, setModuleEnabled] = useState(true);
   const [categories, setCategories] = useState('Entrées,Plats,Desserts,Boissons');
   const [devise, setDevise] = useState('EUR');
   const [afficherPrix, setAfficherPrix] = useState(true);
@@ -108,7 +107,6 @@ export default function MenusPage() {
 
   useEffect(() => {
     if (commercant) {
-      setModuleEnabled(commercant.module_menu_jour ?? true);
       const catsRaw = commercant.menu_categories;
       if (typeof catsRaw === 'string') {
         try { setCategories(JSON.parse(catsRaw).join(',')); } catch { setCategories(catsRaw); }
@@ -122,16 +120,14 @@ export default function MenusPage() {
 
   const handleAutoSaveSettings = useCallback(async () => {
     await commercantApi.update({
-      module_menu_jour: moduleEnabled,
       menu_categories: JSON.stringify(categories.split(',').map(c => c.trim()).filter(Boolean)),
       menu_devise: devise,
       menu_afficher_prix: afficherPrix,
     });
-    await refreshUser();
-  }, [moduleEnabled, categories, devise, afficherPrix, refreshUser]);
+  }, [categories, devise, afficherPrix]);
 
   const { status: saveStatusSettings } = useAutoSave({
-    data: { moduleEnabled, categories, devise, afficherPrix },
+    data: { categories, devise, afficherPrix },
     onSave: handleAutoSaveSettings,
     debounceMs: 800,
   });
@@ -208,7 +204,7 @@ export default function MenusPage() {
     setPushResult(null);
     try {
       const res = await menusApi.pushSelection(Array.from(selectedIds));
-      setPushResult({ success: true, message: res.message });
+      setPushResult({ success: true, message: res.message || res.data?.message });
       clearSelection();
     } catch (e: any) {
       setPushResult({ success: false, message: e?.message || 'Erreur' });
@@ -486,29 +482,6 @@ export default function MenusPage() {
           {/* ── ONGLET SETTINGS ──────────────────────────────────────────────── */}
           {activeTab === 'settings' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader><CardTitle>Module</CardTitle></CardHeader>
-                <CardBody>
-                  <div className={`flex items-start justify-between p-3 rounded-lg border ${moduleEnabled ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100'}`}>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Menu du Jour</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{moduleEnabled ? 'Activé — vos clients peuvent voir votre menu' : 'Désactivé — le menu est masqué'}</p>
-                    </div>
-                    <Toggle checked={moduleEnabled} onChange={async (val) => {
-                      const prev = moduleEnabled;
-                      setModuleEnabled(val);
-                      try {
-                        await commercantApi.update({ module_menu_jour: val });
-                        await refreshUser();
-                      } catch (e: any) {
-                        setModuleEnabled(prev);
-                        toast(e?.message || 'Erreur lors de la sauvegarde', 'error');
-                      }
-                    }} />
-                  </div>
-                </CardBody>
-              </Card>
-
               <Card>
                 <CardHeader><CardTitle>Catégories</CardTitle></CardHeader>
                 <CardBody className="space-y-4">

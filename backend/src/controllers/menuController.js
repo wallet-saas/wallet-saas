@@ -283,7 +283,7 @@ const pushSelection = async (req, res) => {
       commercant_id: commercantId,
       titre: notifTitre,
       message: `${platsList}\n\n${result.simulation ? '(mode simulation)' : `${result.totalEnvoyes} client(s) notifié(s)`}`,
-      type: 'menu_push',
+      type: 'push',
       cible: 'tous',
       total_envoyes: result?.totalEnvoyes ?? 0,
       total_ouverts: 0,
@@ -299,7 +299,7 @@ const pushSelection = async (req, res) => {
       simulation: result?.simulation ?? true,
       totalEnvoyes: result?.totalEnvoyes ?? 0,
       message: msgSimulation,
-      data: { menus, totalEnvoyes: result?.totalEnvoyes ?? 0 }
+      data: { menus, totalEnvoyes: result?.totalEnvoyes ?? 0, message: msgSimulation }
     });
 
   } catch (error) {

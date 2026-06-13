@@ -197,7 +197,7 @@ export const menusApi = {
   toggle: (id: string) =>
     request<{ menu: Menu }>(`/api/menus/${id}/toggle`, { method: 'PATCH' }),
   pushSelection: (menuIds: string[], groupeId?: string) =>
-    request<{ success: boolean; simulation: boolean; totalEnvoyes: number; message: string }>(
+    request<{ success: boolean; simulation: boolean; totalEnvoyes: number; message: string; data: { menus: any[]; totalEnvoyes: number; message: string } }>(
       '/api/menus/push-selection',
       { method: 'POST', body: JSON.stringify({ menu_ids: menuIds, groupe_id: groupeId }) }
     ),
@@ -304,6 +304,8 @@ export interface Commercant {
   auto_review_message?: string;
   auto_review_seuil_etoiles?: number;
   auto_review_alerte_email?: boolean;
+  // Avis templates (JSONB)
+  avis_templates?: AvisTemplate[];
   // Boutiques settings
   boutique_defaut_id?: string;
   // Geoloc & Avis

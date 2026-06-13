@@ -62,7 +62,16 @@ export default function AvisPage() {
       // Charger les templates du commerçant, ou utiliser les defaults
       const saved = (commercant as any).avis_templates;
       if (saved && Array.isArray(saved) && saved.length > 0) {
-        setTemplates(saved);
+        // Migration auto: remplacer {prenom_client} par {initiale_client} dans les templates existants
+        const migrated = saved.map((t: AvisTemplate) => ({
+          ...t,
+          texte: t.texte.replace(/\{prenom_client\}/g, '{initiale_client}'),
+        }));
+        setTemplates(migrated);
+        // Si des templates ont été migrés, sauvegarder silencieusement
+        if (JSON.stringify(migrated) !== JSON.stringify(saved)) {
+          commercantApi.update({ avis_templates: migrated }).catch(() => {});
+        }
       } else {
         setTemplates(DEFAULT_TEMPLATES);
       }
