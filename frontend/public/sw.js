@@ -14,7 +14,7 @@ const STATIC_ASSETS = [
   '/manifest.json',
 ];
 
-// Install: cache static assets
+// Install: cache static assets, then immediately claim all clients
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -23,10 +23,11 @@ self.addEventListener('install', (event) => {
       });
     })
   );
+  // Force the waiting service worker to become the active one
   self.skipWaiting();
 });
 
-// Activate: clean old caches
+// Activate: clean old caches, then claim all clients immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -35,10 +36,11 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
+  // Take control of all open pages immediately
   self.clients.claim();
 });
 
-// Fetch: network-first strategy for API calls, cache-first for static
+// Fetch: stale-while-revalidate for HTML pages, cache-first for static assets
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -59,16 +61,38 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets: cache first, fallback to network
+  // HTML pages: stale-while-revalidate (serve cache, update in background)
+  if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then((cache) => {
+        return cache.match(request).then((cached) => {
+          // Always fetch from network in background to update cache
+          const networkFetch = fetch(request).then((response) => {
+            if (response.ok) {
+              cache.put(request, response.clone());
+            }
+            return response;
+          }).catch(() => cached || new Response('Offline', { status: 503 }));
+
+          // Return cached version immediately if available, otherwise wait for network
+          return cached || networkFetch;
+        });
+      })
+    );
+    return;
+  }
+
+  // Static assets (JS, CSS, images): cache-first with background update
   event.respondWith(
     caches.match(request).then((cached) => {
-      return cached || fetch(request).then((response) => {
+      const networkFetch = fetch(request).then((response) => {
         if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
         }
         return response;
-      });
+      }).catch(() => cached);
+
+      return cached || networkFetch;
     }).catch(() => {
       if (request.mode === 'navigate') {
         return caches.match('/');
@@ -76,6 +100,16 @@ self.addEventListener('fetch', (event) => {
       return new Response('Offline', { status: 503 });
     })
   );
+});
+
+// Listen for messages from the client (e.g., force update)
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  if (event.data && event.data.type === 'CLAIM_CLIENTS') {
+    self.clients.claim();
+  }
 });
 
 // Push notifications handler

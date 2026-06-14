@@ -18,9 +18,34 @@ export function PWAInstallPrompt() {
       return;
     }
 
-    // Register service worker
+    // Register service worker with auto-update logic
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {
+      navigator.serviceWorker.register('/sw.js').then((registration) => {
+        // Check for updates on every page load
+        registration.update();
+
+        // When a new SW is waiting, force it to activate
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // New version available — force activate
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
+              }
+            });
+          }
+        });
+
+        // When controller changes (new SW activated), reload to get fresh content
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!refreshing) {
+            refreshing = true;
+            window.location.reload();
+          }
+        });
+      }).catch(() => {
         // SW registration failed — non-critical
       });
     }
