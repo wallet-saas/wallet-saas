@@ -39,7 +39,6 @@ export interface AdminStats {
   commerçants: {
     total: number;
     actifs: number;
-    inactifs: number;
     avec_stripe: number;
   };
   inscriptions_par_mois: Record<string, number>;
@@ -65,7 +64,6 @@ export interface AdminCommercant {
   created_at: string;
   is_active: boolean;
   stripe_customer_id?: string;
-  subscription_status?: string;
   stats?: {
     boutiques: number;
     cartes: number;

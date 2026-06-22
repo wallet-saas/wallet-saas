@@ -18,7 +18,7 @@ async function listCommerçants({ page = 1, limit = 20, search = '', statut = 'a
 
   let query = supabase
     .from('commercants')
-    .select('id, email, nom_enseigne, telephone, created_at, stripe_customer_id, subscription_status', { count: 'exact' })
+    .select('id, email, nom_enseigne, telephone, created_at, stripe_customer_id', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -156,9 +156,13 @@ async function getGlobalStats() {
   // Total commerçants
   const { data: tousCommercants, count: totalCommercants } = await supabase
     .from('commercants')
-    .select('id, is_active', { count: 'exact' });
+    .select('id', { count: 'exact' });
 
-  const commercantsActifs = (tousCommercants || []).filter(c => c.is_active !== false).length;
+  // is_active peut ne pas exister encore — tous considérés comme actifs par défaut
+  let commercantsActifs = totalCommercants || 0;
+  if (tousCommercants && tousCommercants.length > 0 && 'is_active' in tousCommercants[0]) {
+    commercantsActifs = tousCommercants.filter(c => c.is_active !== false).length;
+  }
 
   // Inscriptions par mois (6 derniers mois)
   const sixMonthsAgo = new Date();

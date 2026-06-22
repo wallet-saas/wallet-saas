@@ -408,7 +408,6 @@ function AdminCommercantPage({ commercantId }: { commercantId: string }) {
             <div><dt className="text-gray-500">ID</dt><dd className="font-mono text-xs text-gray-700">{commercant.id}</dd></div>
             <div><dt className="text-gray-500">Inscrit le</dt><dd className="text-gray-700">{new Date(commercant.created_at).toLocaleString('fr-FR')}</dd></div>
             <div><dt className="text-gray-500">Stripe Customer</dt><dd className="font-mono text-xs text-gray-700">{commercant.stripe_customer_id || '—'}</dd></div>
-            <div><dt className="text-gray-500">Subscription</dt><dd className="text-gray-700">{commercant.subscription_status || '—'}</dd></div>
           </dl>
         </div>
       </div>
