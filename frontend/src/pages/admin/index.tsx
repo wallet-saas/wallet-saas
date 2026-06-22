@@ -210,7 +210,6 @@ function AdminStatsPage() {
                   <tr key={c.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="font-medium text-gray-900">{c.nom_enseigne || '—'}</div>
-                      {c.prenom && <div className="text-xs text-gray-500">{c.prenom} {c.nom}</div>}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">{c.email}</td>
                     <td className="px-6 py-4 text-sm text-gray-500">{new Date(c.created_at).toLocaleDateString('fr-FR')}</td>
@@ -410,8 +409,6 @@ function AdminCommercantPage({ commercantId }: { commercantId: string }) {
             <div><dt className="text-gray-500">Inscrit le</dt><dd className="text-gray-700">{new Date(commercant.created_at).toLocaleString('fr-FR')}</dd></div>
             <div><dt className="text-gray-500">Stripe Customer</dt><dd className="font-mono text-xs text-gray-700">{commercant.stripe_customer_id || '—'}</dd></div>
             <div><dt className="text-gray-500">Subscription</dt><dd className="text-gray-700">{commercant.subscription_status || '—'}</dd></div>
-            <div><dt className="text-gray-500">Prénom</dt><dd className="text-gray-700">{commercant.prenom || '—'}</dd></div>
-            <div><dt className="text-gray-500">Nom</dt><dd className="text-gray-700">{commercant.nom || '—'}</dd></div>
           </dl>
         </div>
       </div>
