@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Spinner } from '@/components/ui/Spinner';
 import {
@@ -47,32 +47,35 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const { commercant, loading, isAuthenticated, logout, refreshUser } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const isAbonnementPage = router.pathname === '/dashboard/abonnement' || router.pathname === '/abonnement';
-  const isSetupCardPage = router.pathname === '/dashboard/setup-card';
+
+  // Track if we already redirected to avoid loops
+  const redirectedRef = useRef(false);
 
   useEffect(() => {
-    if (loading || !isAuthenticated || !commercant) return;
-    
+    if (loading || !isAuthenticated || !commercant || redirectedRef.current) return;
+
+    // Read pathname directly from router (not from derived state)
+    const currentPath = router.pathname;
+    const isOnAbonnement = currentPath === '/dashboard/abonnement' || currentPath === '/abonnement';
+    const isOnSetupCard = currentPath === '/dashboard/setup-card';
     const statut = commercant.statut_abonnement;
 
-    // Redirect to /abonnement only when statut is NOT one of the "accepted" values
-    const canAccessDashboard = statut === 'actif' || statut === 'trialing' || statut === 'inactif' || !statut;
-    
-    if (!canAccessDashboard && !isAbonnementPage) {
+    // Allow access for actif, trialing, inactif, or undefined/null (new users)
+    const canAccess = statut === 'actif' || statut === 'trialing' || statut === 'inactif' || !statut;
+
+    if (!canAccess && !isOnAbonnement) {
+      redirectedRef.current = true;
       router.push('/abonnement');
       return;
     }
-    // Redirect to setup-card when wallet class is not yet configured (only if abonnement is actif)
-    if (
-      statut === 'actif' &&
-      !commercant.wallet_class_configured &&
-      !isSetupCardPage
-    ) {
+
+    // Redirect to setup-card when wallet class is not yet configured
+    if (statut === 'actif' && !commercant.wallet_class_configured && !isOnSetupCard) {
+      redirectedRef.current = true;
       router.push('/dashboard/setup-card');
       return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, isAuthenticated, isAbonnementPage, isSetupCardPage]);
+  }, [loading, isAuthenticated, commercant?.statut_abonnement, commercant?.wallet_class_configured, router.pathname]);
 
   if (loading) {
     return (
@@ -84,12 +87,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   if (!isAuthenticated) return null;
   // Allow access for actif, trialing, inactif, or undefined (new users)
-  if (!isAbonnementPage && commercant) {
+  const currentPath = router.pathname;
+  const isOnAbonnement = currentPath === '/dashboard/abonnement' || currentPath === '/abonnement';
+  const isOnSetupCard = currentPath === '/dashboard/setup-card';
+  
+  if (!isOnAbonnement && commercant) {
     const statut = commercant.statut_abonnement;
     if (statut && statut !== 'actif' && statut !== 'trialing' && statut !== 'inactif') return null;
   }
   if (
-    !isSetupCardPage &&
+    !isOnSetupCard &&
     commercant &&
     commercant.statut_abonnement === 'actif' &&
     !commercant.wallet_class_configured
