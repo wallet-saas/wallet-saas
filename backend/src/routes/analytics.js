@@ -365,4 +365,108 @@ router.get('/revenus-estimes', authMiddleware, async (req, res) => {
   }
 });
 
+// ─── GET /api/analytics/overview ───────────────────────────────────────────────
+// Vue d'ensemble pour le dashboard principal (compatible frontend existant)
+router.get('/overview', authMiddleware, async (req, res) => {
+  try {
+    const commercantId = req.commercant.id;
+
+    const { count: totalCartes } = await supabase
+      .from('cartes')
+      .select('id', { count: 'exact', head: true })
+      .eq('commercant_id', commercantId);
+
+    const { count: visitesLastMonth } = await supabase
+      .from('visites')
+      .select('id', { count: 'exact', head: true })
+      .eq('commercant_id', commercantId)
+      .gte('date_visite', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+
+    const { count: totalNotifications } = await supabase
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('commercant_id', commercantId);
+
+    const { data: toutesCartes } = await supabase
+      .from('cartes')
+      .select('id, client_id, last_visit_at')
+      .eq('commercant_id', commercantId);
+
+    const clientsDormants = (toutesCartes || []).filter(c => {
+      if (!c.last_visit_at) return true;
+      const daysSinceVisit = (Date.now() - new Date(c.last_visit_at).getTime()) / (1000 * 60 * 60 * 24);
+      return daysSinceVisit > 30;
+    }).length;
+
+    const { count: cartesInstalleesCetteSemaine } = await supabase
+      .from('cartes')
+      .select('id', { count: 'exact', head: true })
+      .eq('commercant_id', commercantId)
+      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+
+    res.json({
+      success: true,
+      data: {
+        totalCartes: totalCartes || 0,
+        visitesLastMonth: visitesLastMonth || 0,
+        totalNotifications: totalNotifications || 0,
+        clientsDormants,
+        cartesInstalleesCetteSemaine: cartesInstalleesCetteSemaine || 0,
+      },
+    });
+  } catch (err) {
+    console.error('[analytics] GET /overview error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── GET /api/analytics/cards ──────────────────────────────────────────────────
+// Évolution des cartes installées (30 derniers jours) - compatible frontend
+router.get('/cards', authMiddleware, async (req, res) => {
+  try {
+    const commercantId = req.commercant.id;
+    const days = parseInt(req.query.days) || 30;
+
+    const { data: cartes } = await supabase
+      .from('cartes')
+      .select('created_at')
+      .eq('commercant_id', commercantId)
+      .gte('created_at', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString());
+
+    const parJour = {};
+    let cumul = 0;
+    const result = [];
+
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      parJour[dateStr] = 0;
+    }
+
+    (cartes || []).forEach(c => {
+      const dateStr = c.created_at.split('T')[0];
+      if (parJour[dateStr] !== undefined) {
+        parJour[dateStr]++;
+      }
+    });
+
+    Object.entries(parJour).forEach(([date, count]) => {
+      cumul += count;
+      result.push({ date, count, cumul });
+    });
+
+    res.json({
+      success: true,
+      data: {
+        timeSeries: result,
+        visitesParJour: result.map(r => ({ date: r.date, count: r.count })),
+      },
+    });
+  } catch (err) {
+    console.error('[analytics] GET /cards error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;
