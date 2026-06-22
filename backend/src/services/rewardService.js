@@ -321,8 +321,7 @@ async function getMerchantRewards(commercantId, boutiqueId = null, limit = 50) {
     .select(`
       id, niveau, type, seuil, label, action, valeur, points_bonus,
       created_at, details,
-      cartes(pass_serial_number),
-      boutiques(nom)
+      cartes(pass_serial_number)
     `)
     .eq('commercant_id', commercantId)
     .order('created_at', { ascending: false })

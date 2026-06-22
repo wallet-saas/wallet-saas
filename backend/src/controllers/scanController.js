@@ -149,19 +149,32 @@ const scanQR = async (req, res) => {
       });
     }
 
-    // --- Insérer une ligne dans visites ---
-    const { error: visiteError } = await supabase
-      .from('visites')
-      .insert([{
-        commercant_id: commercantId,
-        carte_id: carte.id,
-        client_id: null,
-        points_gagnes: 1,
-        source: qrType === 'dynamic' ? 'qr_dynamic' : 'scan'
-      }]);
+    // --- Récupérer le client_id depuis la table clients via carte_id ---
+    let clientId = null;
+    const { data: clientData } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('carte_id', carte.id)
+      .single();
+    if (clientData) clientId = clientData.id;
 
-    if (visiteError) {
-      console.error('Erreur insertion visite (non bloquant):', visiteError);
+    // --- Insérer une ligne dans visites (seulement si client_id trouvé) ---
+    if (clientId) {
+      const { error: visiteError } = await supabase
+        .from('visites')
+        .insert([{
+          commercant_id: commercantId,
+          carte_id: carte.id,
+          client_id: clientId,
+          points_gagnes: 1,
+          source: qrType === 'dynamic' ? 'qr_dynamic' : 'scan'
+        }]);
+
+      if (visiteError) {
+        console.error('Erreur insertion visite (non bloquant):', visiteError);
+      }
+    } else {
+      console.log('[Scan] Pas de client_id pour la carte', carte.id, '- visite non enregistrée dans visites');
     }
 
     // --- Mettre à jour la carte Google Wallet (best-effort) ---

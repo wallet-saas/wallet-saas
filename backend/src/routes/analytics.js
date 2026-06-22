@@ -469,4 +469,85 @@ router.get('/cards', authMiddleware, async (req, res) => {
   }
 });
 
+// ─── GET /api/analytics/notifications ─────────────────────────────────────────
+// Statistiques notifications pour la page analytics
+router.get('/notifications', authMiddleware, async (req, res) => {
+  try {
+    const commercantId = req.commercant.id;
+    const { data: notifs, error } = await supabase
+      .from('notifications')
+      .select('id, titre, type, cible, total_envoyes, total_ouverts, created_at')
+      .eq('commercant_id', commercantId)
+      .order('created_at', { ascending: false })
+      .limit(10);
+    if (error) throw error;
+    res.json({ success: true, data: { notifications: notifs || [] } });
+  } catch (err) {
+    console.error('[analytics] GET /notifications error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── GET /api/analytics/clients-dormants ──────────────────────────────────────
+// Liste des clients dormants (pas de visite depuis 30j)
+router.get('/clients-dormants', authMiddleware, async (req, res) => {
+  try {
+    const commercantId = req.commercant.id;
+    const { data: cartes, error } = await supabase
+      .from('cartes')
+      .select('id, pass_serial_number, points, last_visit_at, created_at')
+      .eq('commercant_id', commercantId);
+    if (error) throw error;
+    const dormants = (cartes || []).filter(c => {
+      if (!c.last_visit_at) return true;
+      const daysSince = (Date.now() - new Date(c.last_visit_at).getTime()) / (1000 * 60 * 60 * 24);
+      return daysSince > 30;
+    });
+    res.json({ success: true, data: { clients: dormants, total: dormants.length } });
+  } catch (err) {
+    console.error('[analytics] GET /clients-dormants error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── GET /api/analytics/avis ──────────────────────────────────────────────────
+// Statistiques avis pour la page analytics
+router.get('/avis', authMiddleware, async (req, res) => {
+  try {
+    const commercantId = req.commercant.id;
+    const { data: avis, error } = await supabase
+      .from('avis')
+      .select('id, note, source, created_at, reponse_envoyee')
+      .eq('commercant_id', commercantId)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (error) throw error;
+    const total = avis?.length || 0;
+    const moyenne = total > 0 ? (avis.reduce((s, a) => s + a.note, 0) / total).toFixed(1) : 0;
+    const repondus = avis?.filter(a => a.reponse_envoyee).length || 0;
+    res.json({ success: true, data: { avis: avis || [], total, moyenne: parseFloat(moyenne), repondus } });
+  } catch (err) {
+    console.error('[analytics] GET /avis error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── GET /api/analytics/offres ────────────────────────────────────────────────
+// Statistiques offres pour la page analytics
+router.get('/offres', authMiddleware, async (req, res) => {
+  try {
+    const commercantId = req.commercant.id;
+    const { data: offres, error } = await supabase
+      .from('offres')
+      .select('id, titre, code_promo, actif, total_envoyes, total_utilises, date_debut, date_fin, created_at')
+      .eq('commercant_id', commercantId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json({ success: true, data: { offres: offres || [] } });
+  } catch (err) {
+    console.error('[analytics] GET /offres error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;
