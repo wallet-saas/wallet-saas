@@ -51,27 +51,28 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const isSetupCardPage = router.pathname === '/dashboard/setup-card';
 
   useEffect(() => {
-    if (loading) return;
-    if (!isAuthenticated) {
-      router.push('/login');
-      return;
-    }
-    // Redirect to /abonnement only for dashboard pages (not when already there)
-    if (!isAbonnementPage && commercant && commercant.statut_abonnement !== 'actif' && commercant.statut_abonnement !== 'trialing') {
+    if (loading || !isAuthenticated || !commercant) return;
+    
+    const statut = commercant.statut_abonnement;
+
+    // Redirect to /abonnement only when statut is NOT one of the "accepted" values
+    const canAccessDashboard = statut === 'actif' || statut === 'trialing' || statut === 'inactif' || !statut;
+    
+    if (!canAccessDashboard && !isAbonnementPage) {
       router.push('/abonnement');
       return;
     }
-    // Redirect to setup-card when wallet class is not yet configured
+    // Redirect to setup-card when wallet class is not yet configured (only if abonnement is actif)
     if (
-      commercant &&
-      commercant.statut_abonnement === 'actif' &&
+      statut === 'actif' &&
       !commercant.wallet_class_configured &&
       !isSetupCardPage
     ) {
       router.push('/dashboard/setup-card');
       return;
     }
-  }, [loading, isAuthenticated, commercant, isAbonnementPage, isSetupCardPage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, isAuthenticated, isAbonnementPage, isSetupCardPage]);
 
   if (loading) {
     return (
@@ -82,7 +83,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   if (!isAuthenticated) return null;
-  if (!isAbonnementPage && commercant && commercant.statut_abonnement !== 'actif' && commercant.statut_abonnement !== 'trialing') return null;
+  // Allow access for actif, trialing, inactif, or undefined (new users)
+  if (!isAbonnementPage && commercant) {
+    const statut = commercant.statut_abonnement;
+    if (statut && statut !== 'actif' && statut !== 'trialing' && statut !== 'inactif') return null;
+  }
   if (
     !isSetupCardPage &&
     commercant &&
