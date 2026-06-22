@@ -75,7 +75,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       router.push('/dashboard/setup-card');
       return;
     }
-  }, [loading, isAuthenticated, commercant?.statut_abonnement, commercant?.wallet_class_configured, router.pathname]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, isAuthenticated, commercant?.statut_abonnement, commercant?.wallet_class_configured]);
 
   if (loading) {
     return (
