@@ -12,8 +12,10 @@ import Link from 'next/link';
 import {
   Users, CreditCard, Store, TrendingUp,
   Search, ChevronRight, CheckCircle, XCircle,
-  AlertTriangle, ArrowLeft, RefreshCw, Shield
+  AlertTriangle, ArrowLeft, RefreshCw, Shield,
+  Activity, ScanLine, Bell, FileText, Tag, Loader2
 } from 'lucide-react';
+import { adminApi } from '../../services/adminApi';
 
 // ─── Auth guard ────────────────────────────────────────────────────────────────
 
@@ -71,6 +73,12 @@ function AdminDashboard() {
   }
   if (page === 'feedbacks') return <AdminFeedbacksPage />;
   if (page === 'logs') return <AdminLogsPage />;
+  if (page === 'status') return <AdminStatusPage />;
+  if (page === 'clients') return <AdminClientsPage />;
+  if (page === 'scans') return <AdminScansPage />;
+  if (page === 'notifications') return <AdminNotificationsPage />;
+  if (page === 'templates') return <AdminTemplatesPage />;
+  if (page === 'offres') return <AdminOffresPage />;
 
   return <AdminStatsPage />;
 }
@@ -82,8 +90,14 @@ function AdminNav({ active }: { active: string }) {
   const navItems = [
     { key: 'dashboard', label: 'Dashboard', icon: TrendingUp },
     { key: 'commercants', label: 'Commerçants', icon: Users },
+    { key: 'clients', label: 'Clients', icon: Users },
+    { key: 'scans', label: 'Scans', icon: ScanLine },
+    { key: 'notifications', label: 'Notifications', icon: Bell },
+    { key: 'templates', label: 'Templates', icon: FileText },
+    { key: 'offres', label: 'Offres', icon: Tag },
     { key: 'feedbacks', label: 'Feedbacks', icon: AlertTriangle },
     { key: 'logs', label: 'Logs', icon: CreditCard },
+    { key: 'status', label: 'Santé', icon: Activity },
   ];
 
   const handleLogout = () => {
@@ -93,7 +107,7 @@ function AdminNav({ active }: { active: string }) {
 
   return (
     <nav className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 flex-wrap">
         <Shield className="h-5 w-5 text-indigo-600 mr-2" />
         <span className="text-lg font-bold text-indigo-600 mr-4">Stamply Admin</span>
         {navItems.map(item => (
@@ -103,7 +117,7 @@ function AdminNav({ active }: { active: string }) {
               if (item.key === 'dashboard') router.push('/admin');
               else router.push(`/admin?page=${item.key}`);
             }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
               active === item.key
                 ? 'bg-indigo-50 text-indigo-700'
                 : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
@@ -289,6 +303,8 @@ function StatCard({ label, value, icon: Icon, color, sub }: { label: string; val
     green: 'bg-green-50 text-green-600',
     blue: 'bg-blue-50 text-blue-600',
     purple: 'bg-purple-50 text-purple-600',
+    amber: 'bg-amber-50 text-amber-600',
+    red: 'bg-red-50 text-red-600',
   };
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -553,6 +569,743 @@ function AdminLogsPage() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// NEW PAGES — V2 Admin Panel
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Status Page ───────────────────────────────────────────────────────────────
+
+function AdminStatusPage() {
+  const [status, setStatus] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    adminApi.status()
+      .then(setStatus)
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const getStatusColor = (s: string) => {
+    switch (s) {
+      case 'ok': return 'bg-green-50 border-green-200 text-green-700';
+      case 'not_configured': return 'bg-amber-50 border-amber-200 text-amber-700';
+      case 'error': return 'bg-red-50 border-red-200 text-red-700';
+      default: return 'bg-gray-50 border-gray-200 text-gray-600';
+    }
+  };
+
+  const getStatusIcon = (s: string) => {
+    switch (s) {
+      case 'ok': return <CheckCircle className="h-5 w-5 text-green-500" />;
+      case 'not_configured': return <AlertTriangle className="h-5 w-5 text-amber-500" />;
+      case 'error': return <XCircle className="h-5 w-5 text-red-500" />;
+      default: return <AlertTriangle className="h-5 w-5 text-gray-400" />;
+    }
+  };
+
+  const services = [
+    { key: 'google_wallet', label: 'Google Wallet' },
+    { key: 'fcm', label: 'FCM' },
+    { key: 'stripe', label: 'Stripe' },
+    { key: 'apple_wallet', label: 'Apple Wallet' },
+    { key: 'supabase', label: 'Supabase' },
+    { key: 'backend', label: 'Backend' },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Head><title>Admin — Santé des services</title></Head>
+      <AdminNav active="status" />
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Santé des services</h1>
+          <button
+            onClick={() => { setLoading(true); adminApi.status().then(setStatus).catch(err => setError(err.message)).finally(() => setLoading(false)); }}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Actualiser
+          </button>
+        </div>
+
+        {error && <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 text-red-700 text-sm">{error}</div>}
+
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1,2,3,4,5,6].map(i => (
+              <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-1/2 mb-3" />
+                <div className="h-6 bg-gray-200 rounded w-1/3" />
+              </div>
+            ))}
+          </div>
+        ) : status ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {services.map(svc => {
+              const svcData = status[svc.key];
+              if (!svcData) return null;
+              const isBackend = svc.key === 'backend';
+              const uptimeHours = svcData.uptime ? Math.round(svcData.uptime / 3600) : null;
+              return (
+                <div key={svc.key} className={`rounded-xl border p-6 ${getStatusColor(svcData.status)}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-gray-900">{svc.label}</h3>
+                    {getStatusIcon(svcData.status)}
+                  </div>
+                  <p className="text-sm capitalize font-medium">{svcData.status.replace('_', ' ')}</p>
+                  <p className="text-xs mt-2 opacity-80">{svcData.message}</p>
+                  {isBackend && uptimeHours !== null && (
+                    <p className="text-xs mt-2 font-medium">Uptime: {uptimeHours}h</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center text-gray-400 py-12">Aucun statut disponible</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Clients Page ──────────────────────────────────────────────────────────────
+
+function AdminClientsPage() {
+  const [clients, setClients] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [search, setSearch] = useState('');
+  const [commercantFilter, setCommercantFilter] = useState('');
+
+  useEffect(() => {
+    setLoading(true);
+    adminApi.listClients({ page, limit: 20, search, commercant_id: commercantFilter || undefined })
+      .then(d => {
+        setClients(d.clients);
+        setTotalPages(d.totalPages);
+        setTotal(d.total);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [page, search, commercantFilter]);
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Head><title>Admin — Clients</title></Head>
+      <AdminNav active="clients" />
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Liste des clients <span className="text-gray-400 text-lg font-normal">({total})</span></h1>
+
+        {/* Filtres */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-4 p-4 flex items-center gap-4 flex-wrap">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Rechercher par nom, email ou N° carte..."
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1); }}
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <input
+            type="text"
+            placeholder="Filtrer par commerçant ID..."
+            value={commercantFilter}
+            onChange={e => { setCommercantFilter(e.target.value); setPage(1); }}
+            className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-64"
+          />
+        </div>
+
+        {/* Table */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          {loading ? (
+            <div className="p-8 text-center text-gray-400">Chargement...</div>
+          ) : clients.length === 0 ? (
+            <div className="p-8 text-center text-gray-400">Aucun client trouvé</div>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                  <th className="px-6 py-3">Client</th>
+                  <th className="px-6 py-3">Commerçant</th>
+                  <th className="px-6 py-3">Boutique</th>
+                  <th className="px-6 py-3">N° Carte</th>
+                  <th className="px-6 py-3">Points</th>
+                  <th className="px-6 py-3">Inscrit le</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {clients.map(c => (
+                  <tr key={c.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-gray-900">{c.client_nom || '—'}</div>
+                      <div className="text-xs text-gray-500">{c.client_email}</div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{c.commercant_nom || '—'}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{c.boutique_nom || '—'}</td>
+                    <td className="px-6 py-4 text-sm font-mono text-gray-500">{c.numero_carte || '—'}</td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">
+                        {c.solde_points || 0} pts
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{new Date(c.created_at).toLocaleDateString('fr-FR')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+              <span className="text-sm text-gray-500">Page {page} sur {totalPages} ({total} clients)</span>
+              <div className="flex gap-2">
+                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-3 py-1 text-sm border rounded-lg disabled:opacity-50 hover:bg-gray-50">Précédent</button>
+                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-3 py-1 text-sm border rounded-lg disabled:opacity-50 hover:bg-gray-50">Suivant</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Scans Page ────────────────────────────────────────────────────────────────
+
+function AdminScansPage() {
+  const [scans, setScans] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [today, setToday] = useState(0);
+  const [orphelins, setOrphelins] = useState(0);
+
+  useEffect(() => {
+    setLoading(true);
+    adminApi.listScans({ page, limit: 20 })
+      .then(d => {
+        setScans(d.scans);
+        setTotalPages(d.totalPages);
+        setTotal(d.total);
+        setToday(d.scans_today);
+        setOrphelins(d.scans_orphelins);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [page]);
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Head><title>Admin — Scans</title></Head>
+      <AdminNav active="scans" />
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Historique des scans</h1>
+
+        {/* Stats cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <StatCard label="Total scans" value={total} icon={ScanLine} color="indigo" />
+          <StatCard label="Aujourd'hui" value={today} icon={TrendingUp} color="green" />
+          <StatCard label="Orphelins" value={orphelins} icon={AlertTriangle} color="red" />
+        </div>
+
+        {/* Table */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          {loading ? (
+            <div className="p-8 text-center text-gray-400">Chargement...</div>
+          ) : scans.length === 0 ? (
+            <div className="p-8 text-center text-gray-400">Aucun scan enregistré</div>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                  <th className="px-6 py-3">Client</th>
+                  <th className="px-6 py-3">Boutique</th>
+                  <th className="px-6 py-3">Type</th>
+                  <th className="px-6 py-3">Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {scans.map(s => {
+                  const isOrphelin = !s.client_id;
+                  return (
+                    <tr key={s.id} className={`hover:bg-gray-50 transition-colors ${isOrphelin ? 'bg-red-50' : ''}`}>
+                      <td className="px-6 py-4">
+                        <div className={`text-sm font-medium ${isOrphelin ? 'text-red-700' : 'text-gray-900'}`}>
+                          {s.clients?.nom || '—'}
+                        </div>
+                        <div className="text-xs text-gray-500">{s.clients?.email || ''}</div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{s.boutiques?.nom || '—'}</td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                          {s.type_action || '—'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{new Date(s.created_at).toLocaleString('fr-FR')}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+              <span className="text-sm text-gray-500">Page {page} sur {totalPages}</span>
+              <div className="flex gap-2">
+                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-3 py-1 text-sm border rounded-lg disabled:opacity-50 hover:bg-gray-50">Précédent</button>
+                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-3 py-1 text-sm border rounded-lg disabled:opacity-50 hover:bg-gray-50">Suivant</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Notifications Page ────────────────────────────────────────────────────────
+
+function AdminNotificationsPage() {
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    adminApi.notificationsStats()
+      .then(setStats)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handlePushTest = () => {
+    const commercantId = prompt('ID du commerçant pour le test :');
+    if (!commercantId) return;
+    setSending(true);
+    setMessage('');
+    adminApi.pushTest(commercantId)
+      .then(d => {
+        setMessage(`Push envoyé avec succès (mode: ${d.mode})`);
+      })
+      .catch(err => setMessage(`Erreur: ${err.message}`))
+      .finally(() => setSending(false));
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Head><title>Admin — Notifications</title></Head>
+      <AdminNav active="notifications" />
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Statistiques Push</h1>
+          <button
+            onClick={handlePushTest}
+            disabled={sending}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
+          >
+            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bell className="h-4 w-4" />}
+            Envoyer push test
+          </button>
+        </div>
+
+        {message && (
+          <div className={`mb-4 px-4 py-3 rounded-lg text-sm ${message.startsWith('Erreur') ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
+            {message}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+            {[1,2,3,4,5].map(i => (
+              <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-pulse">
+                <div className="h-3 bg-gray-200 rounded w-2/3 mb-2" />
+                <div className="h-6 bg-gray-200 rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+        ) : stats ? (
+          <>
+            {/* Stats cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+              <StatCard label="Total" value={stats.total} icon={Bell} color="indigo" />
+              <StatCard label="Aujourd'hui" value={stats.today} icon={TrendingUp} color="green" />
+              <StatCard label="Push réels" value={stats.push_reels} icon={CheckCircle} color="blue" />
+              <StatCard label="Simulation" value={stats.simulation} icon={AlertTriangle} color="amber" />
+              <StatCard label="Mode" value={stats.mode} icon={Shield} color="purple" />
+            </div>
+
+            {/* Dernières notifications */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900 px-6 py-4 border-b border-gray-100">Dernières notifications</h2>
+              {stats.recentes && stats.recentes.length > 0 ? (
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                      <th className="px-6 py-3">Titre</th>
+                      <th className="px-6 py-3">Commerçant</th>
+                      <th className="px-6 py-3">Type</th>
+                      <th className="px-6 py-3">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {stats.recentes.map((n: any, i: number) => (
+                      <tr key={i} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{n.titre || '—'}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{n.commercant_nom || '—'}</td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${n.mode === 'simulation' ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700'}`}>
+                            {n.mode || 'réel'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{new Date(n.created_at).toLocaleString('fr-FR')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="p-8 text-center text-gray-400">Aucune notification récente</div>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="text-center text-gray-400 py-12">Aucune statistique disponible</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Templates Page ────────────────────────────────────────────────────────────
+
+function AdminTemplatesPage() {
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    adminApi.listTemplates()
+      .then(d => setTemplates(d.templates))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Head><title>Admin — Templates d'avis</title></Head>
+      <AdminNav active="templates" />
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Templates d'avis</h1>
+
+        {loading ? (
+          <div className="space-y-4">
+            {[1,2,3].map(i => (
+              <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-pulse">
+                <div className="h-5 bg-gray-200 rounded w-1/3 mb-3" />
+                <div className="flex gap-2">
+                  <div className="h-6 bg-gray-200 rounded w-20" />
+                  <div className="h-6 bg-gray-200 rounded w-24" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : templates.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-400">
+            Aucun template configuré
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {templates.map(t => (
+              <div key={t.commercant_id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 className="font-semibold text-gray-900 mb-3">{t.commercant_nom}</h3>
+                <div className="flex flex-wrap gap-2">
+                  {t.templates && t.templates.length > 0 ? (
+                    t.templates.map((tmpl: any, i: number) => (
+                      <span
+                        key={i}
+                        className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100"
+                      >
+                        {tmpl.nom || tmpl.type || `Template ${i + 1}`}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-sm text-gray-400">Aucun template</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Offres Page ───────────────────────────────────────────────────────────────
+
+function AdminOffresPage() {
+  const [offres, setOffres] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState({
+    titre: '',
+    description: '',
+    type_recompense: 'points',
+    valeur: 10,
+    date_fin: '',
+    commercant_id: '',
+  });
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const loadOffres = () => {
+    setLoading(true);
+    adminApi.listOffres({ page, limit: 20, statut: filter || undefined })
+      .then(d => {
+        setOffres(d.offres);
+        setTotalPages(d.totalPages);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadOffres();
+  }, [page, filter]);
+
+  const handleCreate = async () => {
+    if (!form.titre || !form.commercant_id) {
+      setMessage('Le titre et le commerçant sont requis.');
+      return;
+    }
+    setSaving(true);
+    setMessage('');
+    try {
+      await adminApi.createOffre(form);
+      setShowModal(false);
+      setForm({ titre: '', description: '', type_recompense: 'points', valeur: 10, date_fin: '', commercant_id: '' });
+      setMessage('Offre créée avec succès.');
+      loadOffres();
+    } catch (err: any) {
+      setMessage(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Supprimer cette offre ?')) return;
+    try {
+      await adminApi.deleteOffre(id);
+      setMessage('Offre supprimée.');
+      loadOffres();
+    } catch (err: any) {
+      setMessage(err.message);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Head><title>Admin — Offres</title></Head>
+      <AdminNav active="offres" />
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Gestion des offres</h1>
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+          >
+            <Tag className="h-4 w-4" />
+            Créer une offre
+          </button>
+        </div>
+
+        {message && (
+          <div className={`mb-4 px-4 py-3 rounded-lg text-sm ${message.includes('Erreur') ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
+            {message}
+          </div>
+        )}
+
+        {/* Filter */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-4 p-4 flex items-center gap-4">
+          <span className="text-sm font-medium text-gray-700">Filtre:</span>
+          <select
+            value={filter}
+            onChange={e => { setFilter(e.target.value); setPage(1); }}
+            className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="">Toutes</option>
+            <option value="actives">Actives</option>
+            <option value="expirees">Expirées</option>
+          </select>
+        </div>
+
+        {/* Table */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          {loading ? (
+            <div className="p-8 text-center text-gray-400">Chargement...</div>
+          ) : offres.length === 0 ? (
+            <div className="p-8 text-center text-gray-400">Aucune offre trouvée</div>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                  <th className="px-6 py-3">Titre</th>
+                  <th className="px-6 py-3">Commerçant</th>
+                  <th className="px-6 py-3">Type</th>
+                  <th className="px-6 py-3">Valeur</th>
+                  <th className="px-6 py-3">Période</th>
+                  <th className="px-6 py-3"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {offres.map(o => (
+                  <tr key={o.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-gray-900">{o.titre}</div>
+                      {o.description && <div className="text-xs text-gray-500 mt-0.5 max-w-xs truncate">{o.description}</div>}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{o.commercants?.nom_enseigne || '—'}</td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex px-2 py-1 rounded text-xs font-medium bg-indigo-50 text-indigo-700">
+                        {o.type_recompense || '—'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{o.valeur}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {new Date(o.date_debut).toLocaleDateString('fr-FR')} → {o.date_fin ? new Date(o.date_fin).toLocaleDateString('fr-FR') : '∞'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => handleDelete(o.id)}
+                        className="text-red-600 hover:text-red-800 text-sm font-medium transition-colors"
+                      >
+                        Supprimer
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+              <span className="text-sm text-gray-500">Page {page} sur {totalPages}</span>
+              <div className="flex gap-2">
+                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-3 py-1 text-sm border rounded-lg disabled:opacity-50 hover:bg-gray-50">Précédent</button>
+                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-3 py-1 text-sm border rounded-lg disabled:opacity-50 hover:bg-gray-50">Suivant</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modal Créer une offre */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Créer une offre</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Titre *</label>
+                <input
+                  type="text"
+                  value={form.titre}
+                  onChange={e => setForm(f => ({ ...f, titre: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Ex: Double points week-end"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={form.description}
+                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  rows={2}
+                  placeholder="Description de l'offre..."
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type récompense</label>
+                  <select
+                    value={form.type_recompense}
+                    onChange={e => setForm(f => ({ ...f, type_recompense: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="points">Points</option>
+                    <option value="remise">Remise</option>
+                    <option value="cadeau">Cadeau</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Valeur</label>
+                  <input
+                    type="number"
+                    value={form.valeur}
+                    onChange={e => setForm(f => ({ ...f, valeur: Number(e.target.value) }))}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date fin</label>
+                <input
+                  type="date"
+                  value={form.date_fin}
+                  onChange={e => setForm(f => ({ ...f, date_fin: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">ID Commerçant *</label>
+                <input
+                  type="text"
+                  value={form.commercant_id}
+                  onChange={e => setForm(f => ({ ...f, commercant_id: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="uuid du commerçant"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleCreate}
+                disabled={saving}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
+              >
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Créer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

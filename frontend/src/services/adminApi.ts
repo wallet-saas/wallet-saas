@@ -57,6 +57,8 @@ export interface AdminCommercant {
   stripe_customer_id?: string;
   wallet_class_configured?: boolean;
   created_at: string;
+  updated_at?: string;
+  is_active?: boolean;
   stats?: { boutiques: number; cartes: number; visites_30j: number };
 }
 
@@ -98,6 +100,96 @@ export interface AdminLogsList {
   totalPages: number;
 }
 
+export interface ServiceStatus {
+  google_wallet: { status: string; message: string; issuer_id?: string };
+  fcm: { status: string; message: string };
+  stripe: { status: string; message: string };
+  apple_wallet: { status: string; message: string };
+  supabase: { status: string; message: string };
+  backend: { status: string; message: string; uptime?: number };
+}
+
+export interface AdminClient {
+  id: string;
+  client_id: string | null;
+  client_nom: string;
+  client_email: string;
+  client_telephone: string;
+  commercant_id: string;
+  commercant_nom: string;
+  boutique_nom: string;
+  numero_carte: string;
+  solde_points: number;
+  created_at: string;
+}
+
+export interface AdminClientsList {
+  clients: AdminClient[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+export interface AdminScan {
+  id: string;
+  client_id: string | null;
+  commercant_id: string;
+  boutique_id: string | null;
+  type_action: string;
+  created_at: string;
+  clients?: { nom: string; email: string };
+  boutiques?: { nom: string };
+}
+
+export interface AdminScansList {
+  scans: AdminScan[];
+  total: number;
+  scans_today: number;
+  scans_orphelins: number;
+  page: number;
+  totalPages: number;
+}
+
+export interface NotificationStats {
+  total: number;
+  today: number;
+  push_reels: number;
+  simulation: number;
+  recentes: any[];
+  mode: string;
+}
+
+export interface AdminTemplate {
+  commercant_id: string;
+  commercant_nom: string;
+  templates: any[];
+}
+
+export interface AdminTemplatesList {
+  templates: AdminTemplate[];
+  total: number;
+}
+
+export interface AdminOffre {
+  id: string;
+  titre: string;
+  description: string;
+  type_recompense: string;
+  valeur: number;
+  date_debut: string;
+  date_fin: string | null;
+  commercant_id: string;
+  created_at: string;
+  commercants?: { nom_enseigne: string };
+}
+
+export interface AdminOffresList {
+  offres: AdminOffre[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
 // ─── API Calls ────────────────────────────────────────────────────────────────
 
 export const adminApi = {
@@ -127,6 +219,8 @@ export const adminApi = {
     adminRequest<{ message: string }>(`/api/admin/commercants/${id}/reactiver`, { method: 'POST' }),
   supprimerCommercant: (id: string) =>
     adminRequest<{ message: string }>(`/api/admin/commercants/${id}`, { method: 'DELETE' }),
+  forceWallet: (id: string) =>
+    adminRequest<{ message: string }>(`/api/admin/commercants/${id}/force-wallet`, { method: 'POST' }),
 
   feedbacks: (params?: { page?: number; limit?: number }) => {
     const q = new URLSearchParams(params as Record<string, string>).toString();
@@ -137,4 +231,38 @@ export const adminApi = {
     const q = new URLSearchParams(params as Record<string, string>).toString();
     return adminRequest<AdminLogsList>(`/api/admin/logs${q ? '?' + q : ''}`);
   },
+
+  // Nouvelles routes V2
+  status: () => adminRequest<ServiceStatus>('/api/admin/status'),
+
+  listClients: (params?: { page?: number; limit?: number; search?: string; commercant_id?: string }) => {
+    const q = new URLSearchParams(params as Record<string, string>).toString();
+    return adminRequest<AdminClientsList>(`/api/admin/clients${q ? '?' + q : ''}`);
+  },
+
+  listScans: (params?: { page?: number; limit?: number; commercant_id?: string }) => {
+    const q = new URLSearchParams(params as Record<string, string>).toString();
+    return adminRequest<AdminScansList>(`/api/admin/scans${q ? '?' + q : ''}`);
+  },
+
+  notificationsStats: () => adminRequest<NotificationStats>('/api/admin/notifications/stats'),
+
+  pushTest: (commercant_id: string, titre?: string, message?: string) =>
+    adminRequest<{ success: boolean; message: string; mode: string }>('/api/admin/push-test', {
+      method: 'POST',
+      body: JSON.stringify({ commercant_id, titre, message }),
+    }),
+
+  listTemplates: () => adminRequest<AdminTemplatesList>('/api/admin/templates'),
+
+  listOffres: (params?: { page?: number; limit?: number; statut?: string }) => {
+    const q = new URLSearchParams(params as Record<string, string>).toString();
+    return adminRequest<AdminOffresList>(`/api/admin/offres${q ? '?' + q : ''}`);
+  },
+
+  createOffre: (data: { titre: string; description?: string; type_recompense?: string; valeur?: number; date_debut?: string; date_fin?: string; commercant_id: string }) =>
+    adminRequest<AdminOffre>('/api/admin/offres', { method: 'POST', body: JSON.stringify(data) }),
+
+  deleteOffre: (id: string) =>
+    adminRequest<{ message: string }>(`/api/admin/offres/${id}`, { method: 'DELETE' }),
 };

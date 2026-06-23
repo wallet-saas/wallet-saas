@@ -404,4 +404,410 @@ router.get('/logs', adminAuth, async (req, res) => {
   }
 });
 
+// ─── GET /api/admin/status ─────────────────────────────────────────────────────
+// Santé des services externes
+
+router.get('/status', adminAuth, async (req, res) => {
+  try {
+    const status = {
+      google_wallet: { status: 'ok', message: 'API Google Wallet accessible', issuer_id: process.env.GOOGLE_WALLET_ISSUER_ID || 'non configuré' },
+      fcm: { status: process.env.FIREBASE_SERVICE_ACCOUNT_KEY ? 'ok' : 'not_configured', message: process.env.FIREBASE_SERVICE_ACCOUNT_KEY ? 'Push notifications actives' : 'Mode simulation (clé manquante)' },
+      stripe: { status: process.env.STRIPE_SECRET_KEY?.startsWith('sk_live') ? 'live' : 'test', message: process.env.STRIPE_SECRET_KEY?.startsWith('sk_live') ? 'Stripe live actif' : 'Mode test' },
+      apple_wallet: { status: 'not_configured', message: 'Apple Wallet non configuré (certificat requis)' },
+      supabase: { status: 'ok', message: 'Connecté' },
+      backend: { status: 'ok', message: 'Serveur opérationnel', uptime: process.uptime() },
+    };
+
+    // Test rapide Supabase
+    try {
+      await supabase.from('commercants').select('id').limit(1);
+    } catch {
+      status.supabase = { status: 'error', message: 'Connexion Supabase échouée' };
+    }
+
+    // Test rapide Google Wallet
+    try {
+      const { google } = require('googleapis');
+      const auth = new google.auth.GoogleAuth({
+        credentials: JSON.parse(process.env.GOOGLE_WALLET_SERVICE_ACCOUNT_KEY || '{}'),
+        scopes: ['https://www.googleapis.com/auth/wallet_object.issuer'],
+      });
+      const walletApi = google.walletobjects({ auth, version: 'v1' });
+      await walletApi.issuer.get({ issuerId: process.env.GOOGLE_WALLET_ISSUER_ID });
+    } catch {
+      status.google_wallet = { status: 'error', message: 'API Google Wallet inaccessible (clé invalide?)' };
+    }
+
+    res.json({ success: true, data: status });
+  } catch (err) {
+    console.error('[Admin] Status error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── GET /api/admin/clients ────────────────────────────────────────────────────
+// Liste de tous les clients (cartes installées)
+
+router.get('/clients', adminAuth, async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, parseInt(req.query.limit) || 20);
+    const offset = (page - 1) * limit;
+    const search = (req.query.search || '').trim();
+    const commercantId = req.query.commercant_id;
+
+    let query = supabase
+      .from('cartes')
+      .select('id, client_id, commercant_id, boutique_id, numero_carte, solde_points, created_at, clients(id, nom, email, telephone), commercants(id, nom_enseigne), boutiques(nom)')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (commercantId) {
+      query = query.eq('commercant_id', commercantId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    let clients = data || [];
+    if (search) {
+      clients = clients.filter(c =>
+        c.clients?.nom?.toLowerCase().includes(search.toLowerCase()) ||
+        c.clients?.email?.toLowerCase().includes(search.toLowerCase()) ||
+        c.numero_carte?.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    // Compter le total
+    let countQuery = supabase.from('cartes').select('id', { count: 'exact', head: true });
+    if (commercantId) countQuery = countQuery.eq('commercant_id', commercantId);
+    const { count } = await countQuery;
+
+    res.json({
+      success: true,
+      data: {
+        clients: clients.map(c => ({
+          id: c.id,
+          client_id: c.client_id,
+          client_nom: c.clients?.nom || 'Inconnu',
+          client_email: c.clients?.email || '',
+          client_telephone: c.clients?.telephone || '',
+          commercant_id: c.commercant_id,
+          commercant_nom: c.commercants?.nom_enseigne || '',
+          boutique_nom: c.boutiques?.nom || '',
+          numero_carte: c.numero_carte,
+          solde_points: c.solde_points || 0,
+          created_at: c.created_at,
+        })),
+        total: count || 0,
+        page,
+        totalPages: Math.max(1, Math.ceil((count || 0) / limit))
+      }
+    });
+  } catch (err) {
+    console.error('[Admin] List clients error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── GET /api/admin/scans ─────────────────────────────────────────────────────
+// Historique des scans
+
+router.get('/scans', adminAuth, async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, parseInt(req.query.limit) || 20);
+    const offset = (page - 1) * limit;
+    const commercantId = req.query.commercant_id;
+
+    let query = supabase
+      .from('visites')
+      .select('id, client_id, commercant_id, boutique_id, type_action, created_at, clients(nom, email), boutiques(nom)')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (commercantId) {
+      query = query.eq('commercant_id', commercantId);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    // Stats
+    const { count: totalScans } = await supabase.from('visites').select('id', { count: 'exact', head: true });
+    const { count: scansToday } = await supabase.from('visites').select('id', { count: 'exact', head: true }).gte('created_at', new Date().toISOString().split('T')[0]);
+    const { count: scansOrphelins } = await supabase.from('visites').select('id', { count: 'exact', head: true }).is('client_id', null);
+
+    res.json({
+      success: true,
+      data: {
+        scans: data || [],
+        total: totalScans || 0,
+        scans_today: scansToday || 0,
+        scans_orphelins: scansOrphelins || 0,
+        page,
+        totalPages: Math.max(1, Math.ceil((totalScans || 0) / limit))
+      }
+    });
+  } catch (err) {
+    console.error('[Admin] List scans error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── GET /api/admin/notifications/stats ────────────────────────────────────────
+// Stats des notifications push
+
+router.get('/notifications/stats', adminAuth, async (req, res) => {
+  try {
+    const { count: total } = await supabase.from('notifications').select('id', { count: 'exact', head: true });
+    const { count: today } = await supabase.from('notifications').select('id', { count: 'exact', head: true }).gte('created_at', new Date().toISOString().split('T')[0]);
+    const { count: pushReels } = await supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('type', 'push').not('fcm_token', null);
+    const { count: simulation } = await supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('type', 'simulation');
+
+    // Dernières notifs
+    const { data: recentes } = await supabase
+      .from('notifications')
+      .select('id, type, titre, commercant_id, created_at, commercants(nom_enseigne)')
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    res.json({
+      success: true,
+      data: {
+        total: total || 0,
+        today: today || 0,
+        push_reels: pushReels || 0,
+        simulation: simulation || 0,
+        recentes: recentes || [],
+        mode: process.env.FIREBASE_SERVICE_ACCOUNT_KEY ? 'real' : 'simulation',
+      }
+    });
+  } catch (err) {
+    console.error('[Admin] Notifications stats error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── POST /api/admin/push-test ────────────────────────────────────────────────
+// Envoyer un push test à un commerçant
+
+router.post('/push-test', adminAuth, async (req, res) => {
+  try {
+    const { commercant_id, titre, message } = req.body;
+
+    if (!commercant_id) {
+      return res.status(400).json({ success: false, error: 'commercant_id requis.' });
+    }
+
+    // Récupérer le token FCM du commerçant
+    const { data: commercant } = await supabase
+      .from('commercants')
+      .select('fcm_token, nom_enseigne, notif_mode_simulation')
+      .eq('id', commercant_id)
+      .single();
+
+    if (!commercant) {
+      return res.status(404).json({ success: false, error: 'Commerçant introuvable.' });
+    }
+
+    if (commercant.notif_mode_simulation || !commercant.fcm_token) {
+      return res.json({
+        success: true,
+        message: 'Mode simulation actif ou aucun token FCM — push non envoyé (simulation).',
+        mode: 'simulation'
+      });
+    }
+
+    // Envoyer via FCM
+    const { sendPushToMerchant } = require('../services/notificationService');
+    const result = await sendPushToMerchant(
+      commercant_id,
+      titre || 'Test Admin',
+      message || 'Ceci est un test de notification depuis le panel admin.'
+    );
+
+    res.json({
+      success: true,
+      message: 'Push envoyé avec succès.',
+      mode: 'real',
+      result
+    });
+  } catch (err) {
+    console.error('[Admin] Push test error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── GET /api/admin/templates ─────────────────────────────────────────────────
+// Templates d'avis utilisés
+
+router.get('/templates', adminAuth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('commercants')
+      .select('id, nom_enseigne, avis_templates')
+      .not('avis_templates', 'is', null);
+
+    if (error) throw error;
+
+    const templates = (data || []).map(c => ({
+      commercant_id: c.id,
+      commercant_nom: c.nom_enseigne,
+      templates: c.avis_templates || [],
+    })).filter(t => t.templates.length > 0);
+
+    res.json({ success: true, data: { templates, total: templates.length } });
+  } catch (err) {
+    console.error('[Admin] Templates error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── GET /api/admin/offres ────────────────────────────────────────────────────
+// Toutes les offres promotionnelles
+
+router.get('/offres', adminAuth, async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, parseInt(req.query.limit) || 20);
+    const offset = (page - 1) * limit;
+    const statut = req.query.statut; // actives, expirees
+
+    let query = supabase
+      .from('offres')
+      .select('id, titre, description, type_recompense, valeur, date_debut, date_fin, commercant_id, created_at, commercants(nom_enseigne)')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    let offres = data || [];
+    const now = new Date().toISOString();
+
+    if (statut === 'actives') {
+      offres = offres.filter(o => !o.date_fin || o.date_fin >= now);
+    } else if (statut === 'expirees') {
+      offres = offres.filter(o => o.date_fin && o.date_fin < now);
+    }
+
+    const { count } = await supabase.from('offres').select('id', { count: 'exact', head: true });
+
+    res.json({
+      success: true,
+      data: {
+        offres,
+        total: count || 0,
+        page,
+        totalPages: Math.max(1, Math.ceil((count || 0) / limit))
+      }
+    });
+  } catch (err) {
+    console.error('[Admin] Offres error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── POST /api/admin/offres ───────────────────────────────────────────────────
+// Créer une offre (admin)
+
+router.post('/offres', adminAuth, async (req, res) => {
+  try {
+    const { titre, description, type_recompense, valeur, date_debut, date_fin, commercant_id } = req.body;
+
+    if (!titre || !commercant_id) {
+      return res.status(400).json({ success: false, error: 'Titre et commercant_id requis.' });
+    }
+
+    const { data, error } = await supabase
+      .from('offres')
+      .insert({
+        titre,
+        description: description || '',
+        type_recompense: type_recompense || 'points',
+        valeur: valeur || 0,
+        date_debut: date_debut || new Date().toISOString(),
+        date_fin: date_fin || null,
+        commercant_id,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    await supabase.from('admin_logs').insert({
+      action: 'creer_offre',
+      target_id: data.id,
+      details: JSON.stringify({ titre, commercant_id }),
+    });
+
+    res.json({ success: true, data, message: 'Offre créée.' });
+  } catch (err) {
+    console.error('[Admin] Create offre error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── DELETE /api/admin/offres/:id ──────────────────────────────────────────────
+// Supprimer une offre
+
+router.delete('/offres/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { error } = await supabase.from('offres').delete().eq('id', id);
+
+    if (error) throw error;
+
+    await supabase.from('admin_logs').insert({
+      action: 'supprimer_offre',
+      target_id: id,
+    });
+
+    res.json({ success: true, message: 'Offre supprimée.' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── POST /api/admin/commercants/:id/force-wallet ─────────────────────────────
+// Forcer la configuration Google Wallet d'un commerçant
+
+router.post('/commercants/:id/force-wallet', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data: commercant } = await supabase
+      .from('commercants')
+      .select('id, nom_enseigne, wallet_class_configured')
+      .eq('id', id)
+      .single();
+
+    if (!commercant) {
+      return res.status(404).json({ success: false, error: 'Commerçant introuvable.' });
+    }
+
+    // Marquer comme configuré
+    await supabase
+      .from('commercants')
+      .update({ wallet_class_configured: true, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    await supabase.from('admin_logs').insert({
+      action: 'force_wallet',
+      target_id: id,
+      details: JSON.stringify({ nom: commercant.nom_enseigne }),
+    });
+
+    res.json({
+      success: true,
+      message: `Wallet marqué comme configuré pour ${commercant.nom_enseigne}. N'oubliez pas de créer la LoyaltyClass via le dashboard du commerçant.`
+    });
+  } catch (err) {
+    console.error('[Admin] Force wallet error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;
