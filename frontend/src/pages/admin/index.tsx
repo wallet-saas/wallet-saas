@@ -511,7 +511,7 @@ function AdminFeedbacksPage() {
                         {'⭐'.repeat(f.note)} {f.note}/5
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">{f.commentaire || '—'}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{f.contenu || '—'}</td>
                     <td className="px-6 py-4 text-sm text-gray-500">{new Date(f.created_at).toLocaleDateString('fr-FR')}</td>
                   </tr>
                 ))}
@@ -737,11 +737,12 @@ function AdminClientsPage() {
               <thead>
                 <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
                   <th className="px-6 py-3">Client</th>
-                  <th className="px-6 py-3">Commerçant</th>
-                  <th className="px-6 py-3">Boutique</th>
-                  <th className="px-6 py-3">N° Carte</th>
+                  <th className="px-6 py-3">Type</th>
+                  <th className="px-6 py-3">N° Pass</th>
                   <th className="px-6 py-3">Points</th>
-                  <th className="px-6 py-3">Inscrit le</th>
+                  <th className="px-6 py-3">Installée</th>
+                  <th className="px-6 py-3">Commerçant</th>
+                  <th className="px-6 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -831,7 +832,7 @@ function AdminScansPage() {
             <table className="w-full">
               <thead>
                 <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
-                  <th className="px-6 py-3">Client</th>
+                  <th className="px-6 py-3">Client ID</th>
                   <th className="px-6 py-3">Boutique</th>
                   <th className="px-6 py-3">Type</th>
                   <th className="px-6 py-3">Date</th>

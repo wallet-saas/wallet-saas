@@ -354,7 +354,7 @@ router.get('/feedbacks', adminAuth, async (req, res) => {
 
     const { data, error } = await supabase
       .from('avis')
-      .select('id, note, commentaire, source, created_at, commercant_id, commercants(nom_enseigne)')
+      .select('id, note, contenu, source, created_at, commercant_id, commercants(nom_enseigne)')
       .lte('note', 3)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -458,7 +458,7 @@ router.get('/clients', adminAuth, async (req, res) => {
 
     let query = supabase
       .from('cartes')
-      .select('id, client_id, commercant_id, boutique_id, numero_carte, solde_points, created_at, clients(id, nom, email, telephone), commercants(id, nom_enseigne), boutiques(nom)')
+      .select('id, commercant_id, pass_type, pass_serial_number, pass_url, qr_code_url, actif, points, google_wallet_url, apple_wallet_url, installed_at, created_at, commercants(id, nom_enseigne)')
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -473,9 +473,9 @@ router.get('/clients', adminAuth, async (req, res) => {
     let clients = data || [];
     if (search) {
       clients = clients.filter(c =>
-        c.clients?.nom?.toLowerCase().includes(search.toLowerCase()) ||
-        c.clients?.email?.toLowerCase().includes(search.toLowerCase()) ||
-        c.numero_carte?.toLowerCase().includes(search.toLowerCase())
+        c.pass_serial_number?.toLowerCase().includes(search.toLowerCase()) ||
+        c.pass_url?.toLowerCase().includes(search.toLowerCase()) ||
+        c.commercants?.nom_enseigne?.toLowerCase().includes(search.toLowerCase())
       );
     }
 
@@ -489,15 +489,17 @@ router.get('/clients', adminAuth, async (req, res) => {
       data: {
         clients: clients.map(c => ({
           id: c.id,
-          client_id: c.client_id,
-          client_nom: c.clients?.nom || 'Inconnu',
-          client_email: c.clients?.email || '',
-          client_telephone: c.clients?.telephone || '',
+          pass_type: c.pass_type || 'google',
+          pass_serial_number: c.pass_serial_number || '',
+          pass_url: c.pass_url || '',
+          qr_code_url: c.qr_code_url || '',
+          actif: c.actif !== false,
+          points: c.points || 0,
+          google_wallet_url: c.google_wallet_url || '',
+          apple_wallet_url: c.apple_wallet_url || '',
+          installed: !!c.installed_at,
           commercant_id: c.commercant_id,
           commercant_nom: c.commercants?.nom_enseigne || '',
-          boutique_nom: c.boutiques?.nom || '',
-          numero_carte: c.numero_carte,
-          solde_points: c.solde_points || 0,
           created_at: c.created_at,
         })),
         total: count || 0,
@@ -523,7 +525,7 @@ router.get('/scans', adminAuth, async (req, res) => {
 
     let query = supabase
       .from('visites')
-      .select('id, client_id, commercant_id, boutique_id, type_action, created_at, clients(nom, email), boutiques(nom)')
+      .select('id, client_id, commercant_id, boutique_id, type_action, created_at, boutiques(nom)')
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -677,7 +679,7 @@ router.get('/offres', adminAuth, async (req, res) => {
 
     let query = supabase
       .from('offres')
-      .select('id, titre, description, type_recompense, valeur, date_debut, date_fin, commercant_id, created_at, commercants(nom_enseigne)')
+      .select('id, titre, description, code_promo, reduction_pct, reduction_montant, date_debut, date_fin, actif, total_envoyes, total_utilises, commercant_id, created_at, commercants(nom_enseigne)')
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -688,9 +690,9 @@ router.get('/offres', adminAuth, async (req, res) => {
     const now = new Date().toISOString();
 
     if (statut === 'actives') {
-      offres = offres.filter(o => !o.date_fin || o.date_fin >= now);
+      offres = offres.filter(o => o.actif === true && (!o.date_fin || o.date_fin >= now));
     } else if (statut === 'expirees') {
-      offres = offres.filter(o => o.date_fin && o.date_fin < now);
+      offres = offres.filter(o => o.actif === false || (o.date_fin && o.date_fin < now));
     }
 
     const { count } = await supabase.from('offres').select('id', { count: 'exact', head: true });
@@ -715,7 +717,7 @@ router.get('/offres', adminAuth, async (req, res) => {
 
 router.post('/offres', adminAuth, async (req, res) => {
   try {
-    const { titre, description, type_recompense, valeur, date_debut, date_fin, commercant_id } = req.body;
+    const { titre, description, code_promo, reduction_pct, reduction_montant, date_debut, date_fin, commercant_id } = req.body;
 
     if (!titre || !commercant_id) {
       return res.status(400).json({ success: false, error: 'Titre et commercant_id requis.' });
@@ -726,11 +728,13 @@ router.post('/offres', adminAuth, async (req, res) => {
       .insert({
         titre,
         description: description || '',
-        type_recompense: type_recompense || 'points',
-        valeur: valeur || 0,
+        code_promo: code_promo || '',
+        reduction_pct: reduction_pct || 0,
+        reduction_montant: reduction_montant || 0,
         date_debut: date_debut || new Date().toISOString(),
         date_fin: date_fin || null,
         commercant_id,
+        actif: true,
       })
       .select()
       .single();

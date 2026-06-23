@@ -72,7 +72,8 @@ export interface AdminCommercantsList {
 export interface AdminFeedback {
   id: string;
   note: number;
-  commentaire?: string;
+  contenu?: string;
+  source: string;
   created_at: string;
   commercant_id: string;
   commercants?: { nom_enseigne: string };
@@ -111,15 +112,17 @@ export interface ServiceStatus {
 
 export interface AdminClient {
   id: string;
-  client_id: string | null;
-  client_nom: string;
-  client_email: string;
-  client_telephone: string;
+  pass_type: string;
+  pass_serial_number: string;
+  pass_url: string;
+  qr_code_url: string;
+  actif: boolean;
+  points: number;
+  google_wallet_url: string;
+  apple_wallet_url: string;
+  installed: boolean;
   commercant_id: string;
   commercant_nom: string;
-  boutique_nom: string;
-  numero_carte: string;
-  solde_points: number;
   created_at: string;
 }
 
@@ -137,7 +140,6 @@ export interface AdminScan {
   boutique_id: string | null;
   type_action: string;
   created_at: string;
-  clients?: { nom: string; email: string };
   boutiques?: { nom: string };
 }
 
@@ -174,10 +176,14 @@ export interface AdminOffre {
   id: string;
   titre: string;
   description: string;
-  type_recompense: string;
-  valeur: number;
+  code_promo: string;
+  reduction_pct: number;
+  reduction_montant: number;
   date_debut: string;
   date_fin: string | null;
+  actif: boolean;
+  total_envoyes: number;
+  total_utilises: number;
   commercant_id: string;
   created_at: string;
   commercants?: { nom_enseigne: string };
