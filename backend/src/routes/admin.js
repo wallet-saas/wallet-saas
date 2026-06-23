@@ -525,7 +525,7 @@ router.get('/scans', adminAuth, async (req, res) => {
 
     let query = supabase
       .from('visites')
-      .select('id, client_id, commercant_id, boutique_id, type_action, created_at, boutiques(nom)')
+      .select('id, client_id, commercant_id, boutique_id, created_at, boutiques(nom)')
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
