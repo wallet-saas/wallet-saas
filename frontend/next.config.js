@@ -26,7 +26,12 @@ const nextConfig = {
     ];
   },
   async rewrites() {
-    return [];
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'https://stamply-backend-gn8z.onrender.com/api/:path*',
+      },
+    ];
   },
 };
 
