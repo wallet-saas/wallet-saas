@@ -25,15 +25,17 @@ services:
       - key: JWT_SECRET
         sync: false  # À remplir dans le dashboard Render
       - key: STRIPE_SECRET_KEY
-        sync: false  # À remplir dans le dashboard Render
+        value: "REDACTED"
       - key: STRIPE_PUBLISHABLE_KEY
-        sync: false  # À remplir dans le dashboard Render
+        value: "pk_live_REDACTED"
+      - key: STRIPE_PRICE_ID
+        value: "price_REDACTED"
+      - key: STRIPE_WEBHOOK_SECRET
+        value: "whsec_REDACTED"
       - key: FRONTEND_URL
-        sync: false  # URL du frontend Vercel
+        value: "https://stamply-gamma.vercel.app"
       - key: BACKEND_URL
-        sync: false  # URL du backend Render (auto-générée)
-      - key: GOOGLE_WALLET_ISSUER_ID
-        value: "3388000000023112631"
+        value: "https://stamply-backend-gn8z.onrender.com"
       - key: GOOGLE_WALLET_KEY_FILE
         value: "./config/google-wallet-key.json"
       - key: STRIPE_PRICE_ID
