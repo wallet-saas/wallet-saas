@@ -25,9 +25,25 @@ function getFirebaseAdmin() {
   if (_initAttempted) return _adminApp;
   _initAttempted = true;
 
-  const raw = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  let raw = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+
+  // Fallback : charger depuis fichier local (firebase-key.json)
   if (!raw) {
-    console.warn('[FCM] FIREBASE_SERVICE_ACCOUNT_KEY absent — mode simulation activé. Les push Android ne seront pas envoyés.');
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const keyPath = path.join(__dirname, '..', '..', 'firebase-key.json');
+      if (fs.existsSync(keyPath)) {
+        raw = fs.readFileSync(keyPath, 'utf8');
+        console.log('[FCM] Clé Firebase chargée depuis firebase-key.json');
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  if (!raw) {
+    console.warn('[FCM] FIREBASE_SERVICE_ACCOUNT_KEY absent et firebase-key.json introuvable — mode simulation activé.');
     return null;
   }
 
@@ -119,10 +135,19 @@ async function sendPushNotification(fcmToken, title, body, data = {}) {
  * Utile pour les endpoints de status/stats.
  */
 function isFCMEnabled() {
-  return !!process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  // Check env var or local file
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) return true;
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    return fs.existsSync(path.join(__dirname, '..', '..', 'firebase-key.json'));
+  } catch {
+    return false;
+  }
 }
 
 module.exports = {
   sendPushNotification,
-  isFCMEnabled
+  isFCMEnabled,
+  getFirebaseAdmin
 };
