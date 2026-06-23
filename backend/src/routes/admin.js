@@ -14,7 +14,7 @@ const { supabase } = require('../config/supabase');
 // ─── Config ────────────────────────────────────────────────────────────────────
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@stamply.fr';
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || null; // bcrypt hash
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || '$2b$10$Y7HlJC62gdlhVD16LlqaB.kD8n/Npo.fODEZtNWJ10OeJXyKwpWvC'; // StamplyAdmin2024!
 
 // ─── Helper: Admin Token ────────────────────────────────────────────────────────
 
