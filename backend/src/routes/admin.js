@@ -427,15 +427,15 @@ router.get('/status', adminAuth, async (req, res) => {
 
     // Test rapide Google Wallet
     try {
-      const { google } = require('googleapis');
-      const auth = new google.auth.GoogleAuth({
-        credentials: JSON.parse(process.env.GOOGLE_WALLET_SERVICE_ACCOUNT_KEY || '{}'),
-        scopes: ['https://www.googleapis.com/auth/wallet_object.issuer'],
-      });
-      const walletApi = google.walletobjects({ auth, version: 'v1' });
-      await walletApi.issuer.get({ issuerId: process.env.GOOGLE_WALLET_ISSUER_ID });
+      const googleWalletService = require('../services/googleWalletService');
+      const report = await googleWalletService.testConnection();
+      if (report.error) {
+        status.google_wallet = { status: 'error', message: report.error };
+      } else {
+        status.google_wallet = { status: 'ok', message: 'API Google Wallet accessible', issuer_id: report.issuer_id_value };
+      }
     } catch {
-      status.google_wallet = { status: 'error', message: 'API Google Wallet inaccessible (clé invalide?)' };
+      status.google_wallet = { status: 'error', message: 'API Google Wallet inaccessible' };
     }
 
     res.json({ success: true, data: status });
