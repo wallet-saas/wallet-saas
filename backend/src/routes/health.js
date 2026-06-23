@@ -51,7 +51,7 @@ router.get('/', async (req, res) => {
 
   // 4. FCM (Firebase)
   report.services.fcm = {
-    status: process.env.FIREBASE_SERVICE_ACCOUNT_JSON || process.env.FIREBASE_SERVICE_ACCOUNT_BASE64
+    status: process.env.FIREBASE_SERVICE_ACCOUNT_KEY || process.env.FIREBASE_SERVICE_ACCOUNT_JSON || process.env.FIREBASE_SERVICE_ACCOUNT_BASE64
       ? 'configured'
       : 'not_configured',
   };
@@ -92,10 +92,10 @@ router.get('/diagnostics', async (req, res) => {
       stripe_price_id: process.env.STRIPE_PRICE_ID ? '✅ configuré' : '❌ manquant',
       stripe_webhook: process.env.STRIPE_WEBHOOK_SECRET ? '✅ configuré' : '❌ manquant',
       google_wallet_issuer: process.env.GOOGLE_WALLET_ISSUER_ID ? '✅ configuré' : '❌ manquant',
-      google_wallet_key: process.env.GOOGLE_WALLET_KEY_JSON || process.env.GOOGLE_WALLET_KEY_JSON_BASE64 || process.env.GOOGLE_WALLET_KEY_FILE
+      google_wallet_key: process.env.GOOGLE_WALLET_SERVICE_ACCOUNT_KEY || process.env.GOOGLE_WALLET_KEY_JSON || process.env.GOOGLE_WALLET_KEY_JSON_BASE64 || process.env.GOOGLE_WALLET_KEY_FILE
         ? '✅ configuré'
         : '❌ manquant',
-      fcm_key: process.env.FIREBASE_SERVICE_ACCOUNT_JSON || process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 || process.env.FIREBASE_SERVICE_ACCOUNT_PATH
+      fcm_key: process.env.FIREBASE_SERVICE_ACCOUNT_KEY || process.env.FIREBASE_SERVICE_ACCOUNT_JSON || process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 || process.env.FIREBASE_SERVICE_ACCOUNT_PATH
         ? '✅ configuré'
         : '❌ manquant',
       apple_pass_type: process.env.APPLE_PASS_TYPE_IDENTIFIER ? '✅ configuré' : '❌ manquant',
