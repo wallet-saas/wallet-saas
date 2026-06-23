@@ -31,6 +31,13 @@ export function Navbar() {
         {/* Boutons à droite */}
         <div className="flex items-center gap-3 shrink-0">
           <Link
+            href="/admin/login"
+            className="text-xs text-slate-600 hover:text-slate-400 transition-colors"
+            title="Administration"
+          >
+            ⚙
+          </Link>
+          <Link
             href="/login"
             className="text-sm font-medium text-slate-300 hover:text-white transition-colors px-4 py-2 rounded-lg hover:bg-white/5"
           >
