@@ -2,18 +2,21 @@
  * Stamply — API Admin
  * 
  * Appels API pour le panel d'administration.
- * Utilise le header X-Admin-Key pour l'authentification.
+ * Utilise le header Authorization Bearer <token> pour l'authentification.
  */
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
-const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY || 'stamply_admin_default_change_me';
+function getToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('stamply_admin_token');
+}
 
 function adminHeaders(): Record<string, string> {
-  return {
-    'Content-Type': 'application/json',
-    'X-Admin-Key': ADMIN_KEY,
-  };
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const token = getToken();
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return headers;
 }
 
 async function adminRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -36,52 +39,31 @@ async function adminRequest<T>(path: string, options: RequestInit = {}): Promise
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface AdminStats {
-  commerçants: {
-    total: number;
-    actifs: number;
-    avec_stripe: number;
-  };
-  inscriptions_par_mois: Record<string, number>;
+  commerçants: { total: number; actifs: number; inactifs: number };
   cartes: number;
   visites_30j: number;
   boutiques: number;
-  commercants_recents: Array<{
-    id: string;
-    email: string;
-    nom_enseigne: string;
-    created_at: string;
-    is_active: boolean;
-  }>;
 }
 
 export interface AdminCommercant {
   id: string;
   email: string;
   nom_enseigne: string;
-  prenom?: string;
-  nom?: string;
   telephone?: string;
-  created_at: string;
-  is_active: boolean;
+  adresse?: string;
+  ville?: string;
+  code_postal?: string;
+  abonnement_statut?: string;
   stripe_customer_id?: string;
-  stats?: {
-    boutiques: number;
-    cartes: number;
-    visites_30j: number;
-  };
-  dernieres_notifications?: Array<{
-    id: string;
-    type: string;
-    titre: string;
-    created_at: string;
-  }>;
+  wallet_class_configured?: boolean;
+  created_at: string;
+  stats?: { boutiques: number; cartes: number; visites_30j: number };
 }
 
 export interface AdminCommercantsList {
   commerçants: AdminCommercant[];
   total: number;
   page: number;
-  limit: number;
   totalPages: number;
 }
 
@@ -98,13 +80,12 @@ export interface AdminFeedbacksList {
   feedbacks: AdminFeedback[];
   total: number;
   page: number;
-  limit: number;
+  totalPages: number;
 }
 
 export interface AdminLog {
   id: string;
   action: string;
-  target_type?: string;
   target_id?: string;
   details?: any;
   created_at: string;
@@ -114,26 +95,27 @@ export interface AdminLogsList {
   logs: AdminLog[];
   total: number;
   page: number;
-  limit: number;
+  totalPages: number;
 }
 
 // ─── API Calls ────────────────────────────────────────────────────────────────
 
 export const adminApi = {
-  // Stats globales
+  login: (email: string, password: string) =>
+    fetch(`${API_URL}/api/admin/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    }).then(r => r.json()),
+
   stats: () => adminRequest<AdminStats>('/api/admin/stats'),
 
-  // Commerçants
   listCommerçants: (params?: { page?: number; limit?: number; search?: string; statut?: string }) => {
     const q = new URLSearchParams(params as Record<string, string>).toString();
     return adminRequest<AdminCommercantsList>(`/api/admin/commercants${q ? '?' + q : ''}`);
   },
   getCommercant: (id: string) => adminRequest<AdminCommercant>(`/api/admin/commercants/${id}`),
-  updateCommercant: (id: string, data: Partial<AdminCommercant>) =>
-    adminRequest<AdminCommercant>(`/api/admin/commercants/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }),
+
   resetPassword: (id: string, password: string) =>
     adminRequest<{ message: string }>(`/api/admin/commercants/${id}/reset-password`, {
       method: 'POST',
@@ -146,13 +128,11 @@ export const adminApi = {
   supprimerCommercant: (id: string) =>
     adminRequest<{ message: string }>(`/api/admin/commercants/${id}`, { method: 'DELETE' }),
 
-  // Feedbacks
   feedbacks: (params?: { page?: number; limit?: number }) => {
     const q = new URLSearchParams(params as Record<string, string>).toString();
     return adminRequest<AdminFeedbacksList>(`/api/admin/feedbacks${q ? '?' + q : ''}`);
   },
 
-  // Logs
   logs: (params?: { page?: number; limit?: number }) => {
     const q = new URLSearchParams(params as Record<string, string>).toString();
     return adminRequest<AdminLogsList>(`/api/admin/logs${q ? '?' + q : ''}`);

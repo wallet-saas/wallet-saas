@@ -1,13 +1,8 @@
 /**
- * Stamply — Panel Admin
+ * Stamply — Panel Admin V2
  * 
- * Accessible via /admin?key=STAMPLY_ADMIN_KEY
- * 
- * Pages :
- *   /admin           — Dashboard stats + liste commerçants
- *   /admin/commercant/:id  — Fiche détaillée d'un commerçant
- *   /admin/feedbacks       — Feedbacks clients (<4 étoiles)
- *   /admin/logs            — Logs des actions admin
+ * Connexion directe par email + mot de passe
+ * Liste des commerçants avec statuts d'abonnement
  */
 
 import { useEffect, useState } from 'react';
@@ -17,30 +12,32 @@ import Link from 'next/link';
 import {
   Users, CreditCard, Store, TrendingUp,
   Search, ChevronRight, CheckCircle, XCircle,
-  AlertTriangle, ArrowLeft
+  AlertTriangle, ArrowLeft, RefreshCw, Shield
 } from 'lucide-react';
-import { adminApi, AdminStats, AdminCommercant } from '@/services/adminApi';
 
 // ─── Auth guard ────────────────────────────────────────────────────────────────
 
-const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY || 'stamply_admin_default_change_me';
-
 function useAdminAuth() {
-  const router = useRouter();
   const [authed, setAuthed] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (router.isReady) {
-      const key = router.query.key as string;
-      if (key && key === ADMIN_KEY) {
-        setAuthed(true);
-      } else {
-        setAuthed(false);
+    const token = localStorage.getItem('stamply_admin_token');
+    if (token) {
+      // Verify token is still valid (basic check)
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.role === 'admin' && payload.exp * 1000 > Date.now()) {
+          setAuthed(true);
+        } else {
+          localStorage.removeItem('stamply_admin_token');
+        }
+      } catch {
+        localStorage.removeItem('stamply_admin_token');
       }
-      setLoading(false);
     }
-  }, [router.isReady, router.query.key]);
+    setLoading(false);
+  }, []);
 
   return { authed, loading };
 }
@@ -56,16 +53,8 @@ export default function AdminPage() {
   }
 
   if (!authed) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
-          <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-gray-900 mb-2">Accès refusé</h1>
-          <p className="text-gray-500 mb-4">Clé admin manquante ou invalide.</p>
-          <p className="text-xs text-gray-400">Accédez via /admin?key=VOTRE_CLE_ADMIN</p>
-        </div>
-      </div>
-    );
+    router.push('/admin/login');
+    return null;
   }
 
   return <AdminDashboard key={router.asPath} />;
@@ -77,22 +66,12 @@ function AdminDashboard() {
   const router = useRouter();
   const { page } = router.query;
 
-  // Sub-page: commercant detail
   if (page === 'commercant' && router.query.id) {
     return <AdminCommercantPage commercantId={router.query.id as string} />;
   }
+  if (page === 'feedbacks') return <AdminFeedbacksPage />;
+  if (page === 'logs') return <AdminLogsPage />;
 
-  // Sub-page: feedbacks
-  if (page === 'feedbacks') {
-    return <AdminFeedbacksPage />;
-  }
-
-  // Sub-page: logs
-  if (page === 'logs') {
-    return <AdminLogsPage />;
-  }
-
-  // Default: stats + liste
   return <AdminStatsPage />;
 }
 
@@ -107,16 +86,22 @@ function AdminNav({ active }: { active: string }) {
     { key: 'logs', label: 'Logs', icon: CreditCard },
   ];
 
+  const handleLogout = () => {
+    localStorage.removeItem('stamply_admin_token');
+    router.push('/admin/login');
+  };
+
   return (
-    <nav className="bg-white border-b border-gray-200 px-6 py-3">
+    <nav className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
       <div className="flex items-center gap-1">
-        <span className="text-lg font-bold text-indigo-600 mr-4">🛡️ Stamply Admin</span>
+        <Shield className="h-5 w-5 text-indigo-600 mr-2" />
+        <span className="text-lg font-bold text-indigo-600 mr-4">Stamply Admin</span>
         {navItems.map(item => (
           <button
             key={item.key}
             onClick={() => {
-              if (item.key === 'dashboard') router.push('/admin?key=' + ADMIN_KEY);
-              else router.push(`/admin?key=${ADMIN_KEY}&page=${item.key}`);
+              if (item.key === 'dashboard') router.push('/admin');
+              else router.push(`/admin?page=${item.key}`);
             }}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               active === item.key
@@ -129,35 +114,61 @@ function AdminNav({ active }: { active: string }) {
           </button>
         ))}
       </div>
+      <button onClick={handleLogout} className="text-sm text-gray-500 hover:text-red-600 transition-colors">
+        Déconnexion
+      </button>
     </nav>
   );
+}
+
+// ─── Helper: Statut Badge ──────────────────────────────────────────────────────
+
+function getStatutBadge(statut: string) {
+  switch (statut) {
+    case 'actif':
+      return <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700"><CheckCircle className="h-3 w-3" /> Actif</span>;
+    case 'inactif':
+      return <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600"><XCircle className="h-3 w-3" /> Inactif</span>;
+    case 'past_due':
+      return <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700"><AlertTriangle className="h-3 w-3" /> Impayé</span>;
+    case 'suspendu':
+      return <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700"><AlertTriangle className="h-3 w-3" /> Suspendu</span>;
+    default:
+      return <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">{statut || '—'}</span>;
+  }
 }
 
 // ─── Stats Page ────────────────────────────────────────────────────────────────
 
 function AdminStatsPage() {
-  const [stats, setStats] = useState<AdminStats | null>(null);
-  const [commercants, setCommercants] = useState<AdminCommercant[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [commercants, setCommercants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [statutFilter, setStatutFilter] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const router = useRouter();
 
   useEffect(() => {
-    adminApi.stats().then(setStats).catch(console.error);
+    fetch('/api/admin/stats', {
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('stamply_admin_token') }
+    }).then(r => r.json()).then(d => setStats(d.data)).catch(console.error);
   }, []);
 
   useEffect(() => {
     setLoading(true);
-    adminApi.listCommerçants({ page, limit: 20, search })
-      .then(res => {
-        setCommercants(res.commerçants);
-        setTotalPages(res.totalPages);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [page, search]);
+    const params = new URLSearchParams({ page: String(page), limit: '20' });
+    if (search) params.set('search', search);
+    if (statutFilter) params.set('statut', statutFilter);
+
+    fetch(`/api/admin/commercants?${params}`, {
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('stamply_admin_token') }
+    }).then(r => r.json()).then(d => {
+      setCommercants(d.data.commerçants);
+      setTotalPages(d.data.totalPages);
+    }).catch(console.error).finally(() => setLoading(false));
+  }, [page, search, statutFilter]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -175,33 +186,45 @@ function AdminStatsPage() {
           </div>
         )}
 
+        {/* Filtres */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-4 p-4 flex items-center gap-4 flex-wrap">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Rechercher par nom ou email..."
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1); }}
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <select
+            value={statutFilter}
+            onChange={e => { setStatutFilter(e.target.value); setPage(1); }}
+            className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="">Tous les statuts</option>
+            <option value="actif">Actif</option>
+            <option value="inactif">Inactif</option>
+            <option value="past_due">Impayé</option>
+            <option value="suspendu">Suspendu</option>
+          </select>
+        </div>
+
         {/* Commerçants table */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Commerçants</h2>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Rechercher..."
-                value={search}
-                onChange={e => { setSearch(e.target.value); setPage(1); }}
-                className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-64"
-              />
-            </div>
-          </div>
-
           {loading ? (
             <div className="p-8 text-center text-gray-400">Chargement...</div>
           ) : (
             <table className="w-full">
               <thead>
-                <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
                   <th className="px-6 py-3">Commerçant</th>
                   <th className="px-6 py-3">Email</th>
                   <th className="px-6 py-3">Inscrit le</th>
-                  <th className="px-6 py-3">Statut</th>
+                  <th className="px-6 py-3">Abonnement</th>
                   <th className="px-6 py-3">Stripe</th>
+                  <th className="px-6 py-3">Wallet</th>
                   <th className="px-6 py-3"></th>
                 </tr>
               </thead>
@@ -213,27 +236,24 @@ function AdminStatsPage() {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">{c.email}</td>
                     <td className="px-6 py-4 text-sm text-gray-500">{new Date(c.created_at).toLocaleDateString('fr-FR')}</td>
-                    <td className="px-6 py-4">
-                      {c.is_active ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700">
-                          <CheckCircle className="h-3 w-3" /> Actif
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700">
-                          <XCircle className="h-3 w-3" /> Inactif
-                        </span>
-                      )}
-                    </td>
+                    <td className="px-6 py-4">{getStatutBadge(c.abonnement_statut)}</td>
                     <td className="px-6 py-4">
                       {c.stripe_customer_id ? (
-                        <span className="text-xs text-green-600">✓ Connecté</span>
+                        <span className="text-xs text-green-600 font-medium">✓ Connecté</span>
                       ) : (
                         <span className="text-xs text-gray-400">—</span>
                       )}
                     </td>
                     <td className="px-6 py-4">
+                      {c.wallet_class_configured ? (
+                        <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">Configuré</span>
+                      ) : (
+                        <span className="text-xs text-gray-400">Non configuré</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
                       <button
-                        onClick={() => router.push(`/admin?key=${ADMIN_KEY}&page=commercant&id=${c.id}`)}
+                        onClick={() => router.push(`/admin?page=commercant&id=${c.id}`)}
                         className="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center gap-1"
                       >
                         Détails <ChevronRight className="h-4 w-4" />
@@ -261,51 +281,67 @@ function AdminStatsPage() {
   );
 }
 
+// ─── Stat Card ─────────────────────────────────────────────────────────────────
+
+function StatCard({ label, value, icon: Icon, color, sub }: { label: string; value: number; icon: any; color: string; sub?: string }) {
+  const colors: Record<string, string> = {
+    indigo: 'bg-indigo-50 text-indigo-600',
+    green: 'bg-green-50 text-green-600',
+    blue: 'bg-blue-50 text-blue-600',
+    purple: 'bg-purple-50 text-purple-600',
+  };
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-gray-500">{label}</p>
+          <p className="text-3xl font-bold text-gray-900 mt-1">{value}</p>
+          {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+        </div>
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colors[color]}`}>
+          <Icon className="h-6 w-6" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Commercant Detail Page ────────────────────────────────────────────────────
 
 function AdminCommercantPage({ commercantId }: { commercantId: string }) {
   const [commercant, setCommercant] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [resetPw, setResetPw] = useState('');
-  const [showReset, setShowReset] = useState(false);
   const [message, setMessage] = useState('');
+  const [showReset, setShowReset] = useState(false);
+  const [resetPw, setResetPw] = useState('');
   const router = useRouter();
 
+  const refresh = async () => {
+    const r = await fetch(`/api/admin/commercants/${commercantId}`, {
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('stamply_admin_token') }
+    });
+    const d = await r.json();
+    setCommercant(d.data);
+  };
+
   useEffect(() => {
-    adminApi.getCommercant(commercantId)
-      .then(setCommercant)
-      .catch(err => setMessage(err.message))
-      .finally(() => setLoading(false));
+    refresh().catch(err => setMessage(err.message)).finally(() => setLoading(false));
   }, [commercantId]);
 
   const handleAction = async (action: string) => {
     try {
       setMessage('');
-      switch (action) {
-        case 'suspendre':
-          await adminApi.suspendreCommercant(commercantId);
-          setMessage('Commerçant suspendu.');
-          break;
-        case 'reactiver':
-          await adminApi.reactiverCommercant(commercantId);
-          setMessage('Commerçant réactivé.');
-          break;
-        case 'reset_pw':
-          if (!resetPw || resetPw.length < 8) { setMessage('Mot de passe: 8 caractères min.'); return; }
-          await adminApi.resetPassword(commercantId, resetPw);
-          setMessage('Mot de passe réinitialisé.');
-          setShowReset(false);
-          setResetPw('');
-          break;
-        case 'supprimer':
-          if (!confirm('Supprimer définitivement ce commerçant ?')) return;
-          await adminApi.supprimerCommercant(commercantId);
-          router.push('/admin?key=' + ADMIN_KEY);
-          return;
+      const res = await fetch(`/api/admin/commercants/${commercantId}/${action}`, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + localStorage.getItem('stamply_admin_token') }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage(data.message || 'Action réussie.');
+        await refresh();
+      } else {
+        setMessage(data.error || 'Erreur.');
       }
-      // Refresh
-      const updated = await adminApi.getCommercant(commercantId);
-      setCommercant(updated);
     } catch (err: any) {
       setMessage(err.message);
     }
@@ -318,15 +354,12 @@ function AdminCommercantPage({ commercantId }: { commercantId: string }) {
     <div className="min-h-screen bg-gray-50">
       <Head><title>Admin — {commercant.nom_enseigne}</title></Head>
       <AdminNav active="commercants" />
-
       <div className="max-w-4xl mx-auto px-6 py-8">
-        <button onClick={() => router.push('/admin?key=' + ADMIN_KEY)} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-6">
+        <button onClick={() => router.push('/admin')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-6">
           <ArrowLeft className="h-4 w-4" /> Retour
         </button>
 
-        {message && (
-          <div className="mb-4 px-4 py-3 rounded-lg bg-indigo-50 text-indigo-700 text-sm">{message}</div>
-        )}
+        {message && <div className="mb-4 px-4 py-3 rounded-lg bg-indigo-50 text-indigo-700 text-sm">{message}</div>}
 
         {/* Header */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
@@ -337,11 +370,7 @@ function AdminCommercantPage({ commercantId }: { commercantId: string }) {
               {commercant.telephone && <p className="text-sm text-gray-400 mt-1">📞 {commercant.telephone}</p>}
             </div>
             <div className="flex items-center gap-2">
-              {commercant.is_active ? (
-                <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-50 text-green-700">Actif</span>
-              ) : (
-                <span className="px-3 py-1 rounded-full text-sm font-medium bg-red-50 text-red-700">Suspendu</span>
-              )}
+              {getStatutBadge(commercant.abonnement_statut)}
             </div>
           </div>
 
@@ -366,7 +395,7 @@ function AdminCommercantPage({ commercantId }: { commercantId: string }) {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Actions</h2>
           <div className="flex flex-wrap gap-3">
-            {commercant.is_active ? (
+            {commercant.abonnement_statut === 'actif' ? (
               <button onClick={() => handleAction('suspendre')} className="px-4 py-2 bg-amber-50 text-amber-700 rounded-lg text-sm font-medium hover:bg-amber-100 transition-colors">
                 Suspendre
               </button>
@@ -375,12 +404,19 @@ function AdminCommercantPage({ commercantId }: { commercantId: string }) {
                 Réactiver
               </button>
             )}
-
             <button onClick={() => setShowReset(!showReset)} className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors">
               Reset mot de passe
             </button>
-
-            <button onClick={() => handleAction('supprimer')} className="px-4 py-2 bg-red-50 text-red-700 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors">
+            <button onClick={() => {
+              if (!confirm('Supprimer définitivement ce commerçant ?')) return;
+              fetch(`/api/admin/commercants/${commercantId}`, {
+                method: 'DELETE',
+                headers: { Authorization: 'Bearer ' + localStorage.getItem('stamply_admin_token') }
+              }).then(r => r.json()).then(d => {
+                if (d.success) router.push('/admin');
+                else setMessage(d.error);
+              });
+            }} className="px-4 py-2 bg-red-50 text-red-700 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors">
               Supprimer
             </button>
           </div>
@@ -394,7 +430,7 @@ function AdminCommercantPage({ commercantId }: { commercantId: string }) {
                 onChange={e => setResetPw(e.target.value)}
                 className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
-              <button onClick={() => handleAction('reset_pw')} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">
+              <button onClick={() => handleAction('reset-password')} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">
                 Confirmer
               </button>
             </div>
@@ -408,6 +444,7 @@ function AdminCommercantPage({ commercantId }: { commercantId: string }) {
             <div><dt className="text-gray-500">ID</dt><dd className="font-mono text-xs text-gray-700">{commercant.id}</dd></div>
             <div><dt className="text-gray-500">Inscrit le</dt><dd className="text-gray-700">{new Date(commercant.created_at).toLocaleString('fr-FR')}</dd></div>
             <div><dt className="text-gray-500">Stripe Customer</dt><dd className="font-mono text-xs text-gray-700">{commercant.stripe_customer_id || '—'}</dd></div>
+            <div><dt className="text-gray-500">Wallet configuré</dt><dd className="text-gray-700">{commercant.wallet_class_configured ? 'Oui' : 'Non'}</dd></div>
           </dl>
         </div>
       </div>
@@ -423,20 +460,17 @@ function AdminFeedbacksPage() {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    adminApi.feedbacks({ page, limit: 20 })
-      .then(res => setFeedbacks(res.feedbacks))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    fetch(`/api/admin/feedbacks?page=${page}`, {
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('stamply_admin_token') }
+    }).then(r => r.json()).then(d => setFeedbacks(d.data.feedbacks)).catch(console.error).finally(() => setLoading(false));
   }, [page]);
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Head><title>Admin — Feedbacks</title></Head>
       <AdminNav active="feedbacks" />
-
       <div className="max-w-5xl mx-auto px-6 py-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Feedbacks clients (&lt;4 étoiles)</h1>
-
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
           {loading ? (
             <div className="p-8 text-center text-gray-400">Chargement...</div>
@@ -479,23 +513,19 @@ function AdminFeedbacksPage() {
 function AdminLogsPage() {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
 
   useEffect(() => {
-    adminApi.logs({ page, limit: 50 })
-      .then(res => setLogs(res.logs))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [page]);
+    fetch('/api/admin/logs', {
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('stamply_admin_token') }
+    }).then(r => r.json()).then(d => setLogs(d.data.logs)).catch(console.error).finally(() => setLoading(false));
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Head><title>Admin — Logs</title></Head>
       <AdminNav active="logs" />
-
       <div className="max-w-5xl mx-auto px-6 py-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Logs d'administration</h1>
-
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
           {loading ? (
             <div className="p-8 text-center text-gray-400">Chargement...</div>
@@ -506,8 +536,7 @@ function AdminLogsPage() {
               <thead>
                 <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <th className="px-6 py-3">Action</th>
-                  <th className="px-6 py-3">Cible</th>
-                  <th className="px-6 py-3">Détails</th>
+                  <th className="px-6 py-3">Target</th>
                   <th className="px-6 py-3">Date</th>
                 </tr>
               </thead>
@@ -515,46 +544,13 @@ function AdminLogsPage() {
                 {logs.map(l => (
                   <tr key={l.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{l.action}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{l.target_type || '—'}</td>
-                    <td className="px-6 py-4 text-xs text-gray-500 font-mono max-w-xs truncate">{JSON.stringify(l.details) || '—'}</td>
+                    <td className="px-6 py-4 text-xs font-mono text-gray-500">{l.target_id?.slice(0, 8)}...</td>
                     <td className="px-6 py-4 text-sm text-gray-500">{new Date(l.created_at).toLocaleString('fr-FR')}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Stat Card Component ───────────────────────────────────────────────────────
-
-function StatCard({ label, value, icon: Icon, color, sub }: {
-  label: string;
-  value: number;
-  icon: any;
-  color: string;
-  sub?: string;
-}) {
-  const colorMap: Record<string, string> = {
-    indigo: 'bg-indigo-50 text-indigo-600',
-    green: 'bg-green-50 text-green-600',
-    blue: 'bg-blue-50 text-blue-600',
-    purple: 'bg-purple-50 text-purple-600',
-  };
-
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-      <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colorMap[color] || colorMap.indigo}`}>
-          <Icon className="h-5 w-5" />
-        </div>
-        <div>
-          <div className="text-2xl font-bold text-gray-900">{value}</div>
-          <div className="text-xs text-gray-500">{label}</div>
-          {sub && <div className="text-xs text-gray-400">{sub}</div>}
         </div>
       </div>
     </div>
