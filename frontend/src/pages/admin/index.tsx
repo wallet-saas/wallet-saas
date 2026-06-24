@@ -196,7 +196,7 @@ function AdminStatsPage() {
             <StatCard label="Commerçants" value={stats.commerçants.total} icon={Users} color="indigo" sub={`${stats.commerçants.actifs} actifs`} />
             <StatCard label="Cartes" value={stats.cartes} icon={CreditCard} color="green" />
             <StatCard label="Visites (30j)" value={stats.visites_30j} icon={TrendingUp} color="blue" />
-            <StatCard label="Boutiques" value={stats.boutiques} icon={Store} color="purple" />
+
           </div>
         )}
 
@@ -393,7 +393,7 @@ function AdminCommercantPage({ commercantId }: { commercantId: string }) {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4 mt-6">
             <div className="bg-gray-50 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-gray-900">{commercant.stats?.boutiques || 0}</div>
+
               <div className="text-xs text-gray-500 mt-1">Boutiques</div>
             </div>
             <div className="bg-gray-50 rounded-lg p-4 text-center">
@@ -753,7 +753,7 @@ function AdminClientsPage() {
                       <div className="text-xs text-gray-500">{c.client_email}</div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">{c.commercant_nom || '—'}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{c.boutique_nom || '—'}</td>
+
                     <td className="px-6 py-4 text-sm font-mono text-gray-500">{c.numero_carte || '—'}</td>
                     <td className="px-6 py-4">
                       <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">
@@ -849,7 +849,7 @@ function AdminScansPage() {
                         </div>
                         <div className="text-xs text-gray-500">{s.clients?.email || ''}</div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{s.boutiques?.nom || '—'}</td>
+
                       <td className="px-6 py-4">
                         <span className="inline-flex px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
                           {s.type_action || '—'}

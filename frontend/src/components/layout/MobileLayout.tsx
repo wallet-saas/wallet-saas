@@ -11,7 +11,7 @@ interface MobileLayoutProps {
 const navItems = [
   { icon: '🏠', label: 'Accueil', href: '/merchant/dashboard' },
   { icon: '📷', label: 'Scan', href: '/merchant/scan' },
-  { icon: '🏪', label: 'Boutiques', href: '/merchant/boutiques' },
+
   { icon: '📊', label: 'Stats', href: '/merchant/analytics' },
   { icon: '⚙️', label: 'Config', href: '/merchant/config' },
 ];

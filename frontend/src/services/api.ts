@@ -270,7 +270,7 @@ export interface Commercant {
   module_menu_jour?: boolean;
   module_offres_flash?: boolean;
   module_notifications?: boolean;
-  module_boutiques?: boolean;
+
   // Aliases used in frontend
   module_avis?: boolean;
   module_geoloc?: boolean;
@@ -306,8 +306,7 @@ export interface Commercant {
   auto_review_alerte_email?: boolean;
   // Avis templates (JSONB)
   avis_templates?: AvisTemplate[];
-  // Boutiques settings
-  boutique_defaut_id?: string;
+
   // Geoloc & Avis
   google_place_id?: string;
   google_place_url?: string;
@@ -486,46 +485,7 @@ export interface ClientDormant {
   carte?: Carte;
 }
 
-// ─── Boutiques (Multi-commerçant) ──────────────────────────────────────────────
-export const boutiquesApi = {
-  list: () =>
-    request<{ count: number; data: Boutique[] }>('/api/boutiques'),
-  get: (id: string) =>
-    request<Boutique>(`/api/boutiques/${id}`),
-  create: (data: Partial<Boutique>) =>
-    request<Boutique>('/api/boutiques', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-  update: (id: string, data: Partial<Boutique>) =>
-    request<Boutique>(`/api/boutiques/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }),
-  delete: (id: string) =>
-    request<{ message: string }>(`/api/boutiques/${id}`, {
-      method: 'DELETE',
-    }),
-  stats: (id: string) =>
-    request<{ totalCartes: number; totalVisites: number; totalAvis: number; totalOffres: number }>(
-      `/api/boutiques/${id}/stats`
-    ),
-  globalStats: () =>
-    request<{
-      totalBoutiques: number;
-      totalCartes: number;
-      totalVisites: number;
-      totalAvis: number;
-      totalNotifications: number;
-      boutiques: Array<{
-        id: string;
-        nom: string;
-        pointsRecompense: number;
-        totalCartes: number;
-        totalVisites: number;
-      }>;
-    }>('/api/boutiques/global-stats'),
-};
+
 
 // ─── Auto-Review (GMB) ─────────────────────────────────────────────────────────
 export const autoReviewApi = {
@@ -556,32 +516,6 @@ export const autoReviewApi = {
       `/api/auto-review/feedback?limit=${limit}&offset=${offset}`
     ),
 };
-
-// ─── Types ─────────────────────────────────────────────────────────────────────
-export interface Boutique {
-  id: string;
-  commercant_id: string;
-  nom: string;
-  adresse?: string;
-  ville?: string;
-  code_postal?: string;
-  telephone?: string;
-  email?: string;
-  google_place_url?: string;
-  google_place_id?: string;
-  carte_couleur_primaire: string;
-  carte_couleur_secondaire: string;
-  carte_programme_nom?: string;
-  carte_recompense_description?: string;
-  points_recompense: number;
-  logo_url?: string;
-  template_type?: string;
-  module_avis_google: boolean;
-  delai_notif_avis_minutes: number;
-  actif: boolean;
-  created_at: string;
-  updated_at: string;
-}
 
 export interface WalletSetupData {
   template_type?: string;

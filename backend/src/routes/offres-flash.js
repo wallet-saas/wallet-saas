@@ -65,7 +65,6 @@ router.post('/', authMiddleware, [
   body('debut').optional().isISO8601(),
   body('fin').optional().isISO8601(),
   body('max_reclamations').optional().isInt({ min: 1 }),
-  body('boutique_id').optional().isUUID(),
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -82,22 +81,16 @@ router.post('/', authMiddleware, [
       prix_original, prix_reduit, code_promo,
       debut = now.toISOString(),
       fin = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
-      max_reclamations, boutique_id,
+      max_reclamations,
     } = req.body;
 
-    // Vérifier qu'il n'y a pas déjà une offre active pour cette boutique
+    // Vérifier qu'il n'y a pas déjà une offre active
     // Fallback: si la colonne 'active' n'existe pas, on filtre par date fin >= now
     let activeCheck = supabase
       .from('offres_flash')
       .select('id, titre')
       .eq('commercant_id', commercantId)
       .gte('fin', now.toISOString());
-
-    if (boutique_id) {
-      activeCheck = activeCheck.eq('boutique_id', boutique_id);
-    } else {
-      activeCheck = activeCheck.is('boutique_id', null);
-    }
 
     const { data: existing } = await activeCheck.maybeSingle();
     if (existing) {
@@ -113,7 +106,6 @@ router.post('/', authMiddleware, [
       .from('offres_flash')
       .insert({
         commercant_id: commercantId,
-        boutique_id: boutique_id || null,
         titre,
         description: description || null,
         image_url: image_url || null,
@@ -150,8 +142,7 @@ router.post('/', authMiddleware, [
 // GET /api/offres-flash
 // Lister les offres flash du commerçant
 // ============================================
-router.get('/', authMiddleware, [
-  query('boutique_id').optional().isUUID(),
+router.get('/', [
   query('status').optional().isIn(['active', 'past', 'all']),
 ], async (req, res) => {
   const errors = validationResult(req);
@@ -161,7 +152,7 @@ router.get('/', authMiddleware, [
 
   try {
     const commercantId = req.commercant.id;
-    const { boutique_id, status = 'active' } = req.query;
+    const { status = 'active' } = req.query;
     const now = new Date().toISOString();
 
     let query = supabase
@@ -169,10 +160,6 @@ router.get('/', authMiddleware, [
       .select('*')
       .eq('commercant_id', commercantId)
       .order('created_at', { ascending: false });
-
-    if (boutique_id) {
-      query = query.eq('boutique_id', boutique_id);
-    }
 
     if (status === 'active') {
       query = query.gte('fin', now);
@@ -219,8 +206,7 @@ router.get('/public', [
         fin,
         commercant_id,
         boutique_id,
-        commercants(nom, carte_logo_url),
-        boutiques(nom, adresse, ville)
+        commercants(nom, carte_logo_url)
       `)
       .gte('fin', now)
       .order('debut', { ascending: false })
@@ -233,10 +219,10 @@ router.get('/public', [
     let offres = data || [];
     if (latitude && longitude) {
       offres = offres.filter(o => {
-        if (!o.boutiques || !o.boutiques.latitude) return true; // Garder si pas de GPS
+      if (!o.commercants || !o.commercants.latitude) return true;// Garder si pas de GPS
         const dist = haversineDistance(
           parseFloat(latitude), parseFloat(longitude),
-          o.boutiques.latitude, o.boutiques.longitude
+          o.commercants.latitude, o.commercants.longitude
         );
         return dist <= parseInt(distance_km);
       });
@@ -433,16 +419,11 @@ router.post('/:id/vue', async (req, res) => {
 router.get('/stats', authMiddleware, async (req, res) => {
   try {
     const commercantId = req.commercant.id;
-    const { boutique_id } = req.query;
 
     let query = supabase
       .from('offres_flash')
       .select('id, titre, reclamations_count, vues_count, debut, fin, active')
       .eq('commercant_id', commercantId);
-
-    if (boutique_id) {
-      query = query.eq('boutique_id', boutique_id);
-    }
 
     const { data, error } = await query;
     if (error) throw error;

@@ -42,7 +42,7 @@ export interface AdminStats {
   commerçants: { total: number; actifs: number; inactifs: number };
   cartes: number;
   visites_30j: number;
-  boutiques: number;
+
 }
 
 export interface AdminCommercant {
@@ -59,7 +59,7 @@ export interface AdminCommercant {
   created_at: string;
   updated_at?: string;
   is_active?: boolean;
-  stats?: { boutiques: number; cartes: number; visites_30j: number };
+  stats?: { cartes: number; visites_30j: number };
 }
 
 export interface AdminCommercantsList {
@@ -137,10 +137,6 @@ export interface AdminScan {
   id: string;
   client_id: string | null;
   commercant_id: string;
-  boutique_id: string | null;
-  type_action: string;
-  created_at: string;
-  boutiques?: { nom: string };
 }
 
 export interface AdminScansList {

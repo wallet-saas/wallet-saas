@@ -123,12 +123,6 @@ export default function MobileDashboard() {
             color="#6C63FF"
           />
           <QuickAction
-            icon="🏪"
-            label="Mes boutiques"
-            onClick={() => router.push('/merchant/boutiques')}
-            color="#10B981"
-          />
-          <QuickAction
             icon="🎁"
             label="Récompenses"
             onClick={() => router.push('/merchant/rewards')}

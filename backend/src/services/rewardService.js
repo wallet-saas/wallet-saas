@@ -54,7 +54,7 @@ const DEFAULT_REWARD_CONFIG = {
 /**
  * Récupérer la config récompenses d'un commerçant
  */
-async function getRewardConfig(commercantId, boutiqueId = null) {
+async function getRewardConfig(commercantId) {
   const { data, error } = await supabase
     .from('commercants')
     .select('reward_config, parametres')
@@ -109,9 +109,9 @@ async function saveRewardConfig(commercantId, config) {
  * Vérifier si une récompense est débloquée après un scan
  * Appelé par le scanController après chaque scan
  */
-async function checkRewardUnlocked(carteId, commercantId, newPoints, boutiqueId = null) {
+async function checkRewardUnlocked(carteId, commercantId, newPoints) {
   try {
-    const client = await getRewardConfig(commercantId, boutiqueId);
+    const client = await getRewardConfig(commercantId);
     if (!client.enabled) return null;
 
     // Déterminer le nombre total de visites pour cette carte
@@ -155,7 +155,6 @@ async function checkRewardUnlocked(carteId, commercantId, newPoints, boutiqueId 
           await supabase.from('recompenses_debloquees').insert({
             carte_id: carteId,
             commercant_id: commercantId,
-            boutique_id: boutiqueId,
             niveau: i,
             type: 'visites',
             seuil,
@@ -315,7 +314,7 @@ async function getCarteRewards(carteId) {
 /**
  * Récupérer les récompenses du commerçant (toutes les cartes)
  */
-async function getMerchantRewards(commercantId, boutiqueId = null, limit = 50) {
+async function getMerchantRewards(commercantId, limit = 50) {
   let query = supabase
     .from('recompenses_debloquees')
     .select(`
@@ -327,10 +326,6 @@ async function getMerchantRewards(commercantId, boutiqueId = null, limit = 50) {
     .order('created_at', { ascending: false })
     .limit(limit);
 
-  if (boutiqueId) {
-    query = query.eq('boutique_id', boutiqueId);
-  }
-
   const { data, error } = await query;
   if (error) throw error;
   return data || [];
@@ -339,13 +334,11 @@ async function getMerchantRewards(commercantId, boutiqueId = null, limit = 50) {
 /**
  * Statistiques des récompenses
  */
-async function getRewardStats(commercantId, boutiqueId = null) {
+async function getRewardStats(commercantId) {
   let query = supabase
     .from('recompenses_debloquees')
     .select('niveau, action')
     .eq('commercant_id', commercantId);
-
-  if (boutiqueId) query = query.eq('boutique_id', boutiqueId);
 
   const { data, error } = await query;
   if (error) throw error;

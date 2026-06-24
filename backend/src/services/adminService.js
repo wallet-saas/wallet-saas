@@ -56,12 +56,6 @@ async function getCommercantDetail(commercantId) {
 
   if (error) throw error;
 
-  // Compter les boutiques
-  const { count: boutiquesCount } = await supabase
-    .from('boutiques')
-    .select('id', { count: 'exact', head: true })
-    .eq('commercant_id', commercantId);
-
   // Compter les cartes
   const { count: cartesCount } = await supabase
     .from('cartes')
@@ -86,7 +80,6 @@ async function getCommercantDetail(commercantId) {
   return {
     ...data,
     stats: {
-      boutiques: boutiquesCount || 0,
       cartes: cartesCount || 0,
       visites_30j: visites30j || 0,
     },
@@ -190,11 +183,6 @@ async function getGlobalStats() {
     .select('id', { count: 'exact', head: true })
     .gte('date_visite', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
 
-  // Total boutiques
-  const { count: totalBoutiques } = await supabase
-    .from('boutiques')
-    .select('id', { count: 'exact', head: true });
-
   // Commerçants récents (5 derniers)
   const { data: commercantsRecents } = await supabase
     .from('commercants')
@@ -218,7 +206,6 @@ async function getGlobalStats() {
     inscriptions_par_mois: inscriptionsParMois,
     cartes: totalCartes || 0,
     visites_30j: visites30j || 0,
-    boutiques: totalBoutiques || 0,
     commercants_recents: commercantsRecents || [],
   };
 }
