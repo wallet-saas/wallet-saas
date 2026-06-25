@@ -302,27 +302,39 @@ async function getScanStats() {
 // ─── Top commerçants par engagement ───────────────────────────────────────────
 
 async function getTopCommerçants() {
+  // Récupérer les commerçants actifs
   const { data, error } = await supabase
     .from('commercants')
-    .select(`
-      id, nom_enseigne, abonnement_statut, created_at,
-      cartes:cartes(count),
-      visites:visites(count)
-    `)
+    .select('id, nom_enseigne, abonnement_statut, created_at')
     .eq('abonnement_statut', 'actif')
-    .order('visites', { ascending: false })
-    .limit(10);
+    .limit(50);
 
   if (error) throw error;
 
-  return (data || []).map(c => ({
-    id: c.id,
-    nom: c.nom_enseigne,
-    statut: c.abonnement_statut,
-    cartes: c.cartes?.[0]?.count || 0,
-    visites: c.visites?.[0]?.count || 0,
-    inscrit_le: c.created_at,
-  }));
+  // Pour chaque commerçant, compter les visites et cartes
+  const commerçants = [];
+  for (const c of (data || [])) {
+    const { count: nbCartes } = await supabase
+      .from('cartes').select('id', { count: 'exact', head: true })
+      .eq('commercant_id', c.id);
+    
+    const { count: nbVisites } = await supabase
+      .from('visites').select('id', { count: 'exact', head: true })
+      .eq('commercant_id', c.id);
+
+    commerçants.push({
+      id: c.id,
+      nom: c.nom_enseigne,
+      statut: c.abonnement_statut,
+      cartes: nbCartes || 0,
+      visites: nbVisites || 0,
+      inscrit_le: c.created_at,
+    });
+  }
+
+  // Trier par visites décroissantes et prendre top 10
+  commerçants.sort((a, b) => b.visites - a.visites);
+  return commerçants.slice(0, 10);
 }
 
 // ─── Projections ──────────────────────────────────────────────────────────────
