@@ -1,551 +1,142 @@
 /**
- * Stamply — Analytics / Tableau de bord
+ * Stamply — Routes Analytics Admin
  * 
- * Statistiques et graphiques pour les commerçants :
- * - Visites (quotidiennes, hebdomadaires, mensuelles)
- * - Rétention des clients
- * - Avis (moyenne, distribution)
- * - Revenus estimés
- * - Comparaison par boutique
+ * API endpoints pour le dashboard analytics avancé :
+ * - GET /api/analytics/dashboard → Toutes les métriques
+ * - GET /api/analytics/mrr
+ * - GET /api/analytics/churn
+ * - GET /api/analytics/ltv
+ * - GET /api/analytics/arpu
+ * - GET /api/analytics/signups
+ * - GET /api/analytics/revenue
+ * - GET /api/analytics/retention
+ * - GET /api/analytics/scans
+ * - GET /api/analytics/top-commerçants
+ * - GET /api/analytics/projections
  */
 
 const express = require('express');
 const router = express.Router();
-const { supabase } = require('../config/supabase');
-const authMiddleware = require('../middleware/authMiddleware');
-const { query, validationResult } = require('express-validator');
+const analyticsService = require('../services/analyticsService');
 
-// ============================================
-// GET /api/analytics/dashboard
-// Dashboard complet avec toutes les stats
-// ============================================
-router.get('/dashboard', authMiddleware, [
-  query('periode').optional().isIn(['7d', '30d', '90d', '1y', 'all']),
-  query('boutique_id').optional().isUUID(),
-], async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ success: false, errors: errors.array() });
-  }
+// ─── GET /api/analytics/dashboard ─────────────────────────────────────────────
 
+router.get('/dashboard', async (req, res) => {
   try {
-    const commercantId = req.commercant.id;
-    const { periode = '30d', boutique_id } = req.query;
-
-    // Calculer la date de début
-    const now = new Date();
-    let dateDebut;
-    switch (periode) {
-      case '7d': dateDebut = new Date(now - 7 * 24 * 60 * 60 * 1000); break;
-      case '30d': dateDebut = new Date(now - 30 * 24 * 60 * 60 * 1000); break;
-      case '90d': dateDebut = new Date(now - 90 * 24 * 60 * 60 * 1000); break;
-      case '1y': dateDebut = new Date(now - 365 * 24 * 60 * 60 * 1000); break;
-      default: dateDebut = new Date(2020, 0, 1);
-    }
-
-    const dateDebutISO = dateDebut.toISOString();
-
-    // Construire les filtres de base
-    const baseFilter = (q) => {
-      let filtered = q.eq('commercant_id', commercantId);
-      if (boutique_id) filtered = filtered.eq('boutique_id', boutique_id);
-      return filtered;
-    };
-
-    // ===== VISITES =====
-    let visitesQuery = supabase
-      .from('visites')
-      .select('id, date_visite, client_id')
-      .gte('date_visite', dateDebutISO);
-
-    visitesQuery = baseFilter(visitesQuery);
-    const { data: visites } = await visitesQuery;
-
-    // Visites par jour
-    const visitesParJour = {};
-    (visites || []).forEach(v => {
-      const jour = v.date_visite.split('T')[0];
-      visitesParJour[jour] = (visitesParJour[jour] || 0) + 1;
-    });
-
-    // Clients uniques
-    const clientsUniques = new Set((visites || []).map(v => v.client_id)).size;
-
-    // ===== AVIS =====
-    let avisQuery = supabase
-      .from('avis')
-      .select('id, note, created_at')
-      .gte('created_at', dateDebutISO);
-
-    avisQuery = baseFilter(avisQuery);
-    const { data: avis } = await avisQuery;
-
-    const moyenneAvis = avis?.length
-      ? (avis.reduce((sum, a) => sum + a.note, 0) / avis.length).toFixed(1)
-      : 0;
-
-    const distributionAvis = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    (avis || []).forEach(a => {
-      if (a.note >= 1 && a.note <= 5) distributionAvis[a.note]++;
-    });
-
-    // ===== CLIENTS (rétention) =====
-    // Clients qui ont visité au moins 2 fois
-    const { data: clientsRecurrents } = await supabase
-      .from('visites')
-      .select('client_id')
-      .eq('commercant_id', commercantId)
-      .gte('date_visite', new Date(now - 90 * 24 * 60 * 60 * 1000).toISOString());
-
-    const visitesParClient = {};
-    (clientsRecurrents || []).forEach(v => {
-      visitesParClient[v.client_id] = (visitesParClient[v.client_id] || 0) + 1;
-    });
-
-    const clientsRecurrentsCount = Object.values(visitesParClient).filter(c => c >= 2).length;
-
-    // ===== OFFRES FLASH =====
-    let offresQuery = supabase
-      .from('offres_flash')
-      .select('id, reclamations_count, vues_count')
-      .eq('commercant_id', commercantId);
-
-    if (boutique_id) offresQuery = offresQuery.eq('boutique_id', boutique_id);
-    const { data: offres } = await offresQuery;
-
-    const totalVuesOffres = offres?.reduce((sum, o) => sum + (o.vues_count || 0), 0) || 0;
-    const totalReclamations = offres?.reduce((sum, o) => sum + (o.reclamations_count || 0), 0) || 0;
-
-    // ===== COMPARAISON PAR BOUTIQUE =====
-    let boutiquesQuery = supabase
-      .from('boutiques')
-      .select('id, nom')
-      .eq('commercant_id', commercantId);
-
-    const { data: boutiques } = await boutiquesQuery;
-
-    const statsParBoutique = [];
-    if (boutiques && boutiques.length > 0) {
-      for (const boutique of boutiques) {
-        const { data: vBoutique } = await supabase
-          .from('visites')
-          .select('id', { count: 'exact', head: true })
-          .eq('boutique_id', boutique.id)
-          .gte('date_visite', dateDebutISO);
-
-        const { data: aBoutique } = await supabase
-          .from('avis')
-          .select('note')
-          .eq('boutique_id', boutique.id)
-          .gte('created_at', dateDebutISO);
-
-        const moyBoutique = aBoutique?.length
-          ? (aBoutique.reduce((s, a) => s + a.note, 0) / aBoutique.length).toFixed(1)
-          : 0;
-
-        statsParBoutique.push({
-          boutique_id: boutique.id,
-          nom: boutique.nom,
-          visites: vBoutique?.length || 0,
-          avis_moyenne: parseFloat(moyBoutique),
-          avis_count: aBoutique?.length || 0,
-        });
-      }
-    }
-
-    // ===== COMPARAISON PÉRIODÉ PRÉCÉDENTE =====
-    const dureePeriode = now.getTime() - dateDebut.getTime();
-    const dateDebutPrecedente = new Date(dateDebut.getTime() - dureePeriode).toISOString();
-
-    const { count: visitesPrecedentes } = await supabase
-      .from('visites')
-      .select('id', { count: 'exact', head: true })
-      .eq('commercant_id', commercantId)
-      .gte('date_visite', dateDebutPrecedente)
-      .lt('date_visite', dateDebutISO);
-
-    const evolutionVisites = visitesPrecedentes > 0
-      ? (((visites?.length || 0) - visitesPrecedentes) / visitesPrecedentes * 100).toFixed(1)
-      : null;
-
-    // ===== ASSEMBLER LE DASHBOARD =====
-    const dashboard = {
-      periode,
-      date_debut: dateDebutISO,
-      date_fin: now.toISOString(),
-
-      visites: {
-        total: visites?.length || 0,
-        par_jour: visitesParJour,
-        clients_uniques: clientsUniques,
-        evolution_pourcentage: evolutionVisites ? parseFloat(evolutionVisites) : null,
-      },
-
-      clients: {
-        uniques: clientsUniques,
-        recurrents: clientsRecurrentsCount,
-        taux_retention: clientsUniques > 0
-          ? ((clientsRecurrentsCount / clientsUniques) * 100).toFixed(1)
-          : 0,
-      },
-
-      avis: {
-        total: avis?.length || 0,
-        moyenne: parseFloat(moyenneAvis),
-        distribution: distributionAvis,
-        taux_satisfaction: avis?.length > 0
-          ? (((distributionAvis[4] + distributionAvis[5]) / avis.length) * 100).toFixed(1)
-          : 0,
-      },
-
-      offres_flash: {
-        vues: totalVuesOffres,
-        reclamations: totalReclamations,
-        taux_conversion: totalVuesOffres > 0
-          ? ((totalReclamations / totalVuesOffres) * 100).toFixed(1)
-          : 0,
-      },
-
-      par_boutique: statsParBoutique,
-    };
-
+    const dashboard = await analyticsService.getAnalyticsDashboard();
     res.json({ success: true, data: dashboard });
   } catch (err) {
-    console.error('GET /analytics/dashboard error:', err);
+    console.error('[Analytics] Dashboard error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// ============================================
-// GET /api/analytics/visites-hebdo
-// Visites des 7 derniers jours (pour graphique)
-// ============================================
-router.get('/visites-hebdo', authMiddleware, async (req, res) => {
+// ─── GET /api/analytics/mrr ───────────────────────────────────────────────────
+
+router.get('/mrr', async (req, res) => {
   try {
-    const commercantId = req.commercant.id;
-    const { boutique_id } = req.query;
-    const now = new Date();
-    const jours = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-
-    const visitesParJour = {};
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const cle = jours[d.getDay()] + ' ' + d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-      visitesParJour[cle] = 0;
-    }
-
-    let query = supabase
-      .from('visites')
-      .select('date_visite')
-      .eq('commercant_id', commercantId)
-      .gte('date_visite', new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString());
-
-    if (boutique_id) query = query.eq('boutique_id', boutique_id);
-
-    const { data, error } = await query;
-    if (error) throw error;
-
-    (data || []).forEach(v => {
-      const d = new Date(v.date_visite);
-      const cle = jours[d.getDay()] + ' ' + d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-      if (visitesParJour[cle] !== undefined) {
-        visitesParJour[cle]++;
-      }
-    });
-
-    res.json({
-      success: true,
-      data: {
-        labels: Object.keys(visitesParJour),
-        values: Object.values(visitesParJour),
-      },
-    });
+    const mrr = await analyticsService.getMRR();
+    res.json({ success: true, data: mrr });
   } catch (err) {
-    console.error('GET /analytics/visites-hebdo error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// ============================================
-// GET /api/analytics/clients-top
-// Top 10 des clients les plus fidèles
-// ============================================
-router.get('/clients-top', authMiddleware, [
-  query('limit').optional().isInt({ min: 1, max: 50 }),
-], async (req, res) => {
+// ─── GET /api/analytics/churn ─────────────────────────────────────────────────
+
+router.get('/churn', async (req, res) => {
   try {
-    const commercantId = req.commercant.id;
-    const { boutique_id, limit = 10 } = req.query;
-
-    let query = supabase
-      .from('visites')
-      .select('client_id, clients(nom, email, telephone)')
-      .eq('commercant_id', commercantId);
-
-    if (boutique_id) query = query.eq('boutique_id', boutique_id);
-
-    const { data, error } = await query;
-    if (error) throw error;
-
-    // Compter les visites par client
-    const clientMap = new Map();
-    (data || []).forEach(v => {
-      const id = v.client_id;
-      if (!clientMap.has(id)) {
-        clientMap.set(id, {
-          client_id: id,
-          nom: v.clients?.nom || 'Client #' + id.substring(0, 8),
-          visites: 0,
-        });
-      }
-      clientMap.get(id).visites++;
-    });
-
-    // Trier par nombre de visites
-    const topClients = Array.from(clientMap.values())
-      .sort((a, b) => b.visites - a.visites)
-      .slice(0, parseInt(limit));
-
-    res.json({ success: true, data: topClients });
+    const churn = await analyticsService.getChurnRate();
+    res.json({ success: true, data: churn });
   } catch (err) {
-    console.error('GET /analytics/clients-top error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// ============================================
-// GET /api/analytics/revenus-estimes
-// Revenus moyens par clients / jour sur la periode
-// ============================================
-router.get('/revenus-estimes', authMiddleware, async (req, res) => {
+// ─── GET /api/analytics/ltv ───────────────────────────────────────────────────
+
+router.get('/ltv', async (req, res) => {
   try {
-    const commercantId = req.commercant.id;
-    const { periode = '30d', moyenne_achat = 15, boutique_id } = req.query;
-
-    const now = new Date();
-    const jours = periode === '7d' ? 7 : periode === '90d' ? 90 : 30;
-    const dateDebut = new Date(now - jours * 24 * 60 * 60 * 1000);
-
-    let query = supabase
-      .from('visites')
-      .select('id')
-      .eq('commercant_id', commercantId)
-      .gte('date_visite', dateDebut.toISOString());
-
-    if (boutique_id) query = query.eq('boutique_id', boutique_id);
-
-    const { data, error } = await query;
-    if (error) throw error;
-
-    const totalVisites = data?.length || 0;
-    const nbJours = Math.max(1, jours);
-    const visitesJour = (totalVisites / nbJours).toFixed(1);
-    const revenusEstimesTotal = totalVisites * parseFloat(moyenne_achat);
-    const revenusEstimesJour = (revenusEstimesTotal / nbJours).toFixed(2);
-    const revenusEstimesMois = (revenusEstimesJour * 30).toFixed(2);
-
-    res.json({
-      success: true,
-      data: {
-        periode: `${jours} jours`,
-        total_visites: totalVisites,
-        visites_par_jour: parseFloat(visitesJour),
-        moyenne_achat_estimee: parseFloat(moyenne_achat),
-        revenus_estimes_total: parseFloat(revenusEstimesTotal.toFixed(2)),
-        revenus_estimes_jour: parseFloat(revenusEstimesJour),
-        revenus_estimes_mois: parseFloat(revenusEstimesMois),
-        cout_stamply_mois: 49,
-        roi_estime: (parseFloat(revenusEstimesMois) - 49).toFixed(2),
-      },
-    });
+    const ltv = await analyticsService.getLTV();
+    res.json({ success: true, data: ltv });
   } catch (err) {
-    console.error('GET /analytics/revenus-estimes error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// ─── GET /api/analytics/overview ───────────────────────────────────────────────
-// Vue d'ensemble pour le dashboard principal (compatible frontend existant)
-router.get('/overview', authMiddleware, async (req, res) => {
+// ─── GET /api/analytics/arpu ──────────────────────────────────────────────────
+
+router.get('/arpu', async (req, res) => {
   try {
-    const commercantId = req.commercant.id;
-
-    const { count: totalCartes } = await supabase
-      .from('cartes')
-      .select('id', { count: 'exact', head: true })
-      .eq('commercant_id', commercantId);
-
-    const { count: visitesLastMonth } = await supabase
-      .from('visites')
-      .select('id', { count: 'exact', head: true })
-      .eq('commercant_id', commercantId)
-      .gte('date_visite', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
-
-    const { count: totalNotifications } = await supabase
-      .from('notifications')
-      .select('id', { count: 'exact', head: true })
-      .eq('commercant_id', commercantId);
-
-    const { data: toutesCartes } = await supabase
-      .from('cartes')
-      .select('id, client_id, last_visit_at')
-      .eq('commercant_id', commercantId);
-
-    const clientsDormants = (toutesCartes || []).filter(c => {
-      if (!c.last_visit_at) return true;
-      const daysSinceVisit = (Date.now() - new Date(c.last_visit_at).getTime()) / (1000 * 60 * 60 * 24);
-      return daysSinceVisit > 30;
-    }).length;
-
-    const { count: cartesInstalleesCetteSemaine } = await supabase
-      .from('cartes')
-      .select('id', { count: 'exact', head: true })
-      .eq('commercant_id', commercantId)
-      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
-
-    res.json({
-      success: true,
-      data: {
-        totalCartes: totalCartes || 0,
-        visitesLastMonth: visitesLastMonth || 0,
-        totalNotifications: totalNotifications || 0,
-        clientsDormants,
-        cartesInstalleesCetteSemaine: cartesInstalleesCetteSemaine || 0,
-      },
-    });
+    const arpu = await analyticsService.getARPU();
+    res.json({ success: true, data: arpu });
   } catch (err) {
-    console.error('[analytics] GET /overview error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// ─── GET /api/analytics/cards ──────────────────────────────────────────────────
-// Évolution des cartes installées (30 derniers jours) - compatible frontend
-router.get('/cards', authMiddleware, async (req, res) => {
+// ─── GET /api/analytics/signups ───────────────────────────────────────────────
+
+router.get('/signups', async (req, res) => {
   try {
-    const commercantId = req.commercant.id;
-    const days = parseInt(req.query.days) || 30;
-
-    const { data: cartes } = await supabase
-      .from('cartes')
-      .select('created_at')
-      .eq('commercant_id', commercantId)
-      .gte('created_at', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString());
-
-    const parJour = {};
-    let cumul = 0;
-    const result = [];
-
-    for (let i = days - 1; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
-      parJour[dateStr] = 0;
-    }
-
-    (cartes || []).forEach(c => {
-      const dateStr = c.created_at.split('T')[0];
-      if (parJour[dateStr] !== undefined) {
-        parJour[dateStr]++;
-      }
-    });
-
-    Object.entries(parJour).forEach(([date, count]) => {
-      cumul += count;
-      result.push({ date, count, cumul });
-    });
-
-    res.json({
-      success: true,
-      data: {
-        timeSeries: result,
-        visitesParJour: result.map(r => ({ date: r.date, count: r.count })),
-      },
-    });
+    const signups = await analyticsService.getSignupHistory();
+    res.json({ success: true, data: signups });
   } catch (err) {
-    console.error('[analytics] GET /cards error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// ─── GET /api/analytics/notifications ─────────────────────────────────────────
-// Statistiques notifications pour la page analytics
-router.get('/notifications', authMiddleware, async (req, res) => {
+// ─── GET /api/analytics/revenue ───────────────────────────────────────────────
+
+router.get('/revenue', async (req, res) => {
   try {
-    const commercantId = req.commercant.id;
-    const { data: notifs, error } = await supabase
-      .from('notifications')
-      .select('id, titre, type, cible, total_envoyes, total_ouverts, created_at')
-      .eq('commercant_id', commercantId)
-      .order('created_at', { ascending: false })
-      .limit(10);
-    if (error) throw error;
-    res.json({ success: true, data: { notifications: notifs || [] } });
+    const revenue = await analyticsService.getRevenueHistory();
+    res.json({ success: true, data: revenue });
   } catch (err) {
-    console.error('[analytics] GET /notifications error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// ─── GET /api/analytics/clients-dormants ──────────────────────────────────────
-// Liste des clients dormants (pas de visite depuis 30j)
-router.get('/clients-dormants', authMiddleware, async (req, res) => {
+// ─── GET /api/analytics/retention ─────────────────────────────────────────────
+
+router.get('/retention', async (req, res) => {
   try {
-    const commercantId = req.commercant.id;
-    const { data: cartes, error } = await supabase
-      .from('cartes')
-      .select('id, pass_serial_number, points, last_visit_at, created_at')
-      .eq('commercant_id', commercantId);
-    if (error) throw error;
-    const dormants = (cartes || []).filter(c => {
-      if (!c.last_visit_at) return true;
-      const daysSince = (Date.now() - new Date(c.last_visit_at).getTime()) / (1000 * 60 * 60 * 24);
-      return daysSince > 30;
-    });
-    res.json({ success: true, data: { clients: dormants, total: dormants.length } });
+    const retention = await analyticsService.getRetention();
+    res.json({ success: true, data: retention });
   } catch (err) {
-    console.error('[analytics] GET /clients-dormants error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// ─── GET /api/analytics/avis ──────────────────────────────────────────────────
-// Statistiques avis pour la page analytics
-router.get('/avis', authMiddleware, async (req, res) => {
+// ─── GET /api/analytics/scans ─────────────────────────────────────────────────
+
+router.get('/scans', async (req, res) => {
   try {
-    const commercantId = req.commercant.id;
-    const { data: avis, error } = await supabase
-      .from('avis')
-      .select('id, note, source, created_at, reponse_envoyee')
-      .eq('commercant_id', commercantId)
-      .order('created_at', { ascending: false })
-      .limit(20);
-    if (error) throw error;
-    const total = avis?.length || 0;
-    const moyenne = total > 0 ? (avis.reduce((s, a) => s + a.note, 0) / total).toFixed(1) : 0;
-    const repondus = avis?.filter(a => a.reponse_envoyee).length || 0;
-    res.json({ success: true, data: { avis: avis || [], total, moyenne: parseFloat(moyenne), repondus } });
+    const scans = await analyticsService.getScanStats();
+    res.json({ success: true, data: scans });
   } catch (err) {
-    console.error('[analytics] GET /avis error:', err);
+    res.status(500). json({ success: false, error: err.message });
+  }
+});
+
+// ─── GET /api/analytics/top-commerçants ───────────────────────────────────────
+
+router.get('/top-commerçants', async (req, res) => {
+  try {
+    const top = await analyticsService.getTopCommerçants();
+    res.json({ success: true, data: top });
+  } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// ─── GET /api/analytics/offres ────────────────────────────────────────────────
-// Statistiques offres pour la page analytics
-router.get('/offres', authMiddleware, async (req, res) => {
+// ─── GET /api/analytics/projections ───────────────────────────────────────────
+
+router.get('/projections', async (req, res) => {
   try {
-    const commercantId = req.commercant.id;
-    const { data: offres, error } = await supabase
-      .from('offres')
-      .select('id, titre, code_promo, actif, total_envoyes, total_utilises, date_debut, date_fin, created_at')
-      .eq('commercant_id', commercantId)
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    res.json({ success: true, data: { offres: offres || [] } });
+    const projections = await analyticsService.getProjections();
+    res.json({ success: true, data: projections });
   } catch (err) {
-    console.error('[analytics] GET /offres error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });

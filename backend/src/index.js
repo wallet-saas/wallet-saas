@@ -52,6 +52,7 @@ const offresFlashRoutes = require('./routes/offres-flash');
 const rewardsRoutes = require('./routes/rewards');
 const qrCodeRoutes = require('./routes/qrCode');
 const adminRoutes = require('./routes/admin');
+const analyticsV2Routes = require('./routes/analytics');
 
 app.use('/api/commercants', commercantsRoutes);
 app.use('/api/auth', authRoutes);
@@ -72,6 +73,7 @@ app.use('/api/offres-flash', offresFlashRoutes);
 app.use('/api/rewards', rewardsRoutes);
 app.use('/api/qr', qrCodeRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/analytics/v2', analyticsV2Routes);
 
 // Note: /health is also registered via healthRoutes above (line 54)
 

@@ -89,6 +89,7 @@ function AdminNav({ active }: { active: string }) {
   const router = useRouter();
   const navItems = [
     { key: 'dashboard', label: 'Dashboard', icon: TrendingUp },
+    { key: 'analytics', label: '📊 Analytics', icon: TrendingUp },
     { key: 'commercants', label: 'Commerçants', icon: Users },
     { key: 'clients', label: 'Clients', icon: Users },
     { key: 'scans', label: 'Scans', icon: ScanLine },

@@ -1,274 +1,417 @@
+/**
+ * Stamply — Service Analytics Avancé
+ * 
+ * Métriques style Whop/Paddle :
+ * - MRR (Monthly Recurring Revenue)
+ * - Churn rate
+ * - LTV (Lifetime Value)
+ * - ARPU (Average Revenue Per User)
+ * - Courbes d'inscriptions / revenus
+ * - Rétention
+ * - Projections
+ */
+
 const { supabase } = require('../config/supabase');
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+const STRIPE_PRICE_MONTHLY = 49; // €/mois — prix Stamply
 
-/** Retourne une date ISO il y a N jours */
-function daysAgo(n) {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return d.toISOString();
+// ─── MRR (Monthly Recurring Revenue) ─────────────────────────────────────────
+
+async function getMRR() {
+  const { data: actifs, error } = await supabase
+    .from('commercants')
+    .select('id, abonnement_statut, stripe_subscription_id, created_at')
+    .eq('abonnement_statut', 'actif');
+
+  if (error) throw error;
+
+  const count = (actifs || []).length;
+  return {
+    mrr: count * STRIPE_PRICE_MONTHLY,
+    annual_run_rate: count * STRIPE_PRICE_MONTHLY * 12,
+    paying_customers: count,
+  };
 }
 
-/** Groupe un tableau d'items par date (YYYY-MM-DD) à partir d'un champ timestamp */
-function groupByDay(items, dateField) {
-  return items.reduce((acc, item) => {
-    const day = item[dateField]?.slice(0, 10);
-    if (!day) return acc;
-    acc[day] = (acc[day] || 0) + 1;
-    return acc;
-  }, {});
-}
+// ─── Churn Rate ───────────────────────────────────────────────────────────────
 
-/** Convertit un objet { 'YYYY-MM-DD': count } en tableau trié pour graphe */
-function toTimeSeries(grouped) {
-  return Object.entries(grouped)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, count]) => ({ date, count }));
-}
+async function getChurnRate() {
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+  const sixtyDaysAgo = new Date(now - 60 * 24 * 60 * 60 * 1000);
 
-// ---------------------------------------------------------------------------
-// Vue d'ensemble globale
-// ---------------------------------------------------------------------------
-async function getOverview(commercantId) {
-  const [
-    { count: totalCartes },
-    { count: totalVisites },
-    { data: notifications },
-    { data: clientsDormants }
-  ] = await Promise.all([
-    supabase.from('cartes').select('*', { count: 'exact', head: true }).eq('commercant_id', commercantId),
-    supabase.from('visites').select('*', { count: 'exact', head: true }).eq('commercant_id', commercantId),
-    supabase.from('notifications').select('total_envoyes, total_ouverts').eq('commercant_id', commercantId),
-    supabase.from('clients').select('id').eq('commercant_id', commercantId).eq('statut', 'dormant')
-  ]);
+  // Commerçants actifs il y a 30j
+  const { data: actifs30j } = await supabase
+    .from('commercants')
+    .select('id, abonnement_statut, updated_at')
+    .eq('abonnement_statut', 'actif')
+    .gte('updated_at', thirtyDaysAgo.toISOString());
 
-  const totalNotificationsEnvoyees = (notifications || []).reduce((s, n) => s + (n.total_envoyes || 0), 0);
-  const totalNotificationsOuvertes = (notifications || []).reduce((s, n) => s + (n.total_ouverts || 0), 0);
-  const tauxOuvertureGlobal = totalNotificationsEnvoyees > 0
-    ? Math.round((totalNotificationsOuvertes / totalNotificationsEnvoyees) * 100 * 10) / 10
+  // Commerçants qui étaient actifs il y a 60j
+  const { data: actifs60j } = await supabase
+    .from('commercants')
+    .select('id, abonnement_statut, updated_at')
+    .eq('abonnement_statut', 'actif')
+    .gte('updated_at', sixtyDaysAgo.toISOString());
+
+  // Ceux qui ont annulé/suspendu dans les 30 derniers jours
+  const { data: churned } = await supabase
+    .from('commercants')
+    .select('id, abonnement_statut, updated_at')
+    .in('abonnement_statut', ['annule', 'suspendu', 'impaye'])
+    .gte('updated_at', thirtyDaysAgo.toISOString());
+
+  const previousActifs = (actifs60j || []).length;
+  const currentActifs = (actifs30j || []).length;
+  const churnedCount = (churned || []).length;
+
+  const churnRate = previousActifs > 0
+    ? ((churnedCount / previousActifs) * 100).toFixed(2)
     : 0;
 
-  // Visites des 30 derniers jours
-  const { count: visitesRecentes } = await supabase
-    .from('visites')
-    .select('*', { count: 'exact', head: true })
-    .eq('commercant_id', commercantId)
-    .gte('created_at', daysAgo(30));
-
-  // Cartes installées cette semaine
-  const { count: cartesRecentes } = await supabase
-    .from('cartes')
-    .select('*', { count: 'exact', head: true })
-    .eq('commercant_id', commercantId)
-    .gte('created_at', daysAgo(7));
-
   return {
-    totalCartes: totalCartes || 0,
-    cartesInstalleesCetteSemaine: cartesRecentes || 0,
-    visitesLastMonth: visitesRecentes || 0,
-    totalNotifications: totalNotificationsEnvoyees,
-    clientsDormants: clientsDormants?.length || 0,
-    tauxOuverture: tauxOuvertureGlobal
+    churn_rate: parseFloat(churnRate),
+    churned_30j: churnedCount,
+    previous_actifs: previousActifs,
+    current_actifs: currentActifs,
+    net_change: currentActifs - previousActifs,
   };
 }
 
-// ---------------------------------------------------------------------------
-// Évolution des cartes installées (courbe)
-// ---------------------------------------------------------------------------
-async function getCardsEvolution(commercantId, jours = 30) {
-  const since = daysAgo(jours);
+// ─── LTV (Lifetime Value) ─────────────────────────────────────────────────────
 
-  const [
-    { data: cartes, error: cartesError },
-    { data: visites, error: visitesError }
-  ] = await Promise.all([
-    supabase
-      .from('cartes')
-      .select('created_at')
-      .eq('commercant_id', commercantId)
-      .gte('created_at', since)
-      .order('created_at', { ascending: true }),
-    supabase
-      .from('visites')
-      .select('created_at')
-      .eq('commercant_id', commercantId)
-      .gte('created_at', since)
-      .order('created_at', { ascending: true })
-  ]);
+async function getLTV() {
+  const { data: commercants, error } = await supabase
+    .from('commercants')
+    .select('id, abonnement_statut, created_at, updated_at')
+    .in('abonnement_statut', ['actif', 'annule', 'suspendu', 'impaye']);
 
-  if (cartesError) throw new Error('Erreur récupération cartes.');
+  if (error) throw error;
 
-  const grouped = groupByDay(cartes, 'created_at');
-  const timeSeries = toTimeSeries(grouped);
+  const now = Date.now();
+  let totalRevenue = 0;
+  let totalCustomers = 0;
+  let activeCustomers = 0;
+  let durations = [];
 
-  // Cumulatif
-  let cumul = 0;
-  const timeSeriesCumulatif = timeSeries.map(({ date, count }) => {
-    cumul += count;
-    return { date, count, cumul };
+  (commercants || []).forEach(c => {
+    const created = new Date(c.created_at).getTime();
+    const updated = c.updated_at ? new Date(c.updated_at).getTime() : now;
+    const durationDays = (updated - created) / (1000 * 60 * 60 * 24);
+    const monthsActive = Math.max(1, Math.ceil(durationDays / 30));
+    const revenue = monthsActive * STRIPE_PRICE_MONTHLY;
+
+    totalRevenue += revenue;
+    totalCustomers++;
+    durations.push(durationDays);
+
+    if (c.abonnement_statut === 'actif') activeCustomers++;
   });
 
-  // Visites par jour
-  const visitesGrouped = groupByDay(visites || [], 'created_at');
-  const visitesParJour = toTimeSeries(visitesGrouped);
+  const avgLifetimeMonths = durations.length > 0
+    ? durations.reduce((a, b) => a + b, 0) / durations.length / 30
+    : 0;
+
+  const ltv = activeCustomers > 0
+    ? totalRevenue / activeCustomers
+    : 0;
+
+  const avgLifetimeDays = durations.length > 0
+    ? durations.reduce((a, b) => a + b, 0) / durations.length
+    : 0;
 
   return {
-    periode_jours: jours,
-    total_periode: cartes.length,
-    timeSeries: timeSeriesCumulatif,
-    visitesParJour
+    ltv: Math.round(ltv * 100) / 100,
+    avg_lifetime_months: Math.round(avgLifetimeMonths * 10) / 10,
+    avg_lifetime_days: Math.round(avgLifetimeDays),
+    total_revenue_estimated: Math.round(totalRevenue),
+    total_customers_ever: totalCustomers,
+    active_customers: activeCustomers,
   };
 }
 
-// ---------------------------------------------------------------------------
-// Statistiques notifications
-// ---------------------------------------------------------------------------
-async function getNotificationsStats(commercantId) {
-  const { data: notifs, error } = await supabase
-    .from('notifications')
-    .select('id, titre, cible, total_envoyes, total_ouverts, created_at, envoyee')
-    .eq('commercant_id', commercantId)
-    .order('created_at', { ascending: false })
-    .limit(20);
+// ─── ARPU (Average Revenue Per User) ──────────────────────────────────────────
 
-  if (error) throw new Error('Erreur récupération notifications.');
+async function getARPU() {
+  const { data: actifs } = await supabase
+    .from('commercants')
+    .select('id, abonnement_statut')
+    .eq('abonnement_statut', 'actif');
 
-  const totalEnvoyes = notifs.reduce((s, n) => s + (n.total_envoyes || 0), 0);
-  const totalOuverts = notifs.reduce((s, n) => s + (n.total_ouverts || 0), 0);
+  const count = (actifs || []).length;
+  const mrr = count * STRIPE_PRICE_MONTHLY;
 
   return {
-    totalNotifications: notifs.length,
-    totalEnvoyes,
-    totalOuverts,
-    tauxOuverture: totalEnvoyes > 0
-      ? Math.round((totalOuverts / totalEnvoyes) * 100 * 10) / 10
-      : 0,
-    dernieres: notifs.slice(0, 5).map(n => ({
-      id: n.id,
-      titre: n.titre,
-      cible: n.cible,
-      totalEnvoyes: n.total_envoyes,
-      tauxOuverture: n.total_envoyes > 0
-        ? Math.round((n.total_ouverts / n.total_envoyes) * 100)
-        : 0,
-      date: n.created_at
-    }))
+    arpu_monthly: count > 0 ? STRIPE_PRICE_MONTHLY : 0,
+    arpu_annual: count > 0 ? STRIPE_PRICE_MONTHLY * 12 : 0,
+    paying_customers: count,
+    mrr,
   };
 }
 
-// ---------------------------------------------------------------------------
-// Clients dormants (pas vus depuis N jours)
-// ---------------------------------------------------------------------------
-async function getClientsDormants(commercantId, joursSeuil = 30) {
-  const seuil = daysAgo(joursSeuil);
+// ─── Courbe d'inscriptions (12 derniers mois) ─────────────────────────────────
 
-  const { data: clients, error } = await supabase
-    .from('clients')
-    .select('id, carte_id, derniere_visite, nombre_visites, statut, created_at')
-    .eq('commercant_id', commercantId)
-    .or(`derniere_visite.lt.${seuil},derniere_visite.is.null`)
-    .order('derniere_visite', { ascending: true, nullsFirst: true });
-
-  if (error) throw new Error('Erreur récupération clients dormants.');
-
+async function getSignupHistory() {
+  const months = [];
   const now = new Date();
-  const clientsAvecInactivite = (clients || []).map(c => {
-    const joursInactif = c.derniere_visite
-      ? Math.floor((now - new Date(c.derniere_visite)) / (1000 * 60 * 60 * 24))
-      : null;
-    return { ...c, jours_inactif: joursInactif };
-  });
 
-  return {
-    seuil_jours: joursSeuil,
-    total: clientsAvecInactivite.length,
-    clients: clientsAvecInactivite
-  };
-}
+  for (let i = 11; i >= 0; i--) {
+    const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
+    const monthLabel = monthStart.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
 
-// ---------------------------------------------------------------------------
-// Stats avis Google
-// ---------------------------------------------------------------------------
-async function getAvisStats(commercantId) {
-  const { data: avis, error } = await supabase
-    .from('avis')
-    .select('id, note, source, reponse_validee, created_at')
-    .eq('commercant_id', commercantId);
+    const { count: total } = await supabase
+      .from('commercants')
+      .select('id', { count: 'exact', head: true })
+      .lt('created_at', monthEnd.toISOString());
 
-  if (error) throw new Error('Erreur récupération avis.');
+    const { count: newSignups } = await supabase
+      .from('commercants')
+      .select('id', { count: 'exact', head: true })
+      .gte('created_at', monthStart.toISOString())
+      .lt('created_at', monthEnd.toISOString());
 
-  const total = avis.length;
-  const notes = avis.filter(a => a.note !== null).map(a => a.note);
-  const moyenneNote = notes.length > 0
-    ? Math.round((notes.reduce((s, n) => s + n, 0) / notes.length) * 10) / 10
-    : null;
+    const { count: actifs } = await supabase
+      .from('commercants')
+      .select('id', { count: 'exact', head: true })
+      .lt('created_at', monthEnd.toISOString())
+      .eq('abonnement_statut', 'actif');
 
-  const parNote = [1, 2, 3, 4, 5].map(n => ({
-    note: n,
-    count: avis.filter(a => a.note === n).length
-  }));
-
-  const repondus = avis.filter(a => a.reponse_validee).length;
-
-  const parSource = {
-    google: avis.filter(a => a.source === 'google').length,
-    formulaire_prive: avis.filter(a => a.source === 'formulaire_prive').length
-  };
-
-  return {
-    total,
-    moyenneNote,
-    parNote,
-    repondus,
-    tauxReponse: total > 0 ? Math.round((repondus / total) * 100) : 0,
-    parSource
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Performance offres flash
-// ---------------------------------------------------------------------------
-async function getOffresStats(commercantId) {
-  const { data: offres, error } = await supabase
-    .from('offres')
-    .select('id, titre, total_envoyes, total_utilises, actif, date_fin, created_at')
-    .eq('commercant_id', commercantId)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    // Table peut ne pas exister encore
-    if (error.code === '42P01') return { erreur: 'Table offres non créée', offres: [] };
-    throw new Error('Erreur récupération offres.');
+    months.push({
+      month: monthLabel,
+      month_index: 11 - i,
+      total: total || 0,
+      new_signups: newSignups || 0,
+      actifs: actifs || 0,
+    });
   }
 
-  const now = new Date();
-  const offresAvecStats = (offres || []).map(o => ({
-    ...o,
-    tauxUtilisation: o.total_envoyes > 0
-      ? Math.round((o.total_utilises / o.total_envoyes) * 100 * 10) / 10
-      : 0,
-    expiree: o.date_fin ? new Date(o.date_fin) < now : false
-  }));
+  return months;
+}
 
-  const totalEnvoyes = offresAvecStats.reduce((s, o) => s + (o.total_envoyes || 0), 0);
-  const totalUtilises = offresAvecStats.reduce((s, o) => s + (o.total_utilises || 0), 0);
+// ─── Courbe de revenus (12 derniers mois) ─────────────────────────────────────
+
+async function getRevenueHistory() {
+  const months = [];
+  const now = new Date();
+
+  for (let i = 11; i >= 0; i--) {
+    const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
+    const monthLabel = monthStart.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
+
+    // Commerçants actifs à la fin du mois
+    const { data: actifs } = await supabase
+      .from('commercants')
+      .select('id, created_at')
+      .lt('created_at', monthEnd.toISOString())
+      .eq('abonnement_statut', 'actif');
+
+    const count = (actifs || []).length;
+    const revenue = count * STRIPE_PRICE_MONTHLY;
+
+    months.push({
+      month: monthLabel,
+      month_index: 11 - i,
+      revenue,
+      paying_customers: count,
+    });
+  }
+
+  return months;
+}
+
+// ─── Rétention (cohortes) ─────────────────────────────────────────────────────
+
+async function getRetention() {
+  const now = new Date();
+  const cohorts = [];
+
+  for (let i = 5; i >= 0; i--) {
+    const cohortStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const cohortEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
+    const cohortLabel = cohortStart.toLocaleDateString('fr-FR', { month: 'short' });
+
+    // Inscrits ce mois-là
+    const { count: signed } = await supabase
+      .from('commercants')
+      .select('id', { count: 'exact', head: true })
+      .gte('created_at', cohortStart.toISOString())
+      .lt('created_at', cohortEnd.toISOString());
+
+    // Parmi eux, encore actifs aujourd'hui
+    const { count: retained } = await supabase
+      .from('commercants')
+      .select('id', { count: 'exact', head: true })
+      .gte('created_at', cohortStart.toISOString())
+      .lt('created_at', cohortEnd.toISOString())
+      .eq('abonnement_statut', 'actif');
+
+    cohorts.push({
+      month: cohortLabel,
+      signed: signed || 0,
+      retained: retained || 0,
+      retention_rate: signed > 0 ? Math.round((retained / signed) * 100) : 0,
+    });
+  }
+
+  return cohorts;
+}
+
+// ─── Stats des scans (engagement) ─────────────────────────────────────────────
+
+async function getScanStats() {
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+  const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+
+  const { count: total7j } = await supabase
+    .from('visites')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', sevenDaysAgo.toISOString());
+
+  const { count: total30j } = await supabase
+    .from('visites')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', thirtyDaysAgo.toISOString());
+
+  // Scans par jour (30 derniers jours)
+  const daily = [];
+  for (let i = 29; i >= 0; i--) {
+    const dayStart = new Date(now - i * 24 * 60 * 60 * 1000);
+    const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+    const dayLabel = dayStart.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+
+    const { count } = await supabase
+      .from('visites')
+      .select('id', { count: 'exact', head: true })
+      .gte('created_at', dayStart.toISOString())
+      .lt('created_at', dayEnd.toISOString());
+
+    daily.push({ day: dayLabel, scans: count || 0 });
+  }
 
   return {
-    total: offresAvecStats.length,
-    totalEnvoyes,
-    totalUtilises,
-    tauxGlobal: totalEnvoyes > 0 ? Math.round((totalUtilises / totalEnvoyes) * 100 * 10) / 10 : 0,
-    offres: offresAvecStats
+    scans_7j: total7j || 0,
+    scans_30j: total30j || 0,
+    avg_per_day_30j: total30j ? Math.round(total30j / 30) : 0,
+    daily,
+  };
+}
+
+// ─── Top commerçants par engagement ───────────────────────────────────────────
+
+async function getTopCommerçants() {
+  const { data, error } = await supabase
+    .from('commercants')
+    .select(`
+      id, nom_enseigne, abonnement_statut, created_at,
+      cartes:cartes(count),
+      visites:visites(count)
+    `)
+    .eq('abonnement_statut', 'actif')
+    .order('visites', { ascending: false })
+    .limit(10);
+
+  if (error) throw error;
+
+  return (data || []).map(c => ({
+    id: c.id,
+    nom: c.nom_enseigne,
+    statut: c.abonnement_statut,
+    cartes: c.cartes?.[0]?.count || 0,
+    visites: c.visites?.[0]?.count || 0,
+    inscrit_le: c.created_at,
+  }));
+}
+
+// ─── Projections ──────────────────────────────────────────────────────────────
+
+async function getProjections() {
+  const mrrData = await getMRR();
+  const churnData = await getChurnRate();
+  const ltvData = await getLTV();
+
+  const currentMRR = mrrData.mrr;
+  const churnRate = churnData.churn_rate / 100;
+  const growthRate = 0.10; // Hypothèse 10% croissance mensuelle
+
+  const projections = [];
+  let projectedMRR = currentMRR;
+  let projectedCustomers = mrrData.paying_customers;
+
+  for (let i = 1; i <= 12; i++) {
+    const monthDate = new Date();
+    monthDate.setMonth(monthDate.getMonth() + i);
+    const monthLabel = monthDate.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+
+    const newCustomers = Math.ceil(projectedCustomers * growthRate);
+    const lostCustomers = Math.ceil(projectedCustomers * churnRate);
+    projectedCustomers += newCustomers - lostCustomers;
+    projectedMRR = projectedCustomers * STRIPE_PRICE_MONTHLY;
+
+    projections.push({
+      month: monthLabel,
+      month_index: i,
+      projected_mrr: projectedMRR,
+      projected_customers: projectedCustomers,
+      new_customers: newCustomers,
+      lost_customers: lostCustomers,
+    });
+  }
+
+  return {
+    current_mrr: currentMRR,
+    current_customers: mrrData.paying_customers,
+    churn_rate: churnData.churn_rate,
+    growth_assumption: Math.round(growthRate * 100),
+    ltv: ltvData.ltv,
+    projections,
+  };
+}
+
+// ─── Dashboard complet ────────────────────────────────────────────────────────
+
+async function getAnalyticsDashboard() {
+  const [mrr, churn, ltv, arpu, signups, revenue, retention, scans, topCommercants, projections] = await Promise.all([
+    getMRR(),
+    getChurnRate(),
+    getLTV(),
+    getARPU(),
+    getSignupHistory(),
+    getRevenueHistory(),
+    getRetention(),
+    getScanStats(),
+    getTopCommerçants(),
+    getProjections(),
+  ]);
+
+  return {
+    mrr,
+    churn,
+    ltv,
+    arpu,
+    signups,
+    revenue,
+    retention,
+    scans,
+    top_commercants: topCommercants,
+    projections,
+    price_monthly: STRIPE_PRICE_MONTHLY,
+    generated_at: new Date().toISOString(),
   };
 }
 
 module.exports = {
-  getOverview,
-  getCardsEvolution,
-  getNotificationsStats,
-  getClientsDormants,
-  getAvisStats,
-  getOffresStats
+  getMRR,
+  getChurnRate,
+  getLTV,
+  getARPU,
+  getSignupHistory,
+  getRevenueHistory,
+  getRetention,
+  getScanStats,
+  getTopCommerçants,
+  getProjections,
+  getAnalyticsDashboard,
 };
