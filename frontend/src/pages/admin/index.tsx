@@ -16,6 +16,7 @@ import {
   Activity, ScanLine, Bell, FileText, Tag, Loader2
 } from 'lucide-react';
 import { adminApi } from '../../services/adminApi';
+import AnalyticsDashboard from './analytics';
 
 // ─── Auth guard ────────────────────────────────────────────────────────────────
 
@@ -79,8 +80,20 @@ function AdminDashboard() {
   if (page === 'notifications') return <AdminNotificationsPage />;
   if (page === 'templates') return <AdminTemplatesPage />;
   if (page === 'offres') return <AdminOffresPage />;
+  if (page === 'analytics') return <AdminAnalyticsPage />;
 
   return <AdminStatsPage />;
+}
+
+// ─── Analytics Page Wrapper ────────────────────────────────────────────────────
+
+function AdminAnalyticsPage() {
+  return (
+    <div className="max-w-7xl mx-auto">
+      <AdminNav active="analytics" />
+      <AnalyticsDashboard />
+    </div>
+  );
 }
 
 // ─── Navigation ────────────────────────────────────────────────────────────────
