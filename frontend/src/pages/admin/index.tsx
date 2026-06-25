@@ -69,6 +69,7 @@ function AdminDashboard() {
   const router = useRouter();
   const { page } = router.query;
 
+  if (page === 'commercants') return <AdminCommercantsPage />;
   if (page === 'commercant' && router.query.id) {
     return <AdminCommercantPage commercantId={router.query.id as string} />;
   }
@@ -83,6 +84,174 @@ function AdminDashboard() {
   if (page === 'analytics') return <AdminAnalyticsPage />;
 
   return <AdminStatsPage />;
+}
+
+// ─── Commerçants List Page ────────────────────────────────────────────────────
+
+function AdminCommercantsPage() {
+  const [commerçants, setCommerçants] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [statutFilter, setStatutFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const router = useRouter();
+
+  const fetchCommerçants = () => {
+    setLoading(true);
+    const params = new URLSearchParams({ page: String(page), limit: '20' });
+    if (search) params.set('search', search);
+    if (statutFilter) params.set('statut', statutFilter);
+
+    fetch(`/api/admin/commercants?${params}`, {
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('stamply_admin_token') }
+    }).then(r => r.json()).then(d => {
+      if (d.success) {
+        setCommerçants(d.data.commerçants);
+        setTotalPages(d.data.totalPages);
+        setTotal(d.data.total);
+      }
+    }).catch(console.error).finally(() => setLoading(false));
+  };
+
+  useEffect(() => { fetchCommerçants(); }, [page, search, statutFilter]);
+
+  async function handleAction(action: string, id: number) {
+    const confirmMsg = action === 'supprimer' ? 'Supprimer définitivement ce commerçant ?' :
+      action === 'suspendre' ? 'Suspendre ce commerçant ?' :
+      action === 'reactiver' ? 'Réactiver ce commerçant ?' : 'Réinitialiser le mot de passe ?';
+    if (!confirm(confirmMsg)) return;
+
+    setActionLoading(`${action}-${id}`);
+    try {
+      const url = action === 'reactiver' ? `/api/admin/commercants/${id}/reactiver` :
+        action === 'suspendre' ? `/api/admin/commercants/${id}/suspendre` :
+        action === 'supprimer' ? `/api/admin/commercants/${id}` : '';
+
+      if (url) {
+        const res = await fetch(url, {
+          method: action === 'supprimer' ? 'DELETE' : 'POST',
+          headers: { Authorization: 'Bearer ' + localStorage.getItem('stamply_admin_token') }
+        });
+        const json = await res.json();
+        if (json.success) fetchCommerçants();
+        else alert(json.error || 'Erreur');
+      }
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Head><title>Admin — Commerçants</title></Head>
+      <AdminNav active="commercants" />
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-gray-900">Gestion des commerçants</h2>
+          <span className="text-sm text-gray-500">{total} total</span>
+        </div>
+
+        {/* Filtres */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-4 p-4 flex items-center gap-4 flex-wrap">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input type="text" placeholder="Rechercher par nom ou email..." value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1); }}
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+          <select value={statutFilter} onChange={e => { setStatutFilter(e.target.value); setPage(1); }}
+            className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="">Tous les statuts</option>
+            <option value="actif">Actif</option>
+            <option value="inactif">Inactif</option>
+            <option value="past_due">Impayé</option>
+            <option value="suspendu">Suspendu</option>
+          </select>
+        </div>
+
+        {/* Table */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          {loading ? (
+            <div className="p-8 text-center text-gray-400">Chargement...</div>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                  <th className="px-6 py-3">Commerçant</th>
+                  <th className="px-6 py-3">Email</th>
+                  <th className="px-6 py-3">Inscrit le</th>
+                  <th className="px-6 py-3">Abonnement</th>
+                  <th className="px-6 py-3">Wallet</th>
+                  <th className="px-6 py-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {commerçants.map(c => (
+                  <tr key={c.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-gray-900">{c.nom_enseigne || '—'}</div>
+                      {c.telephone && <div className="text-xs text-gray-400">{c.telephone}</div>}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{c.email}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{new Date(c.created_at).toLocaleDateString('fr-FR')}</td>
+                    <td className="px-6 py-4">{getStatutBadge(c.abonnement_statut)}</td>
+                    <td className="px-6 py-4">
+                      {c.wallet_class_configured ? (
+                        <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">Configuré</span>
+                      ) : (
+                        <span className="text-xs text-gray-400">Non</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button onClick={() => router.push(`/admin?page=commercant&id=${c.id}`)}
+                          className="text-indigo-600 hover:text-indigo-800 text-xs font-medium">Détails</button>
+                        {c.abonnement_statut === 'actif' && (
+                          <button onClick={() => handleAction('suspendre', c.id)}
+                            disabled={actionLoading === `suspendre-${c.id}`}
+                            className="text-amber-600 hover:text-amber-800 text-xs font-medium">
+                            {actionLoading === `suspendre-${c.id}` ? '...' : 'Suspendre'}
+                          </button>
+                        )}
+                        {(c.abonnement_statut === 'suspendu' || c.abonnement_statut === 'inactif') && (
+                          <button onClick={() => handleAction('reactiver', c.id)}
+                            disabled={actionLoading === `reactiver-${c.id}`}
+                            className="text-green-600 hover:text-green-800 text-xs font-medium">
+                            {actionLoading === `reactiver-${c.id}` ? '...' : 'Réactiver'}
+                          </button>
+                        )}
+                        <button onClick={() => handleAction('supprimer', c.id)}
+                          disabled={actionLoading === `supprimer-${c.id}`}
+                          className="text-red-600 hover:text-red-800 text-xs font-medium">
+                          {actionLoading === `supprimer-${c.id}` ? '...' : 'Supprimer'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+              <span className="text-sm text-gray-500">Page {page} sur {totalPages} ({total} total)</span>
+              <div className="flex gap-2">
+                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                  className="px-3 py-1 text-sm border rounded-lg disabled:opacity-50 hover:bg-gray-50">Précédent</button>
+                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                  className="px-3 py-1 text-sm border rounded-lg disabled:opacity-50 hover:bg-gray-50">Suivant</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ─── Analytics Page Wrapper ────────────────────────────────────────────────────
