@@ -54,7 +54,7 @@ export interface AdminCommercant {
   ville?: string;
   code_postal?: string;
   abonnement_statut?: string;
-  stripe_customer_id?: string;
+  whop_customer_id?: string;
   wallet_class_configured?: boolean;
   created_at: string;
   updated_at?: string;
@@ -104,7 +104,7 @@ export interface AdminLogsList {
 export interface ServiceStatus {
   google_wallet: { status: string; message: string; issuer_id?: string };
   fcm: { status: string; message: string };
-  stripe: { status: string; message: string };
+  whop: { status: string; message: string };
   apple_wallet: { status: string; message: string };
   supabase: { status: string; message: string };
   backend: { status: string; message: string; uptime?: number };

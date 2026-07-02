@@ -133,7 +133,7 @@ router.get('/commercants', adminAuth, async (req, res) => {
 
     let query = supabase
       .from('commercants')
-      .select('id, email, nom_enseigne, telephone, adresse, ville, code_postal, abonnement_statut, stripe_customer_id, wallet_class_configured, created_at, updated_at')
+      .select('id, email, nom_enseigne, telephone, adresse, ville, code_postal, abonnement_statut, stripe_customer_id, whop_customer_id, wallet_class_configured, created_at, updated_at')
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -412,7 +412,7 @@ router.get('/status', adminAuth, async (req, res) => {
     const status = {
       google_wallet: { status: 'ok', message: 'API Google Wallet accessible', issuer_id: process.env.GOOGLE_WALLET_ISSUER_ID || 'non configuré' },
       fcm: { status: process.env.FIREBASE_SERVICE_ACCOUNT_KEY ? 'ok' : 'not_configured', message: process.env.FIREBASE_SERVICE_ACCOUNT_KEY ? 'Push notifications actives' : 'Mode simulation (clé manquante)' },
-      stripe: { status: process.env.STRIPE_SECRET_KEY?.startsWith('sk_live') ? 'live' : 'test', message: process.env.STRIPE_SECRET_KEY?.startsWith('sk_live') ? 'Stripe live actif' : 'Mode test' },
+      whop: { status: process.env.WHOP_API_KEY?.startsWith('apik') ? 'live' : 'inactif', message: process.env.WHOP_API_KEY?.startsWith('apik') ? 'Whop API connectée' : 'Non configuré' },
       apple_wallet: { status: 'not_configured', message: 'Apple Wallet non configuré (certificat requis)' },
       supabase: { status: 'ok', message: 'Connecté' },
       backend: { status: 'ok', message: 'Serveur opérationnel', uptime: process.uptime() },

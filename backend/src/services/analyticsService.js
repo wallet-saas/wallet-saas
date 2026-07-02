@@ -20,7 +20,7 @@ const STRIPE_PRICE_MONTHLY = 49; // €/mois — prix Stamply
 async function getMRR() {
   const { data: actifs, error } = await supabase
     .from('commercants')
-    .select('id, abonnement_statut, stripe_subscription_id, created_at')
+    .select('id, abonnement_statut, whop_membership_id, created_at')
     .eq('abonnement_statut', 'actif');
 
   if (error) throw error;

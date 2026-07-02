@@ -7,9 +7,9 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ─── Stripe webhook (MUST be before express.json to receive raw body) ────────
-const stripeWebhookRoutes = require('./routes/stripe');
-app.use('/api/webhooks', stripeWebhookRoutes);
+// ─── Whop webhook (MUST be before express.json to receive raw body) ───────────
+const whopWebhookRoutes = require('./routes/whop');
+app.use('/api/webhooks', whopWebhookRoutes);
 
 // CORS — restreindre aux origines autorisées en production
 const corsOptions = {

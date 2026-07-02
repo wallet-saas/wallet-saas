@@ -190,18 +190,18 @@ async function getGlobalStats() {
     .order('created_at', { ascending: false })
     .limit(5);
 
-  // Stripe stats
-  const { count: avecStripe } = await supabase
+  // Whop stats
+  const { count: avecWhop } = await supabase
     .from('commercants')
     .select('id', { count: 'exact', head: true })
-    .not('stripe_customer_id', 'is', null);
+    .not('whop_customer_id', 'is', null);
 
   return {
     commerçants: {
       total: totalCommercants || 0,
       actifs: commercantsActifs || 0,
       inactifs: (totalCommercants || 0) - (commercantsActifs || 0),
-      avec_stripe: avecStripe || 0,
+      avec_whop: avecWhop || 0,
     },
     inscriptions_par_mois: inscriptionsParMois,
     cartes: totalCartes || 0,

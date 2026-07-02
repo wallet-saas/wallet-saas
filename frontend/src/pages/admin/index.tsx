@@ -420,7 +420,7 @@ function AdminStatsPage() {
                   <th className="px-6 py-3">Email</th>
                   <th className="px-6 py-3">Inscrit le</th>
                   <th className="px-6 py-3">Abonnement</th>
-                  <th className="px-6 py-3">Stripe</th>
+                  <th className="px-6 py-3">Whop</th>
                   <th className="px-6 py-3">Wallet</th>
                   <th className="px-6 py-3"></th>
                 </tr>
@@ -435,7 +435,7 @@ function AdminStatsPage() {
                     <td className="px-6 py-4 text-sm text-gray-500">{new Date(c.created_at).toLocaleDateString('fr-FR')}</td>
                     <td className="px-6 py-4">{getStatutBadge(c.abonnement_statut)}</td>
                     <td className="px-6 py-4">
-                      {c.stripe_customer_id ? (
+                      {c.whop_customer_id ? (
                         <span className="text-xs text-green-600 font-medium">✓ Connecté</span>
                       ) : (
                         <span className="text-xs text-gray-400">—</span>
@@ -642,7 +642,7 @@ function AdminCommercantPage({ commercantId }: { commercantId: string }) {
           <dl className="grid grid-cols-2 gap-4 text-sm">
             <div><dt className="text-gray-500">ID</dt><dd className="font-mono text-xs text-gray-700">{commercant.id}</dd></div>
             <div><dt className="text-gray-500">Inscrit le</dt><dd className="text-gray-700">{new Date(commercant.created_at).toLocaleString('fr-FR')}</dd></div>
-            <div><dt className="text-gray-500">Stripe Customer</dt><dd className="font-mono text-xs text-gray-700">{commercant.stripe_customer_id || '—'}</dd></div>
+            <div><dt className="text-gray-500">Whop Customer</dt><dd className="font-mono text-xs text-gray-700">{commercant.whop_customer_id || '—'}</dd></div>
             <div><dt className="text-gray-500">Wallet configuré</dt><dd className="text-gray-700">{commercant.wallet_class_configured ? 'Oui' : 'Non'}</dd></div>
           </dl>
         </div>
@@ -795,7 +795,7 @@ function AdminStatusPage() {
   const services = [
     { key: 'google_wallet', label: 'Google Wallet' },
     { key: 'fcm', label: 'FCM' },
-    { key: 'stripe', label: 'Stripe' },
+    { key: 'whop', label: 'Whop' },
     { key: 'apple_wallet', label: 'Apple Wallet' },
     { key: 'supabase', label: 'Supabase' },
     { key: 'backend', label: 'Backend' },

@@ -42,7 +42,7 @@ export default function AbonnementPage() {
     }
   }, [loading, isAuthenticated, commercant, router]);
 
-  // After Stripe payment: force-sync then poll until actif
+  // After Whop payment: force-sync then poll until actif
   useEffect(() => {
     if (router.query.success !== '1') return;
     if (loading) return;
@@ -61,7 +61,7 @@ export default function AbonnementPage() {
     const trySync = async () => {
       tries++;
       try {
-        // Step 1: force Stripe → Supabase sync
+        // Step 1: force Whop → Supabase sync
         const syncResult = await subscriptionApi.sync();
         console.log('[abonnement] sync result:', syncResult);
         if (syncResult.abonnement_statut === 'actif') {
@@ -236,7 +236,7 @@ export default function AbonnementPage() {
                 </Button>
 
                 <p className="text-xs text-center text-gray-400 mt-3">
-                  Paiement sécurisé par Stripe
+                  Paiement sécurisé par Whop
                 </p>
 
                 {/* Features */}

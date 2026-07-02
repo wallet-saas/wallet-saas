@@ -6,7 +6,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import {
   LayoutDashboard, CreditCard, QrCode, Bell, Star,
   UtensilsCrossed, Tag, MapPin, BarChart3, Settings,
-  CreditCard as StripeCard, LogOut, ChevronLeft, Menu, X,
+  CreditCard as CardIcon, LogOut, ChevronLeft, Menu, X,
   MessageSquare
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
@@ -36,7 +36,7 @@ const navItems: NavItem[] = [
 
 const bottomItems = [
   { label: 'Paramètres', href: '/dashboard/parametres', icon: Settings },
-  { label: 'Abonnement', href: '/dashboard/abonnement', icon: StripeCard },
+  { label: 'Abonnement', href: '/dashboard/abonnement', icon: CardIcon },
 ];
 
 interface DashboardLayoutProps {

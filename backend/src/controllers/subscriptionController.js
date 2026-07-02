@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { supabase } = require('../config/supabase');
-const stripeService = require('../services/stripeService');
+const whopService = require('../services/whopService');
 
 // Helper: fetch full commercant row
 async function getCommercant(id) {
@@ -15,11 +15,10 @@ async function getCommercant(id) {
 
 /**
  * GET /api/subscription/checkout?token=...
- * Browser redirect — token passed as query param because window.location.href is used.
+ * Redirige vers Whop checkout hosted.
  */
 const checkout = async (req, res) => {
   try {
-    // Accept token from Authorization header OR from query param (browser redirect)
     let token = req.query.token;
     if (!token) {
       const header = req.headers.authorization;
@@ -45,8 +44,9 @@ const checkout = async (req, res) => {
       );
     }
 
-    const session = await stripeService.createCheckoutSession(commercant);
-    return res.redirect(303, session.url);
+    // Rediriger vers Whop checkout
+    const checkoutUrl = whopService.getCheckoutUrl(commercant.id);
+    return res.redirect(303, checkoutUrl);
   } catch (error) {
     console.error('[subscription] checkout error:', error.message);
     return res.status(500).json({ success: false, error: error.message });
@@ -55,13 +55,23 @@ const checkout = async (req, res) => {
 
 /**
  * POST /api/subscription/portal
- * Returns { url } — frontend opens it in a new tab.
+ * Retourne un lien vers la page de gestion Whop
  */
 const portal = async (req, res) => {
   try {
     const commercant = await getCommercant(req.commercant.id);
-    const session = await stripeService.createPortalSession(commercant);
-    return res.json({ url: session.url });
+
+    if (!commercant.whop_membership_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Aucun abonnement Whop associé à ce compte',
+      });
+    }
+
+    // Whop n'a pas de portail client dédié type Stripe Billing Portal
+    // On redirige vers la page produit Whop où l'utilisateur peut gérer
+    const url = `https://whop.com/checkout/${process.env.WHOP_PRODUCT_ID}/manage?membership_id=${commercant.whop_membership_id}`;
+    return res.json({ url });
   } catch (error) {
     console.error('[subscription] portal error:', error.message);
     return res.status(500).json({ success: false, error: error.message });
@@ -70,12 +80,24 @@ const portal = async (req, res) => {
 
 /**
  * POST /api/subscription/cancel
- * Sets cancel_at_period_end = true in Stripe.
+ * Annule l'abonnement via Whop
  */
 const cancel = async (req, res) => {
   try {
     const commercant = await getCommercant(req.commercant.id);
-    await stripeService.cancelSubscription(commercant);
+
+    if (!commercant.whop_membership_id) {
+      return res.status(400).json({ success: false, error: 'Aucun abonnement actif' });
+    }
+
+    await whopService.cancelMembership(commercant.whop_membership_id);
+
+    // Mettre à jour le statut localement
+    await supabase
+      .from('commercants')
+      .update({ abonnement_statut: 'inactif' })
+      .eq('id', commercant.id);
+
     return res.json({
       success: true,
       message: "Abonnement annulé. Votre accès reste actif jusqu'à la fin de la période en cours.",
@@ -93,7 +115,7 @@ const status = async (req, res) => {
   try {
     const { data: commercant, error } = await supabase
       .from('commercants')
-      .select('abonnement_statut, stripe_subscription_id, stripe_customer_id, abonnement_fin')
+      .select('abonnement_statut, whop_membership_id, whop_customer_id, abonnement_fin')
       .eq('id', req.commercant.id)
       .single();
 
@@ -106,7 +128,8 @@ const status = async (req, res) => {
       data: {
         statut: commercant.abonnement_statut,
         date_fin: commercant.abonnement_fin,
-        has_subscription: !!commercant.stripe_subscription_id,
+        has_subscription: commercant.abonnement_statut === 'actif',
+        whop_membership_id: commercant.whop_membership_id,
       },
     });
   } catch (error) {
@@ -117,73 +140,37 @@ const status = async (req, res) => {
 
 /**
  * POST /api/subscription/sync
- * Pulls the live subscription from Stripe and updates Supabase immediately.
- * Used as fallback when the webhook hasn't fired yet (e.g. dev mode without Stripe CLI).
+ * Force-sync Whop → Supabase
  */
 const sync = async (req, res) => {
   try {
-    const { data: commercant, error: fetchError } = await supabase
-      .from('commercants')
-      .select('id, stripe_customer_id')
-      .eq('id', req.commercant.id)
-      .single();
+    const commercant = await getCommercant(req.commercant.id);
 
-    if (fetchError || !commercant) {
-      return res.status(404).json({ success: false, error: 'Commerçant introuvable' });
+    if (!commercant.whop_membership_id) {
+      throw new Error('Aucun abonnement Whop trouvé');
     }
 
-    if (!commercant.stripe_customer_id) {
-      return res.status(400).json({ success: false, error: 'Aucun customer Stripe associé' });
-    }
+    // Vérifier le statut sur Whop
+    const membership = await whopService.getMembership(commercant.whop_membership_id);
 
-    console.log(`[subscription/sync] Fetching Stripe subscriptions for customer: ${commercant.stripe_customer_id}`);
-
-    // Pull all non-canceled subscriptions (active, trialing, past_due…)
-    const { stripe } = require('../services/stripeService');
-    const subscriptions = await stripe.subscriptions.list({
-      customer: commercant.stripe_customer_id,
-      limit: 5,
-    });
-
-    console.log(`[subscription/sync] Found ${subscriptions.data.length} subscription(s)`);
-
-    if (subscriptions.data.length === 0) {
-      return res.status(404).json({ success: false, error: 'Aucune subscription trouvée dans Stripe' });
-    }
-
-    // Prefer active/trialing, fallback to most recent
-    const sub =
-      subscriptions.data.find((s) => s.status === 'active' || s.status === 'trialing') ||
-      subscriptions.data[0];
-
-    const statusMap = { active: 'actif', trialing: 'actif', past_due: 'suspendu', unpaid: 'suspendu', canceled: 'annule' };
-    const abonnement_statut = statusMap[sub.status] || 'inactif';
-
-    console.log(`[subscription/sync] Updating commercant ${commercant.id}: abonnement_statut=${abonnement_statut}, sub_id=${sub.id}`);
+    const newStatus = whopService.mapMembershipStatus(membership.status || 'active');
 
     const { error: updateError } = await supabase
       .from('commercants')
-      .update({
-        stripe_subscription_id: sub.id,
-        abonnement_statut,
-        abonnement_fin: sub.current_period_end
-          ? new Date(sub.current_period_end * 1000).toISOString()
-          : null,
-      })
+      .update({ abonnement_statut: newStatus })
       .eq('id', commercant.id);
 
-    if (updateError) {
-      console.error('[subscription/sync] Supabase update error:', updateError.message);
-      return res.status(500).json({ success: false, error: updateError.message });
-    }
+    if (updateError) throw updateError;
 
-    console.log(`[subscription/sync] ✅ Success`);
     return res.json({
       success: true,
-      data: { abonnement_statut, stripe_subscription_id: sub.id },
+      data: {
+        abonnement_statut: newStatus,
+        whop_membership_id: commercant.whop_membership_id,
+      },
     });
   } catch (error) {
-    console.error('[subscription/sync] Error:', error.message);
+    console.error('[subscription] sync error:', error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
 };

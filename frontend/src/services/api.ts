@@ -72,11 +72,11 @@ export const commercantApi = {
 // ─── Subscription ────────────────────────────────────────────────────────────
 export const subscriptionApi = {
   status: () =>
-    request<{ statut: string; date_fin: string | null; has_subscription: boolean }>(
+    request<{ statut: string; date_fin: string | null; has_subscription: boolean; whop_membership_id: string | null }>(
       '/api/subscription/status'
     ),
   sync: () =>
-    request<{ abonnement_statut: string; stripe_subscription_id: string }>(
+    request<{ abonnement_statut: string; whop_membership_id: string | null }>(
       '/api/subscription/sync',
       { method: 'POST' }
     ),
