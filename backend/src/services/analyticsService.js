@@ -13,7 +13,7 @@
 
 const { supabase } = require('../config/supabase');
 
-const STRIPE_PRICE_MONTHLY = 49; // €/mois — prix Stamply
+const PRIX_MENSUEL = 49; // €/mois — prix Stamply
 
 // ─── MRR (Monthly Recurring Revenue) ─────────────────────────────────────────
 
@@ -27,8 +27,8 @@ async function getMRR() {
 
   const count = (actifs || []).length;
   return {
-    mrr: count * STRIPE_PRICE_MONTHLY,
-    annual_run_rate: count * STRIPE_PRICE_MONTHLY * 12,
+    mrr: count * PRIX_MENSUEL,
+    annual_run_rate: count * PRIX_MENSUEL * 12,
     paying_customers: count,
   };
 }
@@ -99,7 +99,7 @@ async function getLTV() {
     const updated = c.updated_at ? new Date(c.updated_at).getTime() : now;
     const durationDays = (updated - created) / (1000 * 60 * 60 * 24);
     const monthsActive = Math.max(1, Math.ceil(durationDays / 30));
-    const revenue = monthsActive * STRIPE_PRICE_MONTHLY;
+    const revenue = monthsActive * PRIX_MENSUEL;
 
     totalRevenue += revenue;
     totalCustomers++;
@@ -139,11 +139,11 @@ async function getARPU() {
     .eq('abonnement_statut', 'actif');
 
   const count = (actifs || []).length;
-  const mrr = count * STRIPE_PRICE_MONTHLY;
+  const mrr = count * PRIX_MENSUEL;
 
   return {
-    arpu_monthly: count > 0 ? STRIPE_PRICE_MONTHLY : 0,
-    arpu_annual: count > 0 ? STRIPE_PRICE_MONTHLY * 12 : 0,
+    arpu_monthly: count > 0 ? PRIX_MENSUEL : 0,
+    arpu_annual: count > 0 ? PRIX_MENSUEL * 12 : 0,
     paying_customers: count,
     mrr,
   };
@@ -208,7 +208,7 @@ async function getRevenueHistory() {
       .eq('abonnement_statut', 'actif');
 
     const count = (actifs || []).length;
-    const revenue = count * STRIPE_PRICE_MONTHLY;
+    const revenue = count * PRIX_MENSUEL;
 
     months.push({
       month: monthLabel,
@@ -360,7 +360,7 @@ async function getProjections() {
     const newCustomers = Math.ceil(projectedCustomers * growthRate);
     const lostCustomers = Math.ceil(projectedCustomers * churnRate);
     projectedCustomers += newCustomers - lostCustomers;
-    projectedMRR = projectedCustomers * STRIPE_PRICE_MONTHLY;
+    projectedMRR = projectedCustomers * PRIX_MENSUEL;
 
     projections.push({
       month: monthLabel,
@@ -409,7 +409,7 @@ async function getAnalyticsDashboard() {
     scans,
     top_commercants: topCommercants,
     projections,
-    price_monthly: STRIPE_PRICE_MONTHLY,
+    price_monthly: PRIX_MENSUEL,
     generated_at: new Date().toISOString(),
   };
 }

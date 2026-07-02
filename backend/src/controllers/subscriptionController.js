@@ -68,7 +68,7 @@ const portal = async (req, res) => {
       });
     }
 
-    // Whop n'a pas de portail client dédié type Stripe Billing Portal
+    // Whop n'a pas de portail client dédié
     // On redirige vers la page produit Whop où l'utilisateur peut gérer
     const url = `https://whop.com/checkout/${process.env.WHOP_PRODUCT_ID}/manage?membership_id=${commercant.whop_membership_id}`;
     return res.json({ url });

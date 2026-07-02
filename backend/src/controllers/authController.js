@@ -81,7 +81,7 @@ const register = async (req, res) => {
           module_offres_flash: true,
           // Template par défaut
           template_metier: 'default',
-          // Abonnement inactif par défaut (sera activé après paiement Stripe)
+          // Abonnement inactif par défaut (sera activé après paiement)
           abonnement_statut: 'inactif',
           // Paramètres par défaut
           delai_notif_avis_minutes: 1440, // 24h par défaut
@@ -112,7 +112,7 @@ const register = async (req, res) => {
     // ── Créer la boutique par défaut ──
     // Tout commerçant inscrit a automatiquement 1 boutique (la principale).
     // Freemium : 1 boutique gratuite, illimitées en Pro.
-    // TODO: brancher la limite quand Stripe sera activé.
+    // TODO: brancher la limite après paiement
     const { data: defaultBoutique, error: boutiqueError } = await supabase
       .from('boutiques')
       .insert([{

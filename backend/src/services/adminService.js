@@ -18,7 +18,7 @@ async function listCommerçants({ page = 1, limit = 20, search = '', statut = 'a
 
   let query = supabase
     .from('commercants')
-    .select('id, email, nom_enseigne, telephone, created_at, stripe_customer_id', { count: 'exact' })
+    .select('id, email, nom_enseigne, telephone, created_at, whop_customer_id', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 

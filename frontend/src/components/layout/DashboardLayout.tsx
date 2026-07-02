@@ -60,8 +60,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     const isOnSetupCard = currentPath === '/dashboard/setup-card';
     const statut = commercant.statut_abonnement;
 
-    // Allow access for actif, trialing, inactif, or undefined/null (new users)
-    const canAccess = statut === 'actif' || statut === 'trialing' || statut === 'inactif' || !statut;
+    // Allow access ONLY for actif or trialing — all other statuses must subscribe
+    const canAccess = statut === 'actif' || statut === 'trialing';
 
     if (!canAccess && !isOnAbonnement) {
       redirectedRef.current = true;
@@ -91,11 +91,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const currentPath = router.pathname;
   const isOnAbonnement = currentPath === '/dashboard/abonnement' || currentPath === '/abonnement';
   const isOnSetupCard = currentPath === '/dashboard/setup-card';
-  
-  if (!isOnAbonnement && commercant) {
-    const statut = commercant.statut_abonnement;
-    if (statut && statut !== 'actif' && statut !== 'trialing' && statut !== 'inactif') return null;
-  }
+  // Allow access ONLY for actif or trialing
+    if (!isOnAbonnement && commercant) {
+      const statut = commercant.statut_abonnement;
+      if (statut && statut !== 'actif' && statut !== 'trialing') return null;
+    }
   if (
     !isOnSetupCard &&
     commercant &&

@@ -7,7 +7,7 @@ const { checkout, portal, cancel, status, sync } = require('../controllers/subsc
 // No authMiddleware here — checkout controller handles token extraction from query
 router.get('/checkout', checkout);
 
-// POST /api/subscription/portal   — returns Stripe Customer Portal URL
+// POST /api/subscription/portal   — returns Whop customer portal URL
 router.post('/portal', authMiddleware, portal);
 
 // POST /api/subscription/cancel   — cancel at period end
@@ -16,7 +16,7 @@ router.post('/cancel', authMiddleware, cancel);
 // GET  /api/subscription/status
 router.get('/status', authMiddleware, status);
 
-// POST /api/subscription/sync — force-sync Stripe → Supabase (dev fallback)
+// POST /api/subscription/sync — force-sync Whop → Supabase (dev fallback)
 router.post('/sync', authMiddleware, sync);
 
 module.exports = router;

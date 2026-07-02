@@ -51,7 +51,7 @@ export default function PolitiqueConfidentialite() {
               <p>Stamply fait appel aux sous-traitants suivants :</p>
               <ul className="list-disc ml-6 mt-2 space-y-1">
                 <li><strong>Supabase</strong> — Base de données et authentification (UE)</li>
-                <li><strong>Stripe</strong> — Paiement (certifié PCI DSS)</li>
+                <li><strong>Whop</strong> — Paiement (certifié PCI DSS)</li>
                 <li><strong>Firebase (Google)</strong> — Notifications push (États-Unis, clauses contractuelles types)</li>
                 <li><strong>Vercel</strong> — Hébergement frontend (États-Unis, clauses contractuelles types)</li>
                 <li><strong>Render</strong> — Hébergement backend (États-Unis, clauses contractuelles types)</li>

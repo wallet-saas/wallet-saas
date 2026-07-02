@@ -37,7 +37,7 @@ async function apiFetch(path, options = {}) {
  */
 function getCheckoutUrl(commercantId) {
   const planId = 'plan_CpKndqmVy2HsP';
-  const successUrl = encodeURIComponent(`${FRONTEND_URL}/abonnement?success=1`);
+  const successUrl = encodeURIComponent(`${FRONTEND_URL}/dashboard?whop_success=1`);
   const cancelUrl = encodeURIComponent(`${FRONTEND_URL}/abonnement?cancelled=1`);
   // Whop metadata is passed as query param
   return `https://whop.com/checkout/${WHOP_PRODUCT_ID}?plan=${planId}&metadata[commercant_id]=${commercantId}&success_url=${successUrl}&cancel_url=${cancelUrl}`;

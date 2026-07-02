@@ -34,7 +34,7 @@ export default function CGV() {
 
             <div>
               <h2 className="text-lg font-semibold text-white mb-2">Article 3 — Prix et facturation</h2>
-              <p>Le service Stamply est proposé au tarif unique de <strong className="text-white">49 € HT / mois</strong> par commerçant. Ce tarif inclut l'ensemble des fonctionnalités décrites à l'article 2. La facturation est mensuelle, par prélèvement automatique via Stripe. Aucun frais d'installation ni de mise en service n'est facturé.</p>
+              <p>Le service Stamply est proposé au tarif unique de <strong className="text-white">49 € HT / mois</strong> par commerçant. Ce tarif inclut l'ensemble des fonctionnalités décrites à l'article 2. La facturation est mensuelle, par prélèvement automatique via Whop. Aucun frais d'installation ni de mise en service n'est facturé.</p>
             </div>
 
             <div>
@@ -44,7 +44,7 @@ export default function CGV() {
 
             <div>
               <h2 className="text-lg font-semibold text-white mb-2">Article 5 — Paiement</h2>
-              <p>Le paiement s'effectue exclusivement par carte bancaire via la plateforme sécurisée Stripe. Le prélèvement mensuel intervient à la date anniversaire de la souscription. En cas de défaut de paiement après un délai de 7 jours, le service peut être suspendu sans préjudice du montant restant dû.</p>
+              <p>Le paiement s'effectue exclusivement par carte bancaire via la plateforme sécurisée Whop. Le prélèvement mensuel intervient à la date anniversaire de la souscription. En cas de défaut de paiement après un délai de 7 jours, le service peut être suspendu sans préjudice du montant restant dû.</p>
             </div>
 
             <div>
@@ -54,7 +54,7 @@ export default function CGV() {
 
             <div>
               <h2 className="text-lg font-semibold text-white mb-2">Article 7 — Responsabilité</h2>
-              <p>Stamply s'engage à fournir le service avec diligence et selon les règles de l'art. La responsabilité de Stamply ne saurait être engagée en cas de force majeure, de dysfonctionnement des services tiers (Google Wallet, Apple Wallet, Firebase, Stripe), ou de mauvaise utilisation du service par le Client.</p>
+              <p>Stamply s'engage à fournir le service avec diligence et selon les règles de l'art. La responsabilité de Stamply ne saurait être engagée en cas de force majeure, de dysfonctionnement des services tiers (Google Wallet, Apple Wallet, Firebase, Whop), ou de mauvaise utilisation du service par le Client.</p>
             </div>
 
             <div>

@@ -43,13 +43,7 @@ router.get('/', async (req, res) => {
     report.services.google_wallet = { status: 'error', error: err.message };
   }
 
-  // 3. Stripe
-  report.services.stripe = {
-    status: process.env.STRIPE_SECRET_KEY ? 'configured' : 'not_configured',
-    mode: process.env.STRIPE_SECRET_KEY ? 'ready' : 'needs STRIPE_SECRET_KEY',
-  };
-
-  // 4. FCM (Firebase)
+  // 3. FCM (Firebase)
   report.services.fcm = {
     status: process.env.FIREBASE_SERVICE_ACCOUNT_KEY || process.env.FIREBASE_SERVICE_ACCOUNT_JSON || process.env.FIREBASE_SERVICE_ACCOUNT_BASE64
       ? 'configured'
@@ -87,10 +81,9 @@ router.get('/diagnostics', async (req, res) => {
       supabase_url: process.env.SUPABASE_URL ? '✅ configuré' : '❌ manquant',
       supabase_service_key: process.env.SUPABASE_SERVICE_ROLE_KEY ? '✅ configuré' : '❌ manquant',
       jwt_secret: process.env.JWT_SECRET ? '✅ configuré' : '❌ manquant',
-      stripe_secret: process.env.STRIPE_SECRET_KEY ? '✅ configuré' : '❌ manquant',
-      stripe_publishable: process.env.STRIPE_PUBLISHABLE_KEY ? '✅ configuré' : '❌ manquant',
-      stripe_price_id: process.env.STRIPE_PRICE_ID ? '✅ configuré' : '❌ manquant',
-      stripe_webhook: process.env.STRIPE_WEBHOOK_SECRET ? '✅ configuré' : '❌ manquant',
+      whop_api_key: process.env.WHOP_API_KEY?.startsWith('apik') ? '✅ configuré' : '❌ manquant',
+      whop_webhook: process.env.WHOP_WEBHOOK_SECRET ? '✅ configuré' : '❌ manquant',
+      whop_product_id: process.env.WHOP_PRODUCT_ID ? '✅ configuré' : '❌ manquant',
       google_wallet_issuer: process.env.GOOGLE_WALLET_ISSUER_ID ? '✅ configuré' : '❌ manquant',
       google_wallet_key: process.env.GOOGLE_WALLET_SERVICE_ACCOUNT_KEY || process.env.GOOGLE_WALLET_KEY_JSON || process.env.GOOGLE_WALLET_KEY_JSON_BASE64 || process.env.GOOGLE_WALLET_KEY_FILE
         ? '✅ configuré'
