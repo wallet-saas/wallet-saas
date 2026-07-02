@@ -3,6 +3,7 @@ const { supabase } = require('../config/supabase');
 const WHOP_API_BASE = 'https://api.whop.com/api/v2';
 const WHOP_API_KEY = process.env.WHOP_API_KEY;
 const WHOP_PRODUCT_ID = process.env.WHOP_PRODUCT_ID;
+const WHOP_PLAN_ID = process.env.WHOP_PLAN_ID || 'plan_CpKndqmVy2HsP';
 const WHOP_WEBHOOK_SECRET = process.env.WHOP_WEBHOOK_SECRET;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3001';
 
@@ -36,11 +37,11 @@ async function apiFetch(path, options = {}) {
  * We add metadata to identify the commercant when webhook fires.
  */
 function getCheckoutUrl(commercantId) {
-  const planId = 'plan_CpKndqmVy2HsP';
+  // Use direct plan URL — the product+plan format shows "Nothing to see here"
   const successUrl = encodeURIComponent(`${FRONTEND_URL}/dashboard?whop_success=1`);
   const cancelUrl = encodeURIComponent(`${FRONTEND_URL}/abonnement?cancelled=1`);
-  // Whop metadata is passed as query param
-  return `https://whop.com/checkout/${WHOP_PRODUCT_ID}?plan=${planId}&metadata[commercant_id]=${commercantId}&success_url=${successUrl}&cancel_url=${cancelUrl}`;
+  // Metadata is passed as query params on the direct plan checkout URL
+  return `https://whop.com/checkout/${WHOP_PLAN_ID}?metadata[commercant_id]=${commercantId}&success_url=${successUrl}&cancel_url=${cancelUrl}`;
 }
 
 // ─── Get Membership ────────────────────────────────────────────────────────────
