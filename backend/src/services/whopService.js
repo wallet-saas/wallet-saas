@@ -5,7 +5,10 @@ const WHOP_API_KEY = process.env.WHOP_API_KEY;
 const WHOP_PRODUCT_ID = process.env.WHOP_PRODUCT_ID;
 const WHOP_PLAN_ID = process.env.WHOP_PLAN_ID || 'plan_CpKndqmVy2HsP';
 const WHOP_WEBHOOK_SECRET = process.env.WHOP_WEBHOOK_SECRET;
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3001';
+const FRONTEND_URL = process.env.FRONTEND_URL || 
+  (process.env.NODE_ENV === 'production' 
+    ? 'https://stamply-gamma.vercel.app' 
+    : 'http://localhost:3001');
 
 function getHeaders() {
   return {
