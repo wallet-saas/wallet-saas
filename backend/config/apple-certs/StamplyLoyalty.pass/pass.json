@@ -1,0 +1,72 @@
+{
+  "formatVersion": 1,
+  "passTypeIdentifier": "pass.com.stamply.loyalty",
+  "serialNumber": "{{SERIAL_NUMBER}}",
+  "teamIdentifier": "{{TEAM_IDENTIFIER}}",
+  "organizationName": "{{ORGANIZATION_NAME}}",
+  "description": "Carte de fidélité {{ORGANIZATION_NAME}}",
+  "logoText": "{{ORGANIZATION_NAME}}",
+  "backgroundColor": "{{BACKGROUND_COLOR}}",
+  "foregroundColor": "{{FOREGROUND_COLOR}}",
+  "labelColor": "{{LABEL_COLOR}}",
+  "barcode": {
+    "message": "{{SERIAL_NUMBER}}",
+    "format": "PKBarcodeFormatQR",
+    "messageEncoding": "iso-8859-1",
+    "altText": "Scannez pour cumuler des points"
+  },
+  "storeCard": {
+    "primaryFields": [
+      {
+        "key": "points",
+        "label": "POINTS",
+        "value": "{{POINTS}}",
+        "numberStyle": "PKNumberStyleDecimal",
+        "changeMessage": "Vous avez %@ points !",
+        "textAlignment": "PKTextAlignmentRight"
+      }
+    ],
+    "secondaryFields": [
+      {
+        "key": "reward",
+        "label": "PROCHAIN CADEAU À",
+        "value": "{{POINTS_REWARD}} points",
+        "textAlignment": "PKTextAlignmentLeft"
+      }
+    ],
+    "auxiliaryFields": [
+      {
+        "key": "visits",
+        "label": "VISITES",
+        "value": "{{VISITS}}",
+        "textAlignment": "PKTextAlignmentLeft"
+      }
+    ],
+    "backFields": [
+      {
+        "key": "commerce",
+        "label": "COMMERCE",
+        "value": "{{ORGANIZATION_NAME}}"
+      },
+      {
+        "key": "adresse",
+        "label": "ADRESSE",
+        "value": "{{ADDRESS}}"
+      },
+      {
+        "key": "programme",
+        "label": "PROGRAMME DE FIDÉLITÉ",
+        "value": "Cumulez 1 point par visite. {{POINTS_REWARD}} points = 1 récompense offerte."
+      },
+      {
+        "key": "conditions",
+        "label": "CONDITIONS",
+        "value": "Offre valable dans la limite du stock disponible. Stamply ne peut être tenu responsable en cas de perte ou de vol de la carte."
+      }
+    ]
+  },
+  "locations": [],
+  "maxDistance": 100,
+  "relevantDate": "{{RELEVANT_DATE}}",
+  "voided": false
+}

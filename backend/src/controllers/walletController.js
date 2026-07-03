@@ -173,7 +173,17 @@ const downloadPass = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Carte introuvable' });
     }
 
-    // Récupérer le nom du commerçant
+    // Rediriger vers Apple Wallet si disponible
+    if (card.apple_wallet_url) {
+      return res.redirect(302, card.apple_wallet_url);
+    }
+
+    // Sinon, rediriger vers Google Wallet
+    if (card.google_wallet_url) {
+      return res.redirect(302, card.google_wallet_url);
+    }
+
+    // Fallback: retourner les infos de la carte
     let nomEnseigne = 'Votre commerce';
     if (card.commercant_id) {
       const { data: commercant } = await supabase

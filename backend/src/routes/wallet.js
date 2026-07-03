@@ -9,6 +9,7 @@ const {
 } = require('../controllers/walletController');
 const { setupWalletCard, updateWalletCard } = require('../controllers/walletSetupController');
 const googleWalletService = require('../services/googleWalletService');
+const appleWalletService = require('../services/appleWalletService');
 const authMiddleware = require('../middleware/authMiddleware');
 const { walletSetupValidation, handleValidationErrors } = require('../middleware/validation');
 
@@ -46,6 +47,15 @@ router.get('/install/:serial', getInstallPage);
  * @access  Public
  */
 router.get('/download/:serial', downloadPass);
+
+/**
+ * @route   GET /api/wallet/pkpass/:fileName
+ * @desc    Servir le fichier .pkpass pour Apple Wallet
+ * @access  Public
+ */
+router.get('/pkpass/:fileName', (req, res) => {
+  appleWalletService.servePkpass(req, res);
+});
 
 /**
  * @route   GET /api/wallet/cartes
