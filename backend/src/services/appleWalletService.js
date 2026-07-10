@@ -2,8 +2,11 @@
  * Service Apple Wallet — Stamply
  * 
  * Génération de cartes .pkpass pour Apple Wallet.
- * Utilise les certificats Apple Developer (signerCert.pem, signerKey.pem, wwdr.pem).
- * Si les certificats ne sont pas présents, retourne null (mode dégradé).
+ * Utilise les certificats Apple Developer.
+ * 
+ * Les certificats peuvent venir de :
+ *   1. Variables d'environnement APPLE_*_BASE64 (prioritaire — pour Render)
+ *   2. Fichiers dans APPLE_CERT_PATH (pour le développement local)
  */
 
 const fs = require('fs');
@@ -12,8 +15,8 @@ const crypto = require('crypto');
 const archiver = require('archiver');
 const { supabase } = require('../config/supabase');
 
-const APPLE_TEAM_ID = process.env.APPLE_TEAM_ID;
-const APPLE_PASS_TYPE_ID = process.env.APPLE_PASS_TYPE_ID || 'pass.com.stamply.loyalty';
+const APPLE_TEAM_ID = process.env.APPLE_TEAM_ID || '4YVDLJ57J7';
+const APPLE_PASS_TYPE_ID = process.env.APPLE_PASS_TYPE_ID || 'pass.com.stamply.4YVDLJ57J7';
 const APPLE_CERT_PATH = process.env.APPLE_CERT_PATH || './config/apple-certs';
 const FRONTEND_URL = process.env.FRONTEND_URL
   || (process.env.NODE_ENV === 'production' ? 'https://stamply-gamma.vercel.app' : 'http://localhost:3001');
@@ -24,15 +27,39 @@ const TEMPLATE_DIR = path.join(process.cwd(), APPLE_CERT_PATH, 'StamplyLoyalty.p
 const CERTS_DIR = path.join(process.cwd(), APPLE_CERT_PATH);
 
 /**
- * Vérifie si Apple Wallet est configuré (variables d'env + fichiers certs présents).
+ * Charge un certificat depuis une variable d'env base64 ou depuis un fichier.
+ */
+function loadCert(envKey, fileName) {
+  // 1. Essayer variable d'environnement base64
+  const envValue = process.env[envKey];
+  if (envValue) {
+    try {
+      return Buffer.from(envValue, 'base64').toString('utf-8');
+    } catch {
+      console.warn(`[AppleWallet] Erreur décodage ${envKey}, fallback fichier`);
+    }
+  }
+
+  // 2. Essayer le fichier
+  const filePath = path.join(CERTS_DIR, fileName);
+  if (fs.existsSync(filePath)) {
+    return fs.readFileSync(filePath, 'utf-8');
+  }
+
+  return null;
+}
+
+/**
+ * Vérifie si Apple Wallet est configuré.
  */
 function isConfigured() {
   if (!APPLE_TEAM_ID) return false;
 
-  const required = ['signerCert.pem', 'signerKey.pem', 'wwdr.pem'];
-  const allExist = required.every(f => fs.existsSync(path.join(CERTS_DIR, f)));
-  
-  return allExist;
+  const signerCert = loadCert('APPLE_SIGNER_CERT_BASE64', 'signerCert.pem');
+  const signerKey = loadCert('APPLE_SIGNER_KEY_BASE64', 'signerKey.pem');
+  const wwdr = loadCert('APPLE_WWDR_BASE64', 'wwdr.pem');
+
+  return !!(signerCert && signerKey && wwdr);
 }
 
 /**
@@ -107,14 +134,17 @@ async function generateSaveUrl(carte, commercant) {
     fs.writeFileSync(path.join(tmpDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
 
     // 5. Signer le manifest avec les certificats Apple → signature
-    const signerCert = fs.readFileSync(path.join(CERTS_DIR, 'signerCert.pem'));
-    const signerKey = fs.readFileSync(path.join(CERTS_DIR, 'signerKey.pem'));
-    const wwdr = fs.readFileSync(path.join(CERTS_DIR, 'wwdr.pem'));
+    const signerCertPem = loadCert('APPLE_SIGNER_CERT_BASE64', 'signerCert.pem');
+    const signerKeyPem = loadCert('APPLE_SIGNER_KEY_BASE64', 'signerKey.pem');
+    const wwdrPem = loadCert('APPLE_WWDR_BASE64', 'wwdr.pem');
+
+    if (!signerCertPem || !signerKeyPem || !wwdrPem) {
+      throw new Error('Certificats Apple manquants');
+    }
 
     const sign = crypto.createSign('RSA-SHA256');
     sign.update(JSON.stringify(manifest));
-    // PKCS#7 detached signature — on utilise le format simple pour commencer
-    const signature = sign.sign({ key: signerKey, cert: signerCert, passphrase: '' }, 'DER');
+    const signature = sign.sign({ key: signerKeyPem, cert: signerCertPem, passphrase: '' }, 'DER');
     fs.writeFileSync(path.join(tmpDir, 'signature'), signature);
 
     // 6. Zipper en .pkpass

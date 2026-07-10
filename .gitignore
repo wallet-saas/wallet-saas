@@ -18,6 +18,7 @@ out/
 certs/
 backend/config/google-wallet-key.json
 backend/config/apple-certs/*.pem
+backend/config/apple-certs/.tmp/
 
 # IDE
 .vscode/
