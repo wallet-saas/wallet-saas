@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { supabase } = require('../config/supabase');
 const googleWalletService = require('../services/googleWalletService');
+const appleWalletService = require('../services/appleWalletService');
 
 /**
  * GET /api/health
@@ -51,11 +52,16 @@ router.get('/', async (req, res) => {
   };
 
   // 5. Apple Wallet
-  report.services.apple_wallet = {
-    status: process.env.APPLE_PASS_TYPE_IDENTIFIER && process.env.APPLE_TEAM_IDENTIFIER
-      ? 'configured'
-      : 'not_configured',
-  };
+  try {
+    const awConfigured = appleWalletService.isConfigured();
+    report.services.apple_wallet = {
+      status: awConfigured ? 'ok' : 'not_configured',
+      configured: awConfigured,
+      mode: awConfigured ? 'live' : 'pas de certificats',
+    };
+  } catch (err) {
+    report.services.apple_wallet = { status: 'error', error: err.message };
+  }
 
   // Global status
   const hasError = Object.values(report.services).some(
@@ -91,8 +97,11 @@ router.get('/diagnostics', async (req, res) => {
       fcm_key: process.env.FIREBASE_SERVICE_ACCOUNT_KEY || process.env.FIREBASE_SERVICE_ACCOUNT_JSON || process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 || process.env.FIREBASE_SERVICE_ACCOUNT_PATH
         ? '✅ configuré'
         : '❌ manquant',
-      apple_pass_type: process.env.APPLE_PASS_TYPE_IDENTIFIER ? '✅ configuré' : '❌ manquant',
-      apple_team: process.env.APPLE_TEAM_IDENTIFIER ? '✅ configuré' : '❌ manquant',
+      apple_pass_type: process.env.APPLE_PASS_TYPE_ID ? '✅ configuré' : '❌ manquant',
+      apple_team: process.env.APPLE_TEAM_ID ? '✅ configuré' : '❌ manquant',
+      apple_cert: process.env.APPLE_SIGNER_CERT_BASE64 ? '✅ configuré' : '❌ manquant',
+      apple_key: process.env.APPLE_SIGNER_KEY_BASE64 ? '✅ configuré' : '❌ manquant',
+      apple_wwdr: process.env.APPLE_WWDR_BASE64 ? '✅ configuré' : '❌ manquant',
       cors_origin: process.env.CORS_ORIGIN || 'non défini (accepte tout)',
     },
     memory: {
