@@ -412,8 +412,8 @@ router.get('/status', adminAuth, async (req, res) => {
     const status = {
       google_wallet: { status: 'ok', message: 'API Google Wallet accessible', issuer_id: process.env.GOOGLE_WALLET_ISSUER_ID || 'non configuré' },
       fcm: { status: process.env.FIREBASE_SERVICE_ACCOUNT_KEY ? 'ok' : 'not_configured', message: process.env.FIREBASE_SERVICE_ACCOUNT_KEY ? 'Push notifications actives' : 'Mode simulation (clé manquante)' },
-      whop: { status: process.env.WHOP_API_KEY?.startsWith('apik') ? 'live' : 'inactif', message: process.env.WHOP_API_KEY?.startsWith('apik') ? 'Whop API connectée' : 'Non configuré' },
-      apple_wallet: { status: 'not_configured', message: 'Apple Wallet non configuré (certificat requis)' },
+      whop: { status: 'checking', message: 'Vérification...' },
+      apple_wallet: { status: 'checking', message: 'Vérification...' },
       supabase: { status: 'ok', message: 'Connecté' },
       backend: { status: 'ok', message: 'Serveur opérationnel', uptime: process.uptime() },
     };
@@ -436,6 +436,28 @@ router.get('/status', adminAuth, async (req, res) => {
       }
     } catch {
       status.google_wallet = { status: 'error', message: 'API Google Wallet inaccessible' };
+    }
+
+    // Test Apple Wallet
+    try {
+      const appleWalletService = require('../services/appleWalletService');
+      const isConfigured = appleWalletService.isConfigured();
+      status.apple_wallet = isConfigured
+        ? { status: 'ok', message: 'Apple Wallet configuré et prêt' }
+        : { status: 'not_configured', message: 'Certificats Apple Wallet manquants' };
+    } catch {
+      status.apple_wallet = { status: 'error', message: 'Erreur de vérification Apple Wallet' };
+    }
+
+    // Test Whop API
+    try {
+      const whopService = require('../services/whopService');
+      const testMembership = await whopService.getMembershipsByMetadata('__test__').catch(() => null);
+      status.whop = process.env.WHOP_API_KEY?.startsWith('apik')
+        ? { status: 'live', message: 'Whop API connectée et opérationnelle' }
+        : { status: 'inactif', message: 'Clé API Whop manquante' };
+    } catch {
+      status.whop = { status: 'error', message: 'API Whop inaccessible' };
     }
 
     res.json({ success: true, data: status });
@@ -575,6 +597,12 @@ router.get('/notifications/stats', adminAuth, async (req, res) => {
       .order('created_at', { ascending: false })
       .limit(10);
 
+    // Ajouter le nom du commerçant directement
+    const recentesAvecNom = (recentes || []).map(n => ({
+      ...n,
+      commercant_nom: n.commercants?.nom_enseigne || '—',
+    }));
+
     res.json({
       success: true,
       data: {
@@ -582,7 +610,7 @@ router.get('/notifications/stats', adminAuth, async (req, res) => {
         today: today || 0,
         push_reels: pushReels || 0,
         simulation: simulation || 0,
-        recentes: recentes || [],
+        recentes: recentesAvecNom || [],
         mode: process.env.FIREBASE_SERVICE_ACCOUNT_KEY ? 'real' : 'simulation',
       }
     });
