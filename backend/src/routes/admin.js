@@ -275,7 +275,7 @@ router.post('/commercants/:id/reactiver', adminAuth, async (req, res) => {
     const { id } = req.params;
     const { error } = await supabase
       .from('commercants')
-      .update({ abonnement_statut: 'actif', is_active: true, updated_at: new Date().toISOString() })
+      .update({ abonnement_statut: 'actif', updated_at: new Date().toISOString() })
       .eq('id', id);
 
     if (error) throw error;
