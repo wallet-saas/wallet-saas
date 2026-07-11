@@ -23,6 +23,11 @@ const FRONTEND_URL = process.env.FRONTEND_URL
 const API_URL = process.env.API_URL
   || (process.env.NODE_ENV === 'production' ? 'https://stamply-backend-gn8z.onrender.com' : 'http://localhost:3000');
 
+const APNS_KEY_PATH = process.env.APNS_KEY_PATH || path.join(process.cwd(), APPLE_CERT_PATH, 'apns.pem');
+const APNS_TEAM_ID = process.env.APPLE_TEAM_ID || '4YVDLJ57J7';
+const APNS_KEY_ID = process.env.APNS_KEY_ID || null;
+const APNS_TOPIC = process.env.APPLE_PASS_TYPE_ID || 'pass.com.stamply.4YVDLJ57J7';
+
 const TEMPLATE_DIR = path.join(process.cwd(), APPLE_CERT_PATH, 'StamplyLoyalty.pass');
 const CERTS_DIR = path.join(process.cwd(), APPLE_CERT_PATH);
 
@@ -121,7 +126,17 @@ async function generateSaveUrl(carte, commercant) {
         .replace(/\{\{VISITS\}\}/g, String(carte.visites || 0))
         .replace(/\{\{ADDRESS\}\}/g, [commercant.adresse, commercant.ville].filter(Boolean).join(', ') || '')
         .replace(/\{\{RELEVANT_DATE\}\}/g, new Date().toISOString())
+        .replace(/\{\{AUTH_TOKEN\}\}/g, carte.apple_auth_token || '')
     );
+
+    // Ajouter les données de géolocalisation si disponibles
+    if (commercant.latitude && commercant.longitude) {
+      passData.locations = [{
+        latitude: parseFloat(commercant.latitude),
+        longitude: parseFloat(commercant.longitude),
+        relevantText: 'Vous êtes à proximité ! 🎉',
+      }];
+    }
 
     fs.writeFileSync(path.join(tmpDir, 'pass.json'), JSON.stringify(passData, null, 2));
 
@@ -212,20 +227,199 @@ async function updatePoints(serialNumber, newPoints) {
   if (!isConfigured()) return;
 
   try {
-    // Pour APNS, il faut un certificat Apple Push Services distinct
-    // Format: POST https://api.push.apple.com/3/device/{deviceToken}
-    // La première fois, on stocke le deviceToken dans la table cartes
-    // TODO: implémenter APNS avec le certificat push
-    
-    console.log(`[AppleWallet] Mise à jour points ${serialNumber} → ${newPoints} (APNS à implémenter)`);
+    // Récupérer le push token stocké
+    const { data: carte } = await supabase
+      .from('cartes')
+      .select('apple_push_token, apple_device_id')
+      .eq('pass_serial_number', serialNumber)
+      .single();
+
+    if (!carte || !carte.apple_push_token) {
+      console.log(`[AppleWallet] Pas de push token pour ${serialNumber} — notification ignorée`);
+      return;
+    }
+
+    // Vérifier si le certificat APNS existe
+    const apnsCertPath = APNS_KEY_PATH;
+
+    if (!fs.existsSync(apnsCertPath) && !process.env.APNS_CERT_BASE64) {
+      console.log(`[AppleWallet] ⚠️ Certificat APNS manquant à ${apnsCertPath} — push non envoyé`);
+      console.log(`[AppleWallet] Pour activer: créer un cert Apple Push Services et le placer dans ${apnsCertPath}`);
+      return;
+    }
+
+    // Construire la notification push HTTP/2 vers Apple
+    // Format: POST https://api.push.apple.com/3/device/{pushToken}
+    // Headers: apns-topic, apns-push-type: live
+    const http2 = require('http2');
+    const tls = require('tls');
+    const fs = require('fs');
+
+    // Charger le certificat APNS
+    let apnsCert;
+    if (process.env.APNS_CERT_BASE64) {
+      apnsCert = Buffer.from(process.env.APNS_CERT_BASE64, 'base64');
+    } else if (fs.existsSync(apnsCertPath)) {
+      apnsCert = fs.readFileSync(apnsCertPath);
+    } else {
+      console.log('[AppleWallet] Certificat APNS introuvable');
+      return;
+    }
+
+    const client = http2.connect('https://api.push.apple.com:443', {
+      ca: apnsCert,
+      key: apnsCert,
+      cert: apnsCert,
+    });
+
+    const payload = JSON.stringify({
+      aps: {
+        'content-available': 1,
+      },
+    });
+
+    const req = client.request({
+      ':method': 'POST',
+      ':path': `/3/device/${carte.apple_push_token}`,
+      'apns-topic': APNS_TOPIC,
+      'apns-push-type': 'live-activity',
+      'apns-priority': '5',
+    });
+
+    req.on('response', (headers) => {
+      const status = headers[':status'];
+      if (status === 200) {
+        console.log(`[AppleWallet] ✅ Push APNS envoyé pour ${serialNumber}`);
+      } else {
+        console.error(`[AppleWallet] ❌ Push APNS refusé (status ${status})`);
+      }
+      client.close();
+    });
+
+    req.on('error', (err) => {
+      console.error('[AppleWallet] ❌ Erreur push APNS:', err.message);
+      client.close();
+    });
+
+    req.end(payload);
   } catch (error) {
     console.error('[AppleWallet] updatePoints error:', error.message);
   }
 }
 
+/**
+ * Génère un buffer .pkpass (utilisé par le web service Apple)
+ * 
+ * @param {Object} carte       - { pass_serial_number, points, visites }
+ * @param {Object} commercant  - { nom_enseigne, carte_couleur_primaire, ... }
+ * @returns {Buffer|null}
+ */
+async function generatePkpassBuffer(carte, commercant) {
+  if (!isConfigured()) return null;
+
+  const serialNumber = carte.pass_serial_number;
+  const tmpDir = path.join(process.cwd(), APPLE_CERT_PATH, '.tmp', `ws-${serialNumber}`);
+
+  try {
+    fs.mkdirSync(tmpDir, { recursive: true });
+
+    // Copier les images du template
+    const images = ['icon.png', 'icon@2x.png', 'logo.png', 'logo@2x.png'];
+    for (const img of images) {
+      const src = path.join(TEMPLATE_DIR, img);
+      if (fs.existsSync(src)) {
+        fs.copyFileSync(src, path.join(tmpDir, img));
+      }
+    }
+
+    // Générer pass.json
+    const template = getPassTemplate();
+    if (!template) throw new Error('Template pass.json introuvable');
+
+    const passData = JSON.parse(
+      JSON.stringify(template)
+        .replace(/\{\{SERIAL_NUMBER\}\}/g, serialNumber)
+        .replace(/\{\{TEAM_IDENTIFIER\}\}/g, APPLE_TEAM_ID)
+        .replace(/\{\{ORGANIZATION_NAME\}\}/g, commercant.nom_enseigne || 'Mon Commerce')
+        .replace(/\{\{BACKGROUND_COLOR\}\}/g, commercant.carte_couleur_primaire || '#6366f1')
+        .replace(/\{\{FOREGROUND_COLOR\}\}/g, commercant.carte_couleur_secondaire || '#ffffff')
+        .replace(/\{\{LABEL_COLOR\}\}/g, commercant.carte_couleur_secondaire || '#ffffff')
+        .replace(/\{\{POINTS\}\}/g, String(carte.points || 0))
+        .replace(/\{\{POINTS_REWARD\}\}/g, String(commercant.points_recompense || 10))
+        .replace(/\{\{VISITS\}\}/g, String(carte.visites || 0))
+        .replace(/\{\{ADDRESS\}\}/g, [commercant.adresse, commercant.ville].filter(Boolean).join(', ') || '')
+        .replace(/\{\{RELEVANT_DATE\}\}/g, new Date().toISOString())
+    );
+
+    // Ajouter les données de géolocalisation si disponibles
+    if (commercant.latitude && commercant.longitude) {
+      passData.locations = [{
+        latitude: parseFloat(commercant.latitude),
+        longitude: parseFloat(commercant.longitude),
+        relevantText: 'Vous êtes à proximité ! 🎉',
+      }];
+    }
+
+    fs.writeFileSync(path.join(tmpDir, 'pass.json'), JSON.stringify(passData, null, 2));
+
+    // Manifest.json
+    const manifest = {};
+    const files = fs.readdirSync(tmpDir).filter(f => f !== 'manifest.json');
+    files.sort().forEach(f => {
+      manifest[f] = sha1(path.join(tmpDir, f));
+    });
+    fs.writeFileSync(path.join(tmpDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
+
+    // Signature
+    const signerCertPem = loadCert('APPLE_SIGNER_CERT_BASE64', 'signerCert.pem');
+    const signerKeyPem = loadCert('APPLE_SIGNER_KEY_BASE64', 'signerKey.pem');
+    if (!signerCertPem || !signerKeyPem) throw new Error('Certificats manquants');
+
+    const sign = crypto.createSign('RSA-SHA256');
+    sign.update(JSON.stringify(manifest));
+    const signature = sign.sign({ key: signerKeyPem, cert: signerCertPem, passphrase: '' }, 'DER');
+    fs.writeFileSync(path.join(tmpDir, 'signature'), signature);
+
+    // Zipper
+    const pkpassPath = path.join(process.cwd(), APPLE_CERT_PATH, '.tmp', `ws-${serialNumber}.pkpass`);
+    const output = fs.createWriteStream(pkpassPath);
+    const archive = archiver('zip', { zlib: { level: 9 } });
+
+    await new Promise((resolve, reject) => {
+      output.on('close', resolve);
+      archive.on('error', reject);
+      archive.pipe(output);
+
+      const orderedFiles = ['pass.json', ...images, 'manifest.json', 'signature'];
+      for (const f of orderedFiles) {
+        const fp = path.join(tmpDir, f);
+        if (fs.existsSync(fp)) {
+          archive.file(fp, { name: f });
+        }
+      }
+      archive.finalize();
+    });
+
+    // Lire le buffer
+    const buffer = fs.readFileSync(pkpassPath);
+
+    // Nettoyer
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    fs.rmSync(pkpassPath, { recursive: true, force: true });
+
+    return buffer;
+  } catch (error) {
+    console.error('[AppleWallet] generatePkpassBuffer error:', error.message);
+    if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true });
+    return null;
+  }
+}
+
 module.exports = {
+  APPLE_PASS_TYPE_ID,
   isConfigured,
   generateSaveUrl,
   servePkpass,
   updatePoints,
+  generatePkpassBuffer,
 };

@@ -1,5 +1,6 @@
 const { supabase } = require('../config/supabase');
 const googleWalletService = require('../services/googleWalletService');
+const appleWalletService = require('../services/appleWalletService');
 const badgeService = require('../services/badgeService');
 const autoReviewService = require('../services/autoReviewService');
 const rewardService = require('../services/rewardService');
@@ -179,6 +180,9 @@ const scanQR = async (req, res) => {
 
     // --- Mettre à jour la carte Google Wallet (best-effort) ---
     googleWalletService.updateLoyaltyObjectPoints(carte.pass_serial_number, newTampons);
+
+    // --- Mettre à jour la carte Apple Wallet via APNS (best-effort) ---
+    appleWalletService.updatePoints(carte.pass_serial_number, newTampons);
 
     // --- Vérifier et attribuer des badges ---
     const newBadges = await badgeService.checkAndAssignBadges(carte.id, commercantId, newTampons);

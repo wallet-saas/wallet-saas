@@ -3,6 +3,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
 import { CreditCard, Loader2, XCircle, Smartphone, Monitor } from 'lucide-react';
+import { GeolocationTracker } from '@/components/GeolocationTracker';
 
 // QR code — client-side only
 const QRCode = dynamic(() => import('qrcode.react').then(m => m.QRCodeCanvas), { ssr: false });
@@ -103,6 +104,9 @@ export default function InstallPage() {
         {/* Hint for Google Wallet button styling */}
         <meta name="theme-color" content={couleur} />
       </Head>
+
+      {/* Géolocalisation arrière-plan pour les notifications de proximité */}
+      {cardData && <GeolocationTracker carteId={cardData.serial_number} />}
 
       <div
         className="min-h-screen flex items-center justify-center p-4"

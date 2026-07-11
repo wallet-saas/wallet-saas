@@ -68,5 +68,8 @@
   "locations": [],
   "maxDistance": 100,
   "relevantDate": "{{RELEVANT_DATE}}",
-  "voided": false
+  "voided": false,
+  "webServiceURL": "https://stamply-backend-gn8z.onrender.com/api/wallet",
+  "authenticationToken": "{{AUTH_TOKEN}}",
+  "locations": []
 }

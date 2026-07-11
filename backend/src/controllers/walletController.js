@@ -277,7 +277,8 @@ const generateCardForClient = async (req, res) => {
     }
 
     const serialNumber = uuidv4();
-    const carteObj = { pass_serial_number: serialNumber, points: 0 };
+    const appleAuthToken = uuidv4();
+    const carteObj = { pass_serial_number: serialNumber, points: 0, apple_auth_token: appleAuthToken };
 
     // Générer l'URL Google Wallet
     let googleUrl = null;
@@ -304,6 +305,7 @@ const generateCardForClient = async (req, res) => {
         points: 0,
         google_wallet_url: googleUrl,
         apple_wallet_url: appleUrl,
+        apple_auth_token: appleAuthToken,
         installed_at: new Date().toISOString(),
       }])
       .select()
