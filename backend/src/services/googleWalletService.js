@@ -487,11 +487,58 @@ async function testGenerateSaveUrl() {
   return report;
 }
 
+/**
+ * Envoie une notification push aux clients Google Wallet.
+ * Utilise l'API Google Wallet AddMessage avec TEXT_AND_NOTIFY.
+ * 
+ * @param {string} serialNumber - pass_serial_number de la carte
+ * @param {string} header - Titre de la notification
+ * @param {string} body - Corps du message
+ * @returns {Promise<boolean>}
+ */
+async function sendNotification(serialNumber, header, body) {
+  if (!isConfigured()) return false;
+
+  try {
+    const objectId = getObjectId(serialNumber);
+    const token = await getAccessToken();
+
+    // Google Wallet AddMessage API with TEXT_AND_NOTIFY
+    // https://developers.google.com/wallet/retail/loyalty-cards/use-cases/trigger-push-notifications
+    await axios.post(
+      `${WALLET_API}/loyaltyObject/${objectId}/addMessage`,
+      {
+        message: {
+          header,
+          body,
+          messageType: 'TEXT_AND_NOTIFY',
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    console.log(`[Google Wallet] ✅ Notification envoyée → ${serialNumber}: "${header}"`);
+    return true;
+  } catch (error) {
+    console.error(
+      `[Google Wallet] Erreur sendNotification (${serialNumber}):`,
+      error.response?.data?.error?.message || error.message
+    );
+    return false;
+  }
+}
+
 module.exports = {
   isConfigured,
   generateSaveUrl,
   updateLoyaltyObjectPoints,
   upsertLoyaltyClass,
+  sendNotification,
   testConnection,
   testGenerateSaveUrl,
 };

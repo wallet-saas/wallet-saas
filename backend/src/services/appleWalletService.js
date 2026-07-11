@@ -127,6 +127,7 @@ async function generateSaveUrl(carte, commercant) {
         .replace(/\{\{ADDRESS\}\}/g, [commercant.adresse, commercant.ville].filter(Boolean).join(', ') || '')
         .replace(/\{\{RELEVANT_DATE\}\}/g, new Date().toISOString())
         .replace(/\{\{AUTH_TOKEN\}\}/g, carte.apple_auth_token || '')
+        .replace(/\{\{NOTIF_BODY\}\}/g, '')
     );
 
     // Ajouter les données de géolocalisation si disponibles
@@ -349,6 +350,8 @@ async function generatePkpassBuffer(carte, commercant) {
         .replace(/\{\{VISITS\}\}/g, String(carte.visites || 0))
         .replace(/\{\{ADDRESS\}\}/g, [commercant.adresse, commercant.ville].filter(Boolean).join(', ') || '')
         .replace(/\{\{RELEVANT_DATE\}\}/g, new Date().toISOString())
+        .replace(/\{\{AUTH_TOKEN\}\}/g, '')
+        .replace(/\{\{NOTIF_BODY\}\}/g, '')
     );
 
     // Ajouter les données de géolocalisation si disponibles

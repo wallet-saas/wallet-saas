@@ -40,6 +40,13 @@
         "label": "VISITES",
         "value": "{{VISITS}}",
         "textAlignment": "PKTextAlignmentLeft"
+      },
+      {
+        "key": "stamply_notif",
+        "label": " ",
+        "value": "{{NOTIF_BODY}}",
+        "changeMessage": "🎯 {{NOTIF_BODY}}",
+        "textAlignment": "PKTextAlignmentLeft"
       }
     ],
     "backFields": [

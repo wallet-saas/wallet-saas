@@ -5,6 +5,7 @@ const {
   APNS_ENABLED,
   FCM_ENABLED
 } = require('../services/notificationService');
+const walletNotificationService = require('../services/walletNotificationService');
 
 // Valeurs autorisées pour le champ cible
 const CIBLES_VALIDES = ['tous', 'actifs', 'dormants'];
@@ -65,6 +66,18 @@ const sendNotification = async (req, res) => {
       cible
     );
 
+    // --- Envoyer aussi aux cartes Wallet de TOUS les clients ---
+    // Google Wallet = TEXT_AND_NOTIFY (push natif dans Google Wallet)
+    // Apple Wallet = changeMessage (notification système sur mise à jour)
+    const walletResult = await walletNotificationService.sendToWalletCards(
+      commercantId,
+      titre.trim(),
+      message.trim()
+    ).catch(err => {
+      console.error('[Notifications] Erreur envoi Wallet:', err.message);
+      return { google: 0, apple: 0, total: 0 };
+    });
+
     // --- Mettre à jour la notification avec les stats d'envoi ---
     const { error: updateError } = await supabase
       .from('notifications')
@@ -84,12 +97,13 @@ const sendNotification = async (req, res) => {
       simulation,
       message: simulation
         ? `Notification simulée. ${totalEnvoyes}/${totalCible} clients ciblés.`
-        : `Notification envoyée à ${totalEnvoyes}/${totalCible} clients.`,
+        : `Notification envoyée à ${totalEnvoyes}/${totalCible} clients + ${walletResult.total} cartes Wallet.`,
       data: {
         notificationId: notif.id,
         totalCible,
         totalEnvoyes,
-        cible
+        cible,
+        wallet: walletResult
       }
     });
 
