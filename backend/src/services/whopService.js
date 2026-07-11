@@ -110,7 +110,7 @@ async function updateCommercantFromMembership(membership) {
   const abonnementStatut = mapMembershipStatus(whopStatus);
 
   const updateData = {
-    whop_membership_id: membership.id,
+    whop_subscription_id: membership.id,
     whop_customer_id: membership.user?.id || membership.user_id,
     abonnement_statut: abonnementStatut,
     abonnement_debut: membership.created_at

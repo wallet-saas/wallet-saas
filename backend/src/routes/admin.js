@@ -133,7 +133,7 @@ router.get('/commercants', adminAuth, async (req, res) => {
 
     let query = supabase
       .from('commercants')
-      .select('id, email, nom_enseigne, telephone, adresse, ville, code_postal, abonnement_statut, whop_customer_id, whop_membership_id, wallet_class_configured, created_at, updated_at')
+      .select('id, email, nom_enseigne, telephone, adresse, ville, code_postal, abonnement_statut, whop_customer_id, whop_subscription_id, wallet_class_configured, created_at, updated_at')
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
