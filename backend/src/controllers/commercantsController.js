@@ -56,7 +56,7 @@ async function detectExistingColumns() {
     console.log(`[commercantsController] Detected ${existingColumns.size} columns in commercants table`);
     // Log missing expected columns
     const expected = [
-      'module_notifications', 'notif_max_par_jour', 'notif_heure_debut', 'notif_heure_fin', 'notif_template_defaut',
+      'module_notifications', 'notif_max_par_jour', 'notif_heure_debut', 'notif_heure_fin', 'notif_template_defaut', 'notif_mode_simulation',
       'avis_seuil_reponse', 'avis_template_auto', 'avis_reponse_auto',
       'menu_categories', 'menu_devise', 'menu_afficher_prix',
       'offres_duree_defaut', 'offres_limite_client', 'offres_notif_auto', 'offres_code_auto',
@@ -197,7 +197,7 @@ exports.updateCommercant = async (req, res) => {
       'delai_notif_avis_minutes', 'delai_avis_minutes',
       'rayon_geoloc_metres', 'latitude', 'longitude',
       'google_place_url',
-      'module_notifications', 'notif_max_par_jour', 'notif_heure_debut', 'notif_heure_fin', 'notif_template_defaut',
+      'module_notifications', 'notif_max_par_jour', 'notif_heure_debut', 'notif_heure_fin', 'notif_template_defaut', 'notif_mode_simulation',
       'avis_seuil_reponse', 'avis_template_auto', 'avis_reponse_auto',
       'menu_categories', 'menu_devise', 'menu_afficher_prix',
       'offres_duree_defaut', 'offres_limite_client', 'offres_notif_auto', 'offres_code_auto',
@@ -210,6 +210,9 @@ exports.updateCommercant = async (req, res) => {
       'card_design', 'carte_background_image_url', 'carte_font_family',
       'carte_text_color', 'carte_text_color_auto', 'carte_tier_name',
       'carte_tier_color', 'carte_overlay_opacity', 'carte_overlay_color',
+      // Relance & anniversaire (migration 007)
+      'relance_auto', 'relance_jours', 'anniversaire_auto', 'anniversaire_message',
+      'type_fidelite', 'type_fidelite_config',
     ];
 
     // Build payload with only allowed fields

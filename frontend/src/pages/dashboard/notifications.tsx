@@ -93,7 +93,7 @@ export default function NotificationsPage() {
   }, [moduleEnabled, maxPerDay, heureDebut, heureFin, templateDefaut, modeSimulation, relanceAuto, relanceJours, anniversaireAuto, anniversaireMessage]);
 
   const { status: saveStatusSettings } = useAutoSave({
-    data: { moduleEnabled, maxPerDay, heureDebut, heureFin, templateDefaut, modeSimulation },
+    data: { moduleEnabled, maxPerDay, heureDebut, heureFin, templateDefaut, modeSimulation, relanceAuto, relanceJours, anniversaireAuto, anniversaireMessage },
     onSave: handleAutoSaveSettings,
     debounceMs: 800,
   });

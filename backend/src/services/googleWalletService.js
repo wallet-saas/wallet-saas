@@ -188,7 +188,7 @@ async function upsertLoyaltyClass(commercant) {
 
   // Use a valid placeholder image URL (Google Wallet requires a real image)
   const DEFAULT_LOGO = 'https://placehold.co/200x200/6366f1/ffffff?text=S';
-  const logoUrl = (commercant.carte_logo_url && commercant.carte_logo_url.startsWith('http') && !commercant.carte_logo_url.includes('/api/images/') && !commercant.carte_logo_url.includes('localhost'))
+  const logoUrl = (commercant.carte_logo_url && commercant.carte_logo_url.startsWith('http'))
     ? commercant.carte_logo_url
     : DEFAULT_LOGO;
   const programName = commercant.carte_programme_nom || commercant.nom_enseigne;
