@@ -241,6 +241,7 @@ export const analyticsApi = {
   clientsDormants: () => request<{ clients: ClientDormant[]; total: number }>('/api/analytics/clients-dormants'),
   avis: () => request<any>('/api/analytics/avis'),
   offres: () => request<any>('/api/analytics/offres'),
+  commercant: () => request<any>('/api/analytics/commercant'),
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -336,6 +337,15 @@ export interface Commercant {
   carte_font_family?: string;
   carte_text_color?: string;
   carte_text_color_auto?: boolean;
+  // Relance automatique
+  relance_auto?: boolean;
+  relance_jours?: number;
+  // Anniversaire automatique
+  anniversaire_auto?: boolean;
+  anniversaire_message?: string;
+  // Format fidélité
+  type_fidelite?: string;
+  type_fidelite_config?: any;
   carte_tier_name?: string;
   carte_tier_color?: string;
   carte_overlay_opacity?: number;

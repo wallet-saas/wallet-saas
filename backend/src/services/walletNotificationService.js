@@ -68,24 +68,36 @@ async function sendToWalletCards(commercantId, titre, message, logoUrl = null) {
       }
     });
 
-  // Apple Wallet — APNS push pour mettre à jour la carte avec le message
-  // Le pass.json a un champ `stamply_notif` avec changeMessage
-  // En mettant à jour la carte, le changeMessage apparaît comme notification iOS
+  // --- Apple Wallet ---
+  // 1. D'abord, stocker le message de notification dans la carte
+  //    pour que le web service Apple Wallet puisse l'injecter dans le pass
+  // 2. Puis envoyer APNS push pour que l'iPhone demande la mise à jour
+  //    (le changeMessage "🎯 {{NOTIF_BODY}}" s'affichera automatiquement)
+  const appleCarteIds = cartes
+    .filter(c => c.apple_push_token)
+    .map(c => c.id);
+
+  if (appleCarteIds.length > 0) {
+    // Stocker le message pour TOUTES les cartes Apple en une requête
+    await supabase
+      .from('cartes')
+      .update({
+        last_notif_titre: titre,
+        last_notif_message: message,
+        last_notif_sent_at: new Date().toISOString(),
+      })
+      .in('id', appleCarteIds)
+      .catch(err => {
+        console.error(`[WalletNotify] Erreur stockage message Apple:`, err.message);
+      });
+  }
+
+  // Envoyer APNS à chaque carte (ne fait rien si pas de cert APNS)
   const applePromises = cartes
-    .filter(c => c.apple_push_token) // Seulement les cartes avec push token enregistré
+    .filter(c => c.apple_push_token)
     .map(async (carte) => {
       try {
-        // Pour Apple Wallet, on ne peut pas envoyer de texte libre
-        // Mais la mise à jour des points déclenchera le changeMessage
-        // On utilise l'existing updatePoints qui envoie APNS
-        // Le changeMessage "🎯 {{NOTIF_BODY}}" est déjà dans le pass.json
-        // 
-        // Alternative : utiliser updatePoints pour déclencher une notif
-        // qui dit "points mis à jour" — ce qui donne au moins une indication
-        await appleWalletService.updatePoints(
-          carte.pass_serial_number,
-          null
-        );
+        await appleWalletService.notifyPush(carte.pass_serial_number);
         appleSent++;
       } catch (err) {
         console.error(`[WalletNotify] Apple échec ${carte.pass_serial_number}:`, err.message);

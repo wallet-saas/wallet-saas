@@ -54,6 +54,7 @@ const qrCodeRoutes = require('./routes/qrCode');
 const adminRoutes = require('./routes/admin');
 const analyticsV2Routes = require('./routes/analytics');
 const appleWebServiceRoutes = require('./routes/appleWebService');
+const relanceRoutes = require('./routes/relance');
 
 app.use('/api/commercants', commercantsRoutes);
 app.use('/api/auth', authRoutes);
@@ -76,6 +77,7 @@ app.use('/api/qr', qrCodeRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/analytics/v2', analyticsV2Routes);
 app.use('/api/wallet', appleWebServiceRoutes);
+app.use('/api/relance', relanceRoutes);
 
 // Note: /health is also registered via healthRoutes above (line 54)
 

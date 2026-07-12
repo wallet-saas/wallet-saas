@@ -17,7 +17,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/Toast';
 import { useAutoSave, SaveIndicator } from '@/hooks/useAutoSave';
 import { formatDateTime, formatPercent, formatNumber } from '@/utils/format';
-import { Bell, Send, Users, Eye, TrendingUp, CheckCircle, AlertCircle, Settings, Zap } from 'lucide-react';
+import { Bell, Send, Users, Eye, TrendingUp, CheckCircle, AlertCircle, Settings, Zap, Gift, Clock } from 'lucide-react';
 
 const schema = z.object({
   titre: z.string().min(1, 'Titre requis').max(80, '80 car. max'),
@@ -53,6 +53,14 @@ export default function NotificationsPage() {
   const [templateDefaut, setTemplateDefaut] = useState('');
   const [modeSimulation, setModeSimulation] = useState(false); // sera écrasé par le useEffect
 
+  // Relance & anniversaire
+  const [relanceAuto, setRelanceAuto] = useState(false);
+  const [relanceJours, setRelanceJours] = useState(14);
+  const [anniversaireAuto, setAnniversaireAuto] = useState(false);
+  const [anniversaireMessage, setAnniversaireMessage] = useState('Joyeux anniversaire ! 🎉 Profitez d\'une offre spéciale pour votre journée.');
+  const [testRelanceLoading, setTestRelanceLoading] = useState(false);
+  const [testAnnivLoading, setTestAnnivLoading] = useState(false);
+
   useEffect(() => {
     if (commercant) {
       setModuleEnabled(commercant.module_notifications ?? true);
@@ -61,6 +69,10 @@ export default function NotificationsPage() {
       setHeureFin(commercant.notif_heure_fin ?? 22);
       setTemplateDefaut(commercant.notif_template_defaut ?? '');
       setModeSimulation(commercant.notif_mode_simulation ?? false);
+      setRelanceAuto(commercant?.relance_auto ?? false);
+      setRelanceJours(commercant?.relance_jours ?? 14);
+      setAnniversaireAuto(commercant?.anniversaire_auto ?? false);
+      setAnniversaireMessage(commercant?.anniversaire_message ?? 'Joyeux anniversaire ! 🎉 Profitez d\'une offre spéciale pour votre journée.');
     }
   }, [commercant]);
 
@@ -72,9 +84,13 @@ export default function NotificationsPage() {
       notif_heure_fin: heureFin,
       notif_template_defaut: templateDefaut,
       notif_mode_simulation: modeSimulation,
+      relance_auto: relanceAuto,
+      relance_jours: relanceJours,
+      anniversaire_auto: anniversaireAuto,
+      anniversaire_message: anniversaireMessage,
     });
     // Pas de refreshUser ici — le state local est déjà à jour
-  }, [moduleEnabled, maxPerDay, heureDebut, heureFin, templateDefaut, modeSimulation]);
+  }, [moduleEnabled, maxPerDay, heureDebut, heureFin, templateDefaut, modeSimulation, relanceAuto, relanceJours, anniversaireAuto, anniversaireMessage]);
 
   const { status: saveStatusSettings } = useAutoSave({
     data: { moduleEnabled, maxPerDay, heureDebut, heureFin, templateDefaut, modeSimulation },
@@ -115,6 +131,37 @@ export default function NotificationsPage() {
   };
 
   const cibleLabel: Record<string, string> = { tous: 'Tous', actifs: 'Actifs', dormants: 'Dormants' };
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+  const getToken = () => typeof window !== 'undefined' ? localStorage.getItem('stamply_token') : null;
+
+  const handleTestRelance = async () => {
+    setTestRelanceLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/relance/run`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+      });
+      const body = await res.json();
+      toast(body?.data?.message || body?.message || 'Relance exécutée', 'success');
+    } catch (e: any) {
+      toast(e?.message || 'Erreur', 'error');
+    } finally { setTestRelanceLoading(false); }
+  };
+
+  const handleTestAnniv = async () => {
+    setTestAnnivLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/relance/anniversaire`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+      });
+      const body = await res.json();
+      toast(body?.data?.message || body?.message || 'Anniversaires envoyés', 'success');
+    } catch (e: any) {
+      toast(e?.message || 'Erreur', 'error');
+    } finally { setTestAnnivLoading(false); }
+  };
 
   return (
     <DashboardLayout>
@@ -280,6 +327,52 @@ export default function NotificationsPage() {
                     </div>
                     <Toggle checked={modeSimulation} onChange={setModeSimulation} />
                   </div>
+                </CardBody>
+              </Card>
+
+              {/* ─── Relance automatique clients dormants ─── */}
+              <Card>
+                <CardHeader><CardTitle>Relance automatique</CardTitle></CardHeader>
+                <CardBody className="space-y-4">
+                  <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Relancer les clients inactifs</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Envoie une notification push aux clients qui ne sont pas venus depuis X jours</p>
+                    </div>
+                    <Toggle checked={relanceAuto} onChange={setRelanceAuto} />
+                  </div>
+                  {relanceAuto && (
+                    <>
+                      <Input label="Seuil d'inactivité (jours)" type="number" min={3} max={90} value={relanceJours} onChange={e => setRelanceJours(Number(e.target.value))} />
+                      <div className="text-xs text-gray-400">Une notification sera envoyée tous les {relanceJours || 14} jours maximum.</div>
+                      <Button variant="secondary" size="sm" loading={testRelanceLoading} onClick={handleTestRelance}>
+                        <Send className="h-3.5 w-3.5" /> Tester la relance maintenant
+                      </Button>
+                    </>
+                  )}
+                </CardBody>
+              </Card>
+
+              {/* ─── Anniversaire automatique ─── */}
+              <Card>
+                <CardHeader><CardTitle>Annonces d'anniversaire</CardTitle></CardHeader>
+                <CardBody className="space-y-4">
+                  <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Souhaiter l'anniversaire aux clients</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Envoie une notification push personnalisée le jour de leur anniversaire</p>
+                    </div>
+                    <Toggle checked={anniversaireAuto} onChange={setAnniversaireAuto} />
+                  </div>
+                  {anniversaireAuto && (
+                    <>
+                      <Textarea label="Message d'anniversaire" rows={2} value={anniversaireMessage} onChange={e => setAnniversaireMessage(e.target.value)} />
+                      <div className="text-xs text-gray-400">Les clients doivent avoir renseigné leur date de naissance sur la page d'installation.</div>
+                      <Button variant="secondary" size="sm" loading={testAnnivLoading} onClick={handleTestAnniv}>
+                        <Send className="h-3.5 w-3.5" /> Tester l'anniversaire maintenant
+                      </Button>
+                    </>
+                  )}
                 </CardBody>
               </Card>
 

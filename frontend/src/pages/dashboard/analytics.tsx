@@ -29,6 +29,15 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [relanceLoading, setRelanceLoading] = useState(false);
 
+  // Données enrichies type Panthera
+  const [commercantOverview, setCommercantOverview] = useState<any>(null);
+  const [clientsActifs, setClientsActifs] = useState(0);
+  const [clientsDormants, setClientsDormants] = useState(0);
+  const [clientsPerdus, setClientsPerdus] = useState(0);
+  const [tauxRetention, setTauxRetention] = useState(0);
+  const [meilleursClients, setMeilleursClients] = useState<any[]>([]);
+  const [clientsRecents, setClientsRecents] = useState<any[]>([]);
+
   useEffect(() => {
     Promise.allSettled([
       analyticsApi.overview(),
@@ -37,13 +46,24 @@ export default function AnalyticsPage() {
       analyticsApi.clientsDormants(),
       analyticsApi.avis(),
       analyticsApi.offres(),
-    ]).then(([ov, ca, no, do_, av, of_]) => {
+      analyticsApi.commercant(),
+    ]).then(([ov, ca, no, do_, av, of_, co]) => {
       if (ov.status === 'fulfilled') setOverview(ov.value);
       if (ca.status === 'fulfilled') setCards(ca.value);
       if (no.status === 'fulfilled') setNotifs(no.value);
       if (do_.status === 'fulfilled') setDormants(do_.value.clients || []);
       if (av.status === 'fulfilled') setAvisStats(av.value);
       if (of_.status === 'fulfilled') setOffresStats(of_.value);
+      if (co.status === 'fulfilled') {
+        const data = co.value;
+        setCommercantOverview(data);
+        setClientsActifs(data?.clientsActifs ?? 0);
+        setClientsDormants(data?.clientsDormants ?? 0);
+        setClientsPerdus(data?.clientsPerdus ?? 0);
+        setTauxRetention(data?.tauxRetention ?? 0);
+        setMeilleursClients(data?.meilleursClients ?? []);
+        setClientsRecents(data?.clientsRecents ?? []);
+      }
     }).finally(() => setLoading(false));
   }, []);
 
@@ -79,6 +99,16 @@ export default function AnalyticsPage() {
             <StatCard label="Notifications" value={formatNumber(overview?.totalNotifications ?? 0)} icon={Bell} iconBg="bg-blue-50" iconColor="text-blue-600" />
             <StatCard label="Clients dormants" value={formatNumber(overview?.clientsDormants ?? 0)} icon={Clock} iconBg="bg-orange-50" iconColor="text-orange-600" />
           </div>
+
+          {/* Performances clés type Panthera */}
+          {commercantOverview && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard label="Chiffre d'affaires brut" value={`${formatNumber(commercantOverview.chiffreAffairesBrut || 0)} €`} icon={TrendingUp} iconBg="bg-green-50" iconColor="text-green-600" trend={commercantOverview.evolutionCA ? { value: `+${commercantOverview.evolutionCA}%`, positive: true } : undefined} />
+              <StatCard label="Revenus de fidélité" value={`${formatNumber(commercantOverview.revenusFidelite || 0)} €`} icon={TrendingUp} iconBg="bg-blue-50" iconColor="text-blue-600" />
+              <StatCard label="Valeur vie client" value={`${commercantOverview.valeurVieClient || 0} €`} icon={Users} iconBg="bg-purple-50" iconColor="text-purple-600" trend={commercantOverview.evolutionCLV ? { value: `+${commercantOverview.evolutionCLV}%`, positive: true } : undefined} />
+              <StatCard label="ROI" value={`1 € → ${commercantOverview.roi || '0,00'} €`} icon={TrendingUp} iconBg="bg-orange-50" iconColor="text-orange-600" trend={commercantOverview.evolutionROI ? { value: `+${commercantOverview.evolutionROI}%`, positive: true } : undefined} />
+            </div>
+          )}
 
           {/* Charts row 1 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -261,6 +291,79 @@ export default function AnalyticsPage() {
                     <div key={s.label} className="bg-gray-50 rounded-xl p-4 text-center">
                       <p className="text-2xl font-bold text-gray-900">{s.value}</p>
                       <p className="text-xs text-gray-500 mt-1">{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardBody>
+            </Card>
+          )}
+
+          {/* Rétention clients */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Rétention clients</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-gray-50 rounded-xl p-4 text-center">
+                  <p className="text-2xl font-bold text-gray-900">{formatNumber(clientsActifs)}</p>
+                  <p className="text-xs text-gray-500 mt-1">Clients actifs (30j)</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-4 text-center">
+                  <p className="text-2xl font-bold text-orange-600">{formatNumber(clientsDormants)}</p>
+                  <p className="text-xs text-gray-500 mt-1">Clients dormants</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-4 text-center">
+                  <p className="text-2xl font-bold text-red-600">{formatNumber(clientsPerdus)}</p>
+                  <p className="text-xs text-gray-500 mt-1">Clients perdus</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-4 text-center">
+                  <p className="text-2xl font-bold text-indigo-600">{formatNumber(tauxRetention)}%</p>
+                  <p className="text-xs text-gray-500 mt-1">Taux de rétention</p>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+
+          {/* Top clients */}
+          {meilleursClients?.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle>🏆 Meilleurs clients</CardTitle></CardHeader>
+              <CardBody className="p-0">
+                <div className="divide-y divide-gray-50">
+                  {meilleursClients.map((c: any, i: number) => (
+                    <div key={i} className="flex items-center justify-between px-6 py-3">
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg font-bold text-gray-300">#{i + 1}</span>
+                        <p className="text-sm font-medium text-gray-900">{c.nom || `Client #${i + 1}`}</p>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <span>{c.total_visites} visites</span>
+                        <span className="font-semibold text-indigo-600">{c.tampons} pts</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardBody>
+            </Card>
+          )}
+
+          {/* Clients récents */}
+          {clientsRecents?.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle>👥 Clients récents</CardTitle></CardHeader>
+              <CardBody className="p-0">
+                <div className="divide-y divide-gray-50">
+                  {clientsRecents.slice(0, 10).map((c: any, i: number) => (
+                    <div key={i} className="flex items-center justify-between px-6 py-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900">{c.client_nom || 'Anonyme'}</p>
+                        <p className="text-xs text-gray-400">{c.client_email || ''}{c.client_email && c.client_telephone ? ' · ' : ''}{c.client_telephone || ''}</p>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-gray-500">
+                        <span>{c.total_visites} visites</span>
+                        <span className="font-semibold">{c.tampons} pts</span>
+                      </div>
                     </div>
                   ))}
                 </div>

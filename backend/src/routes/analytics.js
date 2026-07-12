@@ -18,6 +18,8 @@
 const express = require('express');
 const router = express.Router();
 const analyticsService = require('../services/analyticsService');
+const authMiddleware = require('../middleware/authMiddleware');
+const commercantAnalyticsService = require('../services/commercantAnalyticsService');
 
 // ─── GET /api/analytics/dashboard ─────────────────────────────────────────────
 
@@ -137,6 +139,20 @@ router.get('/projections', async (req, res) => {
     const projections = await analyticsService.getProjections();
     res.json({ success: true, data: projections });
   } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── GET /api/analytics/commercant ────────────────────────────────────────────
+// Dashboard analytics pour le commerçant connecté
+
+router.get('/commercant', authMiddleware, async (req, res) => {
+  try {
+    const commercantId = req.commercant.id;
+    const dashboard = await commercantAnalyticsService.getDashboard(commercantId);
+    res.json({ success: true, data: dashboard });
+  } catch (err) {
+    console.error('[Analytics] Dashboard commerçant error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });

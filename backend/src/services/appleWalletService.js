@@ -219,6 +219,97 @@ function servePkpass(req, res) {
 }
 
 /**
+ * Envoie une notification push APNS pour signaler à l'iPhone
+ * qu'il doit récupérer le pass mis à jour (qui contient le message).
+ * 
+ * Contrairement à updatePoints(), cette fonction ne met pas à jour les points —
+ * elle envoie juste le signal "content-available" pour que l'iPhone
+ * appelle le web service et récupère le pass avec le message de notification.
+ * 
+ * Le changeMessage "🎯 {{NOTIF_BODY}}" dans pass.json fera apparaître
+ * une notification système sur l'iPhone.
+ * 
+ * @param {string} serialNumber - pass_serial_number de la carte
+ */
+async function notifyPush(serialNumber) {
+  if (!isConfigured()) return;
+
+  try {
+    const { data: carte } = await supabase
+      .from('cartes')
+      .select('apple_push_token')
+      .eq('pass_serial_number', serialNumber)
+      .single();
+
+    if (!carte || !carte.apple_push_token) {
+      console.log(`[AppleWallet] Pas de push token pour ${serialNumber}`);
+      return;
+    }
+
+    // Vérifier si le certificat APNS existe
+    const apnsCertPath = APNS_KEY_PATH;
+    if (!fs.existsSync(apnsCertPath) && !process.env.APNS_CERT_BASE64) {
+      console.log(`[AppleWallet] ⚠️ Certificat APNS manquant — push non envoyé pour ${serialNumber}`);
+      console.log(`[AppleWallet] Pour activer: créer un cert Apple Push Services sur developer.apple.com`);
+      return;
+    }
+
+    const http2 = require('http2');
+    const tls = require('tls');
+
+    // Charger le certificat APNS
+    let apnsCert;
+    if (process.env.APNS_CERT_BASE64) {
+      apnsCert = Buffer.from(process.env.APNS_CERT_BASE64, 'base64');
+    } else if (fs.existsSync(apnsCertPath)) {
+      apnsCert = fs.readFileSync(apnsCertPath);
+    } else {
+      console.log('[AppleWallet] Certificat APNS introuvable');
+      return;
+    }
+
+    const client = http2.connect('https://api.push.apple.com:443', {
+      ca: apnsCert,
+      key: apnsCert,
+      cert: apnsCert,
+    });
+
+    const payload = JSON.stringify({
+      aps: {
+        'content-available': 1,
+      },
+    });
+
+    const req = client.request({
+      ':method': 'POST',
+      ':path': `/3/device/${carte.apple_push_token}`,
+      'apns-topic': APNS_TOPIC,
+      'apns-push-type': 'live',
+      'apns-priority': '5',
+    });
+
+    req.on('response', (headers) => {
+      const status = headers[':status'];
+      if (status === 200) {
+        console.log(`[AppleWallet] ✅ Push APNS envoyé pour ${serialNumber}`);
+      } else {
+        console.error(`[AppleWallet] ❌ Push APNS refusé (status ${status})`);
+      }
+      client.close();
+    });
+
+    req.on('error', (err) => {
+      console.error('[AppleWallet] ❌ Erreur push APNS:', err.message);
+      client.close();
+    });
+
+    req.end(payload);
+  } catch (error) {
+    console.error('[AppleWallet] notifyPush error:', error.message);
+  }
+}
+
+/**
  * Envoie une notification push APNS pour mettre à jour une carte Apple Wallet.
  * 
  * @param {string} serialNumber - pass_serial_number de la carte
@@ -283,7 +374,7 @@ async function updatePoints(serialNumber, newPoints) {
       ':method': 'POST',
       ':path': `/3/device/${carte.apple_push_token}`,
       'apns-topic': APNS_TOPIC,
-      'apns-push-type': 'live-activity',
+      'apns-push-type': 'live',
       'apns-priority': '5',
     });
 
@@ -337,6 +428,21 @@ async function generatePkpassBuffer(carte, commercant) {
     const template = getPassTemplate();
     if (!template) throw new Error('Template pass.json introuvable');
 
+    // Chercher si un message de notification est stocké pour cette carte
+    let notifMessage = '';
+    try {
+      const { data: carteDb } = await supabase
+        .from('cartes')
+        .select('last_notif_message')
+        .eq('pass_serial_number', serialNumber)
+        .single();
+      if (carteDb?.last_notif_message) {
+        notifMessage = `🎯 ${carteDb.last_notif_message}`;
+      }
+    } catch (_) {
+      // Non bloquant
+    }
+
     const passData = JSON.parse(
       JSON.stringify(template)
         .replace(/\{\{SERIAL_NUMBER\}\}/g, serialNumber)
@@ -351,7 +457,7 @@ async function generatePkpassBuffer(carte, commercant) {
         .replace(/\{\{ADDRESS\}\}/g, [commercant.adresse, commercant.ville].filter(Boolean).join(', ') || '')
         .replace(/\{\{RELEVANT_DATE\}\}/g, new Date().toISOString())
         .replace(/\{\{AUTH_TOKEN\}\}/g, '')
-        .replace(/\{\{NOTIF_BODY\}\}/g, '')
+        .replace(/\{\{NOTIF_BODY\}\}/g, notifMessage)
     );
 
     // Ajouter les données de géolocalisation si disponibles
@@ -424,5 +530,6 @@ module.exports = {
   generateSaveUrl,
   servePkpass,
   updatePoints,
+  notifyPush,
   generatePkpassBuffer,
 };
