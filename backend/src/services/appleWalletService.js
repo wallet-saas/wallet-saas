@@ -246,32 +246,23 @@ async function notifyPush(serialNumber) {
       return;
     }
 
-    // Vérifier si le certificat APNS existe
-    const apnsCertPath = APNS_KEY_PATH;
-    if (!fs.existsSync(apnsCertPath) && !process.env.APNS_CERT_BASE64) {
-      console.log(`[AppleWallet] ⚠️ Certificat APNS manquant — push non envoyé pour ${serialNumber}`);
-      console.log(`[AppleWallet] Pour activer: créer un cert Apple Push Services sur developer.apple.com`);
+    // Utiliser le même certificat que pour signer les passes
+    // (Apple permet d'utiliser le cert Pass Type ID pour les push)
+    const signerCert = loadCert('APPLE_SIGNER_CERT_BASE64', 'signerCert.pem');
+    const signerKey = loadCert('APPLE_SIGNER_KEY_BASE64', 'signerKey.pem');
+    const wwdr = loadCert('APPLE_WWDR_BASE64', 'wwdr.pem');
+
+    if (!signerCert || !signerKey) {
+      console.log(`[AppleWallet] ⚠️ Certificat signataire manquant — push non envoyé pour ${serialNumber}`);
       return;
     }
 
     const http2 = require('http2');
-    const tls = require('tls');
-
-    // Charger le certificat APNS
-    let apnsCert;
-    if (process.env.APNS_CERT_BASE64) {
-      apnsCert = Buffer.from(process.env.APNS_CERT_BASE64, 'base64');
-    } else if (fs.existsSync(apnsCertPath)) {
-      apnsCert = fs.readFileSync(apnsCertPath);
-    } else {
-      console.log('[AppleWallet] Certificat APNS introuvable');
-      return;
-    }
 
     const client = http2.connect('https://api.push.apple.com:443', {
-      ca: apnsCert,
-      key: apnsCert,
-      cert: apnsCert,
+      ca: wwdr || undefined,
+      key: signerKey,
+      cert: signerCert,
     });
 
     const payload = JSON.stringify({
@@ -331,37 +322,23 @@ async function updatePoints(serialNumber, newPoints) {
       return;
     }
 
-    // Vérifier si le certificat APNS existe
-    const apnsCertPath = APNS_KEY_PATH;
+    // Utiliser le même certificat que pour signer les passes
+    // (Apple permet d'utiliser le cert Pass Type ID pour les push)
+    const signerCert = loadCert('APPLE_SIGNER_CERT_BASE64', 'signerCert.pem');
+    const signerKey = loadCert('APPLE_SIGNER_KEY_BASE64', 'signerKey.pem');
+    const wwdr = loadCert('APPLE_WWDR_BASE64', 'wwdr.pem');
 
-    if (!fs.existsSync(apnsCertPath) && !process.env.APNS_CERT_BASE64) {
-      console.log(`[AppleWallet] ⚠️ Certificat APNS manquant à ${apnsCertPath} — push non envoyé`);
-      console.log(`[AppleWallet] Pour activer: créer un cert Apple Push Services et le placer dans ${apnsCertPath}`);
+    if (!signerCert || !signerKey) {
+      console.log(`[AppleWallet] ⚠️ Certificat signataire manquant — push non envoyé pour ${serialNumber}`);
       return;
     }
 
-    // Construire la notification push HTTP/2 vers Apple
-    // Format: POST https://api.push.apple.com/3/device/{pushToken}
-    // Headers: apns-topic, apns-push-type: live
     const http2 = require('http2');
-    const tls = require('tls');
-    const fs = require('fs');
-
-    // Charger le certificat APNS
-    let apnsCert;
-    if (process.env.APNS_CERT_BASE64) {
-      apnsCert = Buffer.from(process.env.APNS_CERT_BASE64, 'base64');
-    } else if (fs.existsSync(apnsCertPath)) {
-      apnsCert = fs.readFileSync(apnsCertPath);
-    } else {
-      console.log('[AppleWallet] Certificat APNS introuvable');
-      return;
-    }
 
     const client = http2.connect('https://api.push.apple.com:443', {
-      ca: apnsCert,
-      key: apnsCert,
-      cert: apnsCert,
+      ca: wwdr || undefined,
+      key: signerKey,
+      cert: signerCert,
     });
 
     const payload = JSON.stringify({
