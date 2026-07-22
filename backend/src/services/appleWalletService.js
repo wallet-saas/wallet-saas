@@ -91,14 +91,19 @@ function sha1(filePath) {
  * @returns {string|null}      - URL de téléchargement du .pkpass ou null
  */
 async function generateSaveUrl(carte, commercant) {
-  if (!isConfigured()) return null;
+  if (!isConfigured()) {
+    console.log('[AppleWallet] generateSaveUrl: isConfigured() false');
+    return null;
+  }
 
   const serialNumber = carte.pass_serial_number;
   const tmpDir = path.join(process.cwd(), APPLE_CERT_PATH, '.tmp', serialNumber);
+  console.log(`[AppleWallet] generateSaveUrl: tmpDir=${tmpDir}, cwd=${process.cwd()}`);
 
   try {
     // 1. Créer le dossier temporaire
     fs.mkdirSync(tmpDir, { recursive: true });
+    console.log('[AppleWallet] Step 1: tmpDir créé');
 
     // 2. Copier les images du template
     const images = ['icon.png', 'icon@2x.png', 'logo.png', 'logo@2x.png'];
@@ -106,12 +111,16 @@ async function generateSaveUrl(carte, commercant) {
       const src = path.join(TEMPLATE_DIR, img);
       if (fs.existsSync(src)) {
         fs.copyFileSync(src, path.join(tmpDir, img));
+      } else {
+        console.log(`[AppleWallet] Warning: image manquante ${img} dans ${TEMPLATE_DIR}`);
       }
     }
+    console.log('[AppleWallet] Step 2: images copiées');
 
     // 3. Générer pass.json personnalisé
     const template = getPassTemplate();
     if (!template) throw new Error('Template pass.json introuvable');
+    console.log('[AppleWallet] Step 3: template chargé');
 
     const passData = JSON.parse(
       JSON.stringify(template)
