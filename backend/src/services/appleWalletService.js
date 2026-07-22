@@ -193,6 +193,7 @@ async function generateSaveUrl(carte, commercant) {
     return publicUrl;
   } catch (error) {
     console.error('[AppleWallet] generateSaveUrl error:', error.message);
+    console.error('[AppleWallet] Stack:', error.stack);
     // Nettoyer en cas d'erreur
     if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true });
     return null;
