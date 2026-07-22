@@ -160,7 +160,7 @@ async function generateSaveUrl(carte, commercant) {
 
     const sign = crypto.createSign('RSA-SHA256');
     sign.update(JSON.stringify(manifest));
-    const signature = sign.sign({ key: signerKeyPem, cert: signerCertPem, passphrase: '' }, 'DER');
+    const signature = sign.sign(signerKeyPem);
     fs.writeFileSync(path.join(tmpDir, 'signature'), signature);
 
     // 6. Zipper en .pkpass
@@ -464,7 +464,7 @@ async function generatePkpassBuffer(carte, commercant) {
 
     const sign = crypto.createSign('RSA-SHA256');
     sign.update(JSON.stringify(manifest));
-    const signature = sign.sign({ key: signerKeyPem, cert: signerCertPem, passphrase: '' }, 'DER');
+    const signature = sign.sign(signerKeyPem);
     fs.writeFileSync(path.join(tmpDir, 'signature'), signature);
 
     // Zipper
