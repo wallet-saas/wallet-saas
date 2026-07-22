@@ -294,14 +294,14 @@ export default function App() {
           <div className="hidden md:flex items-center gap-4">
             {/* Bouton Admin */}
             <a
-              href="https://stamply-gamma.vercel.app/admin/login"
+              href="/admin/login"
               className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-primary transition-all shadow-sm"
               title="Accès Administrateur"
             >
               <Lock size={14} />
             </a>
             <a
-              href="https://stamply-gamma.vercel.app/auth/login"
+              href="/login"
               className="text-sm font-bold hover:text-primary transition-colors"
             >
               Connexion
@@ -316,7 +316,7 @@ export default function App() {
 
           <div className="md:hidden flex items-center gap-3">
             <a
-              href="https://stamply-gamma.vercel.app/admin/login"
+              href="/admin/login"
               className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500"
             >
               <Lock size={14} />
@@ -426,7 +426,7 @@ export default function App() {
                 className="flex flex-col sm:flex-row gap-4 pt-4"
               >
                 <a
-                  href="https://stamply-gamma.vercel.app/auth/register"
+                  href="/register"
                   className="relative overflow-hidden rounded-full bg-foreground text-background px-8 py-4 font-bold shadow-xl transition-all hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98] inline-flex items-center gap-2 justify-center"
                 >
                   Commencer maintenant <ArrowRight size={20} />
@@ -589,13 +589,13 @@ export default function App() {
                     <div className="border-beam-container rounded-3xl w-72 h-auto shadow-2xl rotate-3">
                       <div className="border-beam-content bg-white p-8 flex flex-col gap-4">
                         <a
-                          href="https://stamply-gamma.vercel.app/install/demo"
+                          href="/install/demo"
                           className="w-full bg-black text-white py-4 rounded-xl flex items-center justify-center gap-3 font-bold text-lg"
                         >
                           Ajouter à Apple Wallet
                         </a>
                         <a
-                          href="https://stamply-gamma.vercel.app/install/demo"
+                          href="/install/demo"
                           className="w-full bg-white border-2 border-gray-200 py-4 rounded-xl flex items-center justify-center gap-3 font-bold text-lg"
                         >
                           Ajouter à Google Wallet
@@ -1171,7 +1171,7 @@ export default function App() {
 
                   <div className="mt-12 relative z-10">
                     <a
-                      href="https://stamply-gamma.vercel.app/auth/register"
+                      href="/register"
                       className="block w-full bg-white text-black py-4 rounded-xl font-black text-lg hover:scale-[1.02] transition-transform shadow-[0_0_40px_rgba(255,255,255,0.3)] text-center"
                     >
                       Récupérer ce CA →
@@ -1226,7 +1226,7 @@ export default function App() {
                 </ul>
 
                 <a
-                  href="https://stamply-gamma.vercel.app/auth/register"
+                  href="/register"
                   className="relative overflow-hidden rounded-full bg-foreground text-background px-8 py-4 font-bold shadow-xl transition-all hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98] w-full text-xl py-6 block text-center"
                 >
                   Démarrer mon essai
