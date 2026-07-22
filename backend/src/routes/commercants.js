@@ -3,6 +3,7 @@ const router = express.Router();
 const commercantsController = require('../controllers/commercantsController');
 const searchController = require('../controllers/commercantsSearchController');
 const authMiddleware = require('../middleware/authMiddleware');
+const { supabase } = require('../config/supabase');
 
 // Public — recherche et listing (AVANT /:id pour éviter le wildcard)
 router.get('/search', searchController.search);
