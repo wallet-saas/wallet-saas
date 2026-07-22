@@ -333,6 +333,25 @@
   -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
 }
 
+@layer utilities {
+  .animate-marquee {
+    animation: marquee 40s linear infinite;
+    display: flex;
+    width: max-content;
+  }
+
+  .animate-marquee-reverse {
+    animation: marquee 40s linear infinite reverse;
+    display: flex;
+    width: max-content;
+  }
+
+  .animate-marquee:hover,
+  .animate-marquee-reverse:hover {
+    animation-play-state: paused;
+  }
+}
+
 /* Stat cards */
 @keyframes stat-pop {
   0% { opacity: 0; transform: scale(0.9) translateY(10px); }

@@ -255,7 +255,7 @@ export default function App() {
       </Head>
     <div className="min-h-screen bg-background relative selection:bg-primary/20 selection:text-primary font-sans">
       {/* Navbar */}
-      <nav className="fixed top-0 w-full glass-card border-b-0 z-50 transition-all duration-300">
+      <nav className="fixed top-0 w-full z-50 transition-all duration-300 bg-white/90 backdrop-blur-md shadow-sm">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center text-white font-black shadow-lg">
@@ -1032,7 +1032,7 @@ export default function App() {
             </div>
 
             <div className="animate-marquee-reverse gap-6 items-center">
-              {[...testimonials.reverse(), ...testimonials].map((t, i) => (
+              {[...testimonials].reverse().concat(testimonials).map((t, i) => (
                 <div
                   key={i}
                   className="w-[400px] h-[220px] bg-[#1a1f2e] border border-white/10 rounded-[2rem] p-8 flex flex-col justify-between hover:bg-[#1f2537] transition-all hover:border-purple-500/50 shrink-0 group"
