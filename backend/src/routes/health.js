@@ -113,4 +113,37 @@ router.get('/diagnostics', async (req, res) => {
   res.json(diagnostics);
 });
 
+/**
+ * GET /api/health/test-apple
+ * Teste la génération d'un pass Apple Wallet et retourne l'erreur exacte
+ */
+router.get('/test-apple', async (req, res) => {
+  const result = {
+    configured: appleWalletService.isConfigured(),
+    pass_type_id: appleWalletService.APPLE_PASS_TYPE_ID || 'N/A',
+    generate_test: null,
+    error: null,
+  };
+
+  // Test generateSaveUrl avec un commerçant factice
+  try {
+    const testCarte = { pass_serial_number: 'test-00000000-0000-0000-0000-000000000000', points: 0 };
+    const testCommercant = {
+      nom_enseigne: 'Test',
+      carte_couleur_primaire: '#6366f1',
+      carte_couleur_secondaire: '#a5b4fc',
+      points_recompense: 10,
+      adresse: '1 rue Test',
+      ville: 'Paris',
+    };
+    const url = await appleWalletService.generateSaveUrl(testCarte, testCommercant);
+    result.generate_test = url ? '✅ URL générée' : '❌ null';
+  } catch (err) {
+    result.generate_test = '❌ Erreur';
+    result.error = err.message;
+  }
+
+  res.json(result);
+});
+
 module.exports = router;
