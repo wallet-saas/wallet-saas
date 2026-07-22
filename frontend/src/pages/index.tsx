@@ -255,77 +255,77 @@ export default function App() {
       </Head>
     <div className="min-h-screen bg-background relative selection:bg-primary/20 selection:text-primary font-sans">
       {/* Navbar */}
-      <nav className="fixed top-0 w-full z-50 transition-all duration-300 bg-white/90 backdrop-blur-md shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center text-white font-black shadow-lg">
+      <nav className="fixed top-0 w-full z-50 transition-all duration-300 bg-white/95 backdrop-blur-md shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-20 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg bg-foreground flex items-center justify-center text-white font-black shadow-lg text-sm sm:text-xl">
               S
             </div>
-            <span className="font-black text-xl tracking-tight">Stamply</span>
+            <span className="font-black text-lg sm:text-2xl tracking-tight">Stamply</span>
           </div>
 
-          <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-muted-foreground">
+          <div className="hidden md:flex items-center gap-6 lg:gap-10 text-base lg:text-lg font-bold text-muted-foreground">
             <a
               href="#fonctionnement"
-              className="hover:text-foreground transition-colors"
+              className="hover:text-foreground transition-colors py-2"
             >
               Comment ça marche
             </a>
             <a
               href="#dashboard"
-              className="hover:text-foreground transition-colors"
+              className="hover:text-foreground transition-colors py-2"
             >
               Analytics
             </a>
             <a
               href="#temoignages"
-              className="hover:text-foreground transition-colors"
+              className="hover:text-foreground transition-colors py-2"
             >
               Avis
             </a>
             <a
               href="#tarifs"
-              className="hover:text-foreground transition-colors"
+              className="hover:text-foreground transition-colors py-2"
             >
               Tarifs
             </a>
           </div>
 
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-3 lg:gap-5">
             {/* Bouton Admin */}
             <a
               href="/admin/login"
-              className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-primary transition-all shadow-sm"
+              className="w-9 h-9 lg:w-11 lg:h-11 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-primary transition-all shadow-sm"
               title="Accès Administrateur"
             >
-              <Lock size={14} />
+              <Lock size={16} className="lg:w-5 lg:h-5" />
             </a>
             <a
               href="/login"
-              className="text-sm font-bold hover:text-primary transition-colors"
+              className="text-base lg:text-lg font-bold hover:text-primary transition-colors"
             >
               Connexion
             </a>
             <a
               href="mailto:contact@stamply.fr"
-              className="bg-primary text-white px-5 py-2.5 rounded-full text-sm font-bold hover:scale-105 transition-all shadow-md shadow-primary/20"
+              className="bg-primary text-black px-6 lg:px-8 py-3 lg:py-4 rounded-full text-base lg:text-lg font-bold hover:scale-105 transition-all shadow-md shadow-primary/20"
             >
               Démo gratuite
             </a>
           </div>
 
-          <div className="md:hidden flex items-center gap-3">
+          <div className="md:hidden flex items-center gap-2">
             <a
               href="/admin/login"
-              className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500"
+              className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-500"
             >
-              <Lock size={14} />
+              <Lock size={16} />
             </a>
             <button
-              className="text-foreground"
+              className="text-foreground p-2"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
-              {isMenuOpen ? <X /> : <Menu />}
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
         </div>
@@ -338,42 +338,50 @@ export default function App() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed inset-x-0 top-16 bg-white/95 backdrop-blur-3xl border-b border-border z-40 p-6 flex flex-col gap-4 shadow-2xl md:hidden"
+            className="fixed inset-x-0 top-14 bg-white/95 backdrop-blur-3xl border-b border-border z-40 p-6 flex flex-col gap-5 shadow-2xl md:hidden"
           >
             <a
               href="#fonctionnement"
               onClick={() => setIsMenuOpen(false)}
-              className="text-lg font-bold p-2"
+              className="text-xl font-bold p-3 hover:text-primary transition-colors"
             >
               Comment ça marche
             </a>
             <a
               href="#dashboard"
               onClick={() => setIsMenuOpen(false)}
-              className="text-lg font-bold p-2"
+              className="text-xl font-bold p-3 hover:text-primary transition-colors"
             >
               Analytics
             </a>
             <a
               href="#temoignages"
               onClick={() => setIsMenuOpen(false)}
-              className="text-lg font-bold p-2"
+              className="text-xl font-bold p-3 hover:text-primary transition-colors"
             >
               Avis
             </a>
             <a
               href="#tarifs"
               onClick={() => setIsMenuOpen(false)}
-              className="text-lg font-bold p-2"
+              className="text-xl font-bold p-3 hover:text-primary transition-colors"
             >
               Tarifs
             </a>
-            <hr className="my-2 border-border" />
+            <hr className="my-3 border-border" />
+            <a
+              href="/login"
+              onClick={() => setIsMenuOpen(false)}
+              className="text-xl font-bold p-3 hover:text-primary transition-colors"
+            >
+              Connexion
+            </a>
             <a
               href="mailto:contact@stamply.fr"
-              className="bg-primary text-white py-4 rounded-xl font-bold shadow-md w-full text-lg block text-center"
+              onClick={() => setIsMenuOpen(false)}
+              className="bg-primary text-black px-6 py-4 rounded-xl font-bold shadow-md w-full text-center text-xl"
             >
-              Réserver une démo
+              Démo gratuite
             </a>
           </motion.div>
         )}
@@ -381,19 +389,19 @@ export default function App() {
 
       <main>
         {/* HERO */}
-        <section className="pt-32 pb-20 md:pt-48 md:pb-32 px-6 relative min-h-[90vh] flex items-center">
+        <section className="pt-24 sm:pt-32 pb-16 sm:pb-20 md:pt-48 md:pb-32 px-4 sm:px-6 relative min-h-[90vh] flex items-center">
           <FuturisticHeroBackground />
-          <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center w-full">
-            <div className="space-y-8 relative z-10">
+          <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-8 sm:gap-16 items-center w-full">
+            <div className="space-y-6 sm:space-y-8 relative z-10">
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-panel text-sm font-bold shadow-sm"
+                className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full glass-panel text-xs sm:text-sm font-bold shadow-sm"
               >
-                <span className="flex h-2.5 w-2.5 relative">
+                <span className="flex h-2 w-2 sm:h-2.5 sm:w-2.5 relative">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5 bg-primary"></span>
                 </span>
                 La fidélité qui rapporte enfin
               </motion.div>
@@ -402,7 +410,7 @@ export default function App() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
-                className="text-5xl md:text-7xl lg:text-[5rem] font-black leading-[1.05] tracking-tight"
+                className="text-4xl sm:text-5xl md:text-7xl lg:text-[5rem] font-black leading-[1.05] tracking-tight"
               >
                 Transformez chaque visite en{" "}
                 <span className="text-gradient block mt-2">client à vie.</span>
@@ -412,7 +420,7 @@ export default function App() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-xl font-medium"
+                className="text-base sm:text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-xl font-medium"
               >
                 Une carte digitale dans leur téléphone en 2 clics. Zéro
                 application. Récoltez leurs données, envoyez des relances, et
@@ -423,17 +431,17 @@ export default function App() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
-                className="flex flex-col sm:flex-row gap-4 pt-4"
+                className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2 sm:pt-4"
               >
                 <a
                   href="/register"
-                  className="relative overflow-hidden rounded-full bg-foreground text-background px-8 py-4 font-bold shadow-xl transition-all hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98] inline-flex items-center gap-2 justify-center"
+                  className="relative overflow-hidden rounded-full bg-foreground text-background px-6 sm:px-8 py-3 sm:py-4 font-bold shadow-xl transition-all hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98] inline-flex items-center gap-2 justify-center text-base sm:text-lg"
                 >
-                  Commencer maintenant <ArrowRight size={20} />
+                  Commencer maintenant <ArrowRight size={18} className="sm:w-5 sm:h-5" />
                 </a>
                 <a
                   href="mailto:contact@stamply.fr"
-                  className="px-8 py-4 rounded-full font-bold bg-white/50 backdrop-blur-md border border-white shadow-sm hover:bg-white transition-all flex items-center justify-center gap-2 text-foreground"
+                  className="px-6 sm:px-8 py-3 sm:py-4 rounded-full font-bold bg-white/50 backdrop-blur-md border border-white shadow-sm hover:bg-white transition-all flex items-center justify-center gap-2 text-foreground text-base sm:text-lg"
                 >
                   Voir la démo
                 </a>
@@ -444,12 +452,12 @@ export default function App() {
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
-              className="relative w-full max-w-[360px] mx-auto perspective-1000"
+              className="relative w-full max-w-[240px] sm:max-w-[300px] md:max-w-[360px] mx-auto perspective-1000"
             >
               <div className="animate-float-iphone relative z-10">
                 <div className="absolute inset-0 bg-gradient-to-tr from-primary/40 to-purple-500/40 blur-[80px] rounded-full scale-110 -z-10" />
 
-                <div className="w-[340px] h-[680px] bg-black rounded-[56px] p-2.5 shadow-2xl border-4 border-[#222] relative overflow-hidden ring-1 ring-white/20">
+                <div className="w-[240px] sm:w-[300px] md:w-[340px] h-[480px] sm:h-[600px] md:h-[680px] bg-black rounded-[36px] sm:rounded-[48px] md:rounded-[56px] p-2 shadow-2xl border-4 border-[#222] relative overflow-hidden ring-1 ring-white/20">
                   <div className="absolute top-0 inset-x-0 h-7 flex justify-center z-20">
                     <div className="w-32 h-7 bg-black rounded-b-3xl" />
                   </div>
@@ -534,7 +542,7 @@ export default function App() {
         </div>
 
         {/* HOW IT WORKS */}
-        <section id="fonctionnement" className="py-24 md:py-32 px-6">
+        <section id="fonctionnement" className="py-16 sm:py-24 md:py-32 px-4 sm:px-6">
           <div className="max-w-6xl mx-auto">
             <SectionHeading
               subtitle="Simple comme bonjour"
@@ -542,9 +550,9 @@ export default function App() {
               description="La puissance d'un grand groupe, la simplicité d'un outil pensé pour les indépendants."
             />
 
-            <div className="space-y-32">
+            <div className="space-y-16 sm:space-y-32">
               {/* Step 1 */}
-              <div className="grid md:grid-cols-2 gap-16 items-center">
+              <div className="grid md:grid-cols-2 gap-8 sm:gap-16 items-center">
                 <motion.div
                   initial={{ opacity: 0, x: -30 }}
                   whileInView={{ opacity: 1, x: 0 }}
@@ -799,7 +807,7 @@ export default function App() {
         {/* DASHBOARD ANALYTICS */}
         <section
           id="dashboard"
-          className="py-32 px-6 bg-white relative overflow-hidden border-y border-border/50"
+          className="py-16 sm:py-24 md:py-32 px-4 sm:px-6 bg-white relative overflow-hidden border-y border-border/50"
         >
           <div className="max-w-6xl mx-auto">
             <SectionHeading
@@ -812,20 +820,20 @@ export default function App() {
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="w-full bg-foreground rounded-[3rem] p-4 md:p-8 shadow-2xl relative overflow-hidden"
+              className="w-full bg-foreground rounded-[2rem] sm:rounded-[3rem] p-3 sm:p-4 md:p-8 shadow-2xl relative overflow-hidden"
             >
-              <div className="bg-[#1e293b]/50 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-6 md:p-10 w-full relative z-10">
-                <div className="flex justify-between items-center mb-10">
-                  <div className="text-white font-bold text-2xl">
+              <div className="bg-[#1e293b]/50 backdrop-blur-2xl border border-white/10 rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-6 md:p-10 w-full relative z-10">
+                <div className="flex justify-between items-center mb-6 sm:mb-10">
+                  <div className="text-white font-bold text-lg sm:text-2xl">
                     Aperçu des performances
                   </div>
-                  <div className="bg-white/10 px-4 py-2 rounded-lg text-sm text-white font-medium flex items-center gap-2">
+                  <div className="bg-white/10 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm text-white font-medium flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />{" "}
                     Temps réel
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-6 sm:mb-10">
                   {[
                     {
                       label: "CA Fidélité",
@@ -954,13 +962,13 @@ export default function App() {
         </section>
 
         {/* DISPLAY CARDS (FEATURES) */}
-        <section className="py-24 bg-background px-6">
+        <section className="py-16 sm:py-24 bg-background px-4 sm:px-6">
           <div className="max-w-6xl mx-auto">
             <SectionHeading
               subtitle="L'arsenal complet"
               title="Tout ce dont vous avez besoin."
             />
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-3 gap-4 sm:gap-6">
               <DisplayCard
                 icon={MapPin}
                 title="Géolocalisation"
@@ -986,11 +994,11 @@ export default function App() {
         {/* TESTIMONIALS V2 (Double Marquee) */}
         <section
           id="temoignages"
-          className="py-32 bg-foreground text-background overflow-hidden relative"
+          className="py-16 sm:py-24 md:py-32 bg-foreground text-background overflow-hidden relative"
         >
           <div className="absolute inset-0 bg-dot-pattern opacity-[0.2] invert" />
 
-          <div className="max-w-7xl mx-auto px-6 relative z-10 mb-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10 mb-12 sm:mb-16">
             <SectionHeading
               light
               subtitle="Ils l'utilisent au quotidien"
@@ -1001,7 +1009,7 @@ export default function App() {
             />
           </div>
 
-          <div className="relative z-10 flex flex-col gap-6 mask-edges">
+          <div className="relative z-10 flex flex-col gap-4 sm:gap-6 mask-edges">
             <div className="animate-marquee gap-6 items-center">
               {[...testimonials, ...testimonials].map((t, i) => (
                 <div
@@ -1065,7 +1073,7 @@ export default function App() {
         {/* ROI CALCULATOR */}
         <section
           id="roi"
-          className="py-32 px-6 relative overflow-hidden bg-background"
+          className="py-16 sm:py-24 md:py-32 px-4 sm:px-6 relative overflow-hidden bg-background"
         >
           <div className="max-w-5xl mx-auto">
             <SectionHeading
@@ -1073,8 +1081,8 @@ export default function App() {
               title="Combien laissez-vous sur la table ?"
             />
 
-            <div className="glass-card rounded-[3rem] p-8 md:p-12 shadow-2xl border border-white/60">
-              <div className="grid lg:grid-cols-2 gap-16">
+            <div className="glass-card rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-8 md:p-12 shadow-2xl border border-white/60">
+              <div className="grid lg:grid-cols-2 gap-8 sm:gap-16">
                 <div className="space-y-10">
                   {[
                     {
@@ -1184,7 +1192,7 @@ export default function App() {
         </section>
 
         {/* PRICING */}
-        <section id="tarifs" className="py-32 px-6 relative">
+        <section id="tarifs" className="py-16 sm:py-24 md:py-32 px-4 sm:px-6 relative">
           <div className="max-w-4xl mx-auto">
             <SectionHeading
               subtitle="Tarif unique"
@@ -1192,22 +1200,22 @@ export default function App() {
               description="La fidélisation digitale premium enfin accessible à tous les commerçants."
             />
 
-            <div className="max-w-lg mx-auto border-beam-container shadow-2xl rounded-[3rem]">
-              <div className="border-beam-content bg-white p-12 text-center rounded-[3rem]">
-                <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-8 rotate-3">
-                  <Sparkles className="text-primary" size={32} />
+            <div className="max-w-lg mx-auto border-beam-container shadow-2xl rounded-[2rem] sm:rounded-[3rem]">
+              <div className="border-beam-content bg-white p-8 sm:p-12 text-center rounded-[2rem] sm:rounded-[3rem]">
+                <div className="w-16 sm:w-20 h-16 sm:h-20 bg-primary/10 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-6 sm:mb-8 rotate-3">
+                  <Sparkles className="text-primary" size={24} />
                 </div>
-                <h3 className="text-3xl font-black mb-4">Plan Commerçant</h3>
-                <div className="flex justify-center items-end gap-2 mb-10">
-                  <span className="text-7xl font-black tracking-tighter">
+                <h3 className="text-2xl sm:text-3xl font-black mb-4">Plan Commerçant</h3>
+                <div className="flex justify-center items-end gap-2 mb-8 sm:mb-10">
+                  <span className="text-5xl sm:text-7xl font-black tracking-tighter">
                     49€
                   </span>
-                  <span className="text-muted-foreground font-bold mb-2 text-xl">
+                  <span className="text-muted-foreground font-bold mb-1 sm:mb-2 text-lg sm:text-xl">
                     HT / mois
                   </span>
                 </div>
 
-                <ul className="space-y-5 text-left mb-12 text-lg">
+                <ul className="space-y-3 sm:space-y-5 text-left mb-8 sm:mb-12 text-base sm:text-lg">
                   {[
                     "Cartes clients illimitées",
                     "Notifications push géolocalisées",
@@ -1240,9 +1248,9 @@ export default function App() {
         </section>
 
         {/* FOOTER */}
-        <footer className="py-20 px-6 bg-foreground text-background">
-          <div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-12">
-            <div className="col-span-2 space-y-6">
+        <footer className="py-16 sm:py-20 px-4 sm:px-6 bg-foreground text-background">
+          <div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-8 sm:gap-12">
+            <div className="col-span-2 space-y-4 sm:space-y-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-foreground font-black shadow-lg">
                   S
