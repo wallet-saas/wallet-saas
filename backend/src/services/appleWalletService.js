@@ -176,7 +176,7 @@ async function generateSaveUrl(carte, commercant) {
     const pkpassPath = path.join(process.cwd(), APPLE_CERT_PATH, '.tmp', `${serialNumber}.pkpass`);
     await new Promise((resolve, reject) => {
       const output = fs.createWriteStream(pkpassPath);
-      const archive = archiver.create('zip', { zlib: { level: 9 } });
+      const archive = new archiver.ZipArchive({ zlib: { level: 9 } });
       output.on('close', resolve);
       archive.on('error', reject);
       archive.pipe(output);
@@ -479,7 +479,7 @@ async function generatePkpassBuffer(carte, commercant) {
     // Zipper
     const pkpassPath = path.join(process.cwd(), APPLE_CERT_PATH, '.tmp', `ws-${serialNumber}.pkpass`);
     const output = fs.createWriteStream(pkpassPath);
-    const archive = archiver.create('zip', { zlib: { level: 9 } });
+    const archive = new archiver.ZipArchive({ zlib: { level: 9 } });
 
     await new Promise((resolve, reject) => {
       output.on('close', resolve);
