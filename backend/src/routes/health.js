@@ -125,10 +125,8 @@ router.get('/test-apple', async (req, res) => {
     error: null,
   };
 
-  // Test generateSaveUrl avec un commerçant factice — MODE DEBUG
+  // Test generateSaveUrl avec un commerçant factice
   try {
-    // MODE DEBUG: on contourne le try/catch interne pour voir l'erreur exacte
-    // On modifie la fonction temporairement via un test direct des étapes
     const testCarte = { pass_serial_number: 'test-00000000-0000-0000-0000-000000000000', points: 0 };
     const testCommercant = {
       nom_enseigne: 'Test',
@@ -138,45 +136,8 @@ router.get('/test-apple', async (req, res) => {
       adresse: '1 rue Test',
       ville: 'Paris',
     };
-
-    // Test étape par étape comme generateSaveUrl mais sans catch
-    const serialNumber = testCarte.pass_serial_number;
-    const APPLE_CERT_PATH = process.env.APPLE_CERT_PATH || './config/apple-certs';
-    const TEMPLATE_DIR = require('path').join(process.cwd(), APPLE_CERT_PATH, 'StamplyLoyalty.pass');
-    const tmpDir = require('path').join(process.cwd(), APPLE_CERT_PATH, '.tmp', serialNumber);
-
-    // Step 1
-    require('fs').mkdirSync(tmpDir, { recursive: true });
-    result.step1_tmpDir = '✅ ok';
-
-    // Step 2: images
-    const images = ['icon.png', 'icon@2x.png', 'logo.png', 'logo@2x.png'];
-    const missingImages = [];
-    for (const img of images) {
-      const src = require('path').join(TEMPLATE_DIR, img);
-      if (require('fs').existsSync(src)) {
-        require('fs').copyFileSync(src, require('path').join(tmpDir, img));
-      } else {
-        missingImages.push(img);
-      }
-    }
-    result.step2_images = missingImages.length === 0 ? '✅ toutes présentes' : `⚠️ manquantes: ${missingImages.join(', ')}`;
-
-    // Step 3: template
-    const templatePath = require('path').join(TEMPLATE_DIR, 'pass.json');
-    if (!require('fs').existsSync(templatePath)) throw new Error('Template pass.json introuvable');
-    result.step3_template = '✅ chargé';
-
-    // Step 4-5: signature
-    const result_sign = appleWalletService.testSignature ? appleWalletService.testSignature() : 'non testé';
-    result.step4_signature = result_sign;
-
-    // Step 6: archiver
-    const archiver = require('archiver');
-    result.step5_archiverType = typeof archiver;
-    result.step5_archiverCreate = typeof archiver.create;
-
-    result.all_steps_ok = '✅ Voir logs Render pour les détails';
+    const url = await appleWalletService.generateSaveUrl(testCarte, testCommercant);
+    result.generate_test = url ? '✅ URL générée: ' + url : '❌ null';
   } catch (err) {
     result.generate_test = '❌ Erreur';
     result.error = err.message;
