@@ -119,7 +119,7 @@ async function servePkpass(req, res) {
   try {
     const { data: carte, error: carteErr } = await supabase
       .from('cartes')
-      .select('pass_serial_number, points, visites, commercant_id, apple_auth_token')
+      .select('pass_serial_number, points, commercant_id, apple_auth_token')
       .eq('pass_serial_number', serialNumber)
       .single();
 
