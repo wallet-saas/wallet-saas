@@ -13,6 +13,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const archiver = require('archiver');
+const forge = require('node-forge');
 const { supabase } = require('../config/supabase');
 
 const APPLE_TEAM_ID = process.env.APPLE_TEAM_ID || '4YVDLJ57J7';
@@ -97,135 +98,58 @@ async function generateSaveUrl(carte, commercant) {
   }
 
   const serialNumber = carte.pass_serial_number;
-  const tmpDir = path.join(process.cwd(), APPLE_CERT_PATH, '.tmp', serialNumber);
-  console.log(`[AppleWallet] generateSaveUrl: tmpDir=${tmpDir}, cwd=${process.cwd()}`);
-
-  try {
-    // 1. Créer le dossier temporaire
-    fs.mkdirSync(tmpDir, { recursive: true });
-    console.log('[AppleWallet] Step 1: tmpDir créé');
-
-    // 2. Copier les images du template
-    const images = ['icon.png', 'icon@2x.png', 'logo.png', 'logo@2x.png'];
-    for (const img of images) {
-      const src = path.join(TEMPLATE_DIR, img);
-      if (fs.existsSync(src)) {
-        fs.copyFileSync(src, path.join(tmpDir, img));
-      } else {
-        console.log(`[AppleWallet] Warning: image manquante ${img} dans ${TEMPLATE_DIR}`);
-      }
-    }
-    console.log('[AppleWallet] Step 2: images copiées');
-
-    // 3. Générer pass.json personnalisé
-    const template = getPassTemplate();
-    if (!template) throw new Error('Template pass.json introuvable');
-    console.log('[AppleWallet] Step 3: template chargé');
-
-    const passData = JSON.parse(
-      JSON.stringify(template)
-        .replace(/\{\{SERIAL_NUMBER\}\}/g, serialNumber)
-        .replace(/\{\{TEAM_IDENTIFIER\}\}/g, APPLE_TEAM_ID)
-        .replace(/\{\{ORGANIZATION_NAME\}\}/g, commercant.nom_enseigne || 'Mon Commerce')
-        .replace(/\{\{BACKGROUND_COLOR\}\}/g, commercant.carte_couleur_primaire || '#6366f1')
-        .replace(/\{\{FOREGROUND_COLOR\}\}/g, commercant.carte_couleur_secondaire || '#ffffff')
-        .replace(/\{\{LABEL_COLOR\}\}/g, commercant.carte_couleur_secondaire || '#ffffff')
-        .replace(/\{\{POINTS\}\}/g, String(carte.points || 0))
-        .replace(/\{\{POINTS_REWARD\}\}/g, String(commercant.points_recompense || 10))
-        .replace(/\{\{VISITS\}\}/g, String(carte.visites || 0))
-        .replace(/\{\{ADDRESS\}\}/g, [commercant.adresse, commercant.ville].filter(Boolean).join(', ') || '')
-        .replace(/\{\{RELEVANT_DATE\}\}/g, new Date().toISOString())
-        .replace(/\{\{AUTH_TOKEN\}\}/g, carte.apple_auth_token || '')
-        .replace(/\{\{NOTIF_BODY\}\}/g, '')
-    );
-
-    // Ajouter les données de géolocalisation si disponibles
-    if (commercant.latitude && commercant.longitude) {
-      passData.locations = [{
-        latitude: parseFloat(commercant.latitude),
-        longitude: parseFloat(commercant.longitude),
-        relevantText: 'Vous êtes à proximité ! 🎉',
-      }];
-    }
-
-    fs.writeFileSync(path.join(tmpDir, 'pass.json'), JSON.stringify(passData, null, 2));
-
-    // 4. Générer manifest.json (SHA1 de tous les fichiers)
-    const manifest = {};
-    const files = fs.readdirSync(tmpDir).filter(f => f !== 'manifest.json');
-    files.sort().forEach(f => {
-      manifest[f] = sha1(path.join(tmpDir, f));
-    });
-    fs.writeFileSync(path.join(tmpDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
-
-    // 5. Signer le manifest avec les certificats Apple → signature
-    const signerCertPem = loadCert('APPLE_SIGNER_CERT_BASE64', 'signerCert.pem');
-    const signerKeyPem = loadCert('APPLE_SIGNER_KEY_BASE64', 'signerKey.pem');
-    const wwdrPem = loadCert('APPLE_WWDR_BASE64', 'wwdr.pem');
-
-    if (!signerCertPem || !signerKeyPem || !wwdrPem) {
-      throw new Error('Certificats Apple manquants');
-    }
-
-    const sign = crypto.createSign('RSA-SHA256');
-    sign.update(JSON.stringify(manifest));
-    const signature = sign.sign(signerKeyPem);
-    fs.writeFileSync(path.join(tmpDir, 'signature'), signature);
-
-    // 6. Zipper en .pkpass
-    const pkpassPath = path.join(process.cwd(), APPLE_CERT_PATH, '.tmp', `${serialNumber}.pkpass`);
-    await new Promise((resolve, reject) => {
-      const output = fs.createWriteStream(pkpassPath);
-      const archive = new archiver.ZipArchive({ zlib: { level: 9 } });
-      output.on('close', resolve);
-      archive.on('error', reject);
-      archive.pipe(output);
-
-      // Ajouter les fichiers dans l'ordre (important pour Apple Wallet)
-      const orderedFiles = ['pass.json', ...images, 'manifest.json', 'signature'];
-      for (const f of orderedFiles) {
-        const fp = path.join(tmpDir, f);
-        if (fs.existsSync(fp)) {
-          archive.file(fp, { name: f });
-        }
-      }
-      archive.finalize();
-    });
-
-    // 7. Upload vers Supabase Storage ou retourner un chemin local
-    const fileName = `${serialNumber}.pkpass`;
-    const publicUrl = `${API_URL}/api/wallet/pkpass/${fileName}`;
-
-    // Nettoyer le dossier temporaire
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-
-    return publicUrl;
-  } catch (error) {
-    console.error('[AppleWallet] generateSaveUrl error:', error.message);
-    console.error('[AppleWallet] Stack:', error.stack);
-    // Nettoyer en cas d'erreur
-    if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true });
-    return null;
-  }
+  console.log(`[AppleWallet] generateSaveUrl: URL dynamique pour ${serialNumber}`);
+  // Retourne l'URL de téléchargement — le pkpass est généré à la volée
+  // pour contourner le système de fichiers éphémère de Render
+  return `${API_URL}/api/wallet/pkpass/${serialNumber}.pkpass`;
 }
 
 /**
- * Sert un fichier .pkpass au client.
+ * Sert un fichier .pkpass au client — généré à la volée
+ * (contourne le système de fichiers éphémère de Render).
  */
-function servePkpass(req, res) {
+async function servePkpass(req, res) {
   const fileName = req.params.fileName;
   if (!fileName || !fileName.endsWith('.pkpass')) {
     return res.status(404).json({ error: 'Fichier introuvable' });
   }
 
-  const filePath = path.join(CERTS_DIR, '.tmp', fileName);
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).json({ error: 'Fichier expiré ou introuvable' });
-  }
+  const serialNumber = fileName.replace(/\.pkpass$/, '');
 
-  res.setHeader('Content-Type', 'application/vnd.apple.pkpass');
-  res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-  res.sendFile(filePath);
+  try {
+    const { data: carte, error: carteErr } = await supabase
+      .from('cartes')
+      .select('pass_serial_number, points, visites, commercant_id, apple_auth_token')
+      .eq('pass_serial_number', serialNumber)
+      .single();
+
+    if (carteErr || !carte) {
+      return res.status(404).json({ error: 'Carte introuvable' });
+    }
+
+    const { data: commercant, error: commErr } = await supabase
+      .from('commercants')
+      .select('nom_enseigne, carte_couleur_primaire, carte_couleur_secondaire, points_recompense, adresse, ville, latitude, longitude, carte_logo_url')
+      .eq('id', carte.commercant_id)
+      .single();
+
+    if (commErr || !commercant) {
+      return res.status(404).json({ error: 'Commerce introuvable' });
+    }
+
+    console.log(`[AppleWallet] servePkpass: génération du pass ${serialNumber}`);
+    const pkpassBuffer = await generatePkpassBuffer(carte, commercant);
+    if (!pkpassBuffer) {
+      return res.status(500).json({ error: 'Erreur génération du pass' });
+    }
+
+    res.setHeader('Content-Type', 'application/vnd.apple.pkpass');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    return res.send(pkpassBuffer);
+  } catch (error) {
+    console.error('[AppleWallet] servePkpass error:', error.message);
+    return res.status(500).json({ error: 'Erreur serveur' });
+  }
 }
 
 /**
@@ -471,9 +395,19 @@ async function generatePkpassBuffer(carte, commercant) {
     const signerKeyPem = loadCert('APPLE_SIGNER_KEY_BASE64', 'signerKey.pem');
     if (!signerCertPem || !signerKeyPem) throw new Error('Certificats manquants');
 
-    const sign = crypto.createSign('RSA-SHA256');
-    sign.update(JSON.stringify(manifest));
-    const signature = sign.sign(signerKeyPem);
+    // Générer une signature PKCS#7 (CMS) détachée — exigé par Apple Wallet
+    const wwdrPem = loadCert('APPLE_WWDR_BASE64', 'wwdr.pem');
+    const p7 = forge.pkcs7.createSignedData();
+    p7.content = forge.util.createBuffer(JSON.stringify(manifest));
+    p7.addCertificate(forge.pki.certificateFromPem(signerCertPem));
+    if (wwdrPem) p7.addCertificate(forge.pki.certificateFromPem(wwdrPem));
+    p7.addSigner({
+      key: forge.pki.privateKeyFromPem(signerKeyPem),
+      certificate: forge.pki.certificateFromPem(signerCertPem),
+      digestAlgorithm: forge.pki.oids.sha256,
+    });
+    p7.sign({ detached: true });
+    const signature = Buffer.from(forge.asn1.toDer(p7.toAsn1()).getBytes(), 'binary');
     fs.writeFileSync(path.join(tmpDir, 'signature'), signature);
 
     // Zipper

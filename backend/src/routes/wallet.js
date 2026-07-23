@@ -53,8 +53,12 @@ router.get('/download/:serial', downloadPass);
  * @desc    Servir le fichier .pkpass pour Apple Wallet
  * @access  Public
  */
-router.get('/pkpass/:fileName', (req, res) => {
-  appleWalletService.servePkpass(req, res);
+router.get('/pkpass/:fileName', async (req, res, next) => {
+  try {
+    await appleWalletService.servePkpass(req, res);
+  } catch (err) {
+    next(err);
+  }
 });
 
 /**
