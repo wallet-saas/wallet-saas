@@ -202,16 +202,52 @@ router.post('/v1/log', async (req, res) => {
 
     // Stocker dans Supabase si on veut
     if (logs.length > 0) {
-      await supabase.from('admin_logs').insert({
-        action: 'apple_wallet_device_log',
-        details: logs.slice(0, 10).join('\n'),
-      }).catch(() => {});
+      try {
+        await supabase.from('admin_logs').insert({
+          action: 'apple_wallet_device_log',
+          details: logs.slice(0, 10).join('\\n'),
+        });
+      } catch (_) {
+        // Non bloquant
+      }
     }
 
     return res.status(200).json({ result: 'OK' });
   } catch (err) {
     console.error('[AppleWS] Log error:', err.message);
     return res.status(200).json({ result: 'OK' });
+  }
+});
+
+router.delete('/v1/devices/:deviceId/registrations/:passTypeId/:serial', async (req, res) => {
+  try {
+    const { deviceId, passTypeId, serial } = req.params;
+
+    const expectedPassType = appleWalletService.APPLE_PASS_TYPE_ID;
+    if (passTypeId !== expectedPassType) {
+      return res.status(404).json({ error: 'Pass type not found' });
+    }
+
+    const { error } = await supabase
+      .from('cartes')
+      .update({
+        apple_device_id: null,
+        apple_push_token: null,
+        apple_registered_at: null,
+      })
+      .eq('pass_serial_number', serial)
+      .eq('apple_device_id', deviceId);
+
+    if (error) {
+      console.error('[AppleWS] Erreur désenregistrement:', error.message);
+      return res.status(500).json({ error: 'Internal error' });
+    }
+
+    console.log(`[AppleWS] ✅ Carte ${serial} désenregistrée (device: ${deviceId})`);
+    return res.status(200).json({ result: 'OK' });
+  } catch (err) {
+    console.error('[AppleWS] Unregister error:', err.message);
+    return res.status(500).json({ error: 'Internal error' });
   }
 });
 

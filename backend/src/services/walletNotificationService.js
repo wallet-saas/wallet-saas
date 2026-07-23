@@ -79,17 +79,19 @@ async function sendToWalletCards(commercantId, titre, message, logoUrl = null) {
 
   if (appleCarteIds.length > 0) {
     // Stocker le message pour TOUTES les cartes Apple en une requête
-    await supabase
-      .from('cartes')
-      .update({
-        last_notif_titre: titre,
-        last_notif_message: message,
-        last_notif_sent_at: new Date().toISOString(),
-      })
-      .in('id', appleCarteIds)
-      .catch(err => {
-        console.error(`[WalletNotify] Erreur stockage message Apple:`, err.message);
-      });
+    try {
+      await supabase
+        .from('cartes')
+        .update({
+          last_notif_titre: titre,
+          last_notif_message: message,
+          last_notif_sent_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(), // bump pour que l'iPhone detecte le changement
+        })
+        .in('id', appleCarteIds);
+    } catch (err) {
+      console.error(`[WalletNotify] Erreur stockage message Apple:`, err.message);
+    }
   }
 
   // Envoyer APNS à chaque carte (ne fait rien si pas de cert APNS)

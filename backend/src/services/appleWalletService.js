@@ -209,7 +209,7 @@ async function notifyPush(serialNumber) {
       ':method': 'POST',
       ':path': `/3/device/${carte.apple_push_token}`,
       'apns-topic': APNS_TOPIC,
-      'apns-push-type': 'live',
+      'apns-push-type': 'alert',
       'apns-priority': '5',
     });
 
@@ -285,7 +285,7 @@ async function updatePoints(serialNumber, newPoints) {
       ':method': 'POST',
       ':path': `/3/device/${carte.apple_push_token}`,
       'apns-topic': APNS_TOPIC,
-      'apns-push-type': 'live',
+      'apns-push-type': 'alert',
       'apns-priority': '5',
     });
 
@@ -367,7 +367,7 @@ async function generatePkpassBuffer(carte, commercant) {
         .replace(/\{\{VISITS\}\}/g, String(carte.visites || 0))
         .replace(/\{\{ADDRESS\}\}/g, [commercant.adresse, commercant.ville].filter(Boolean).join(', ') || '')
         .replace(/\{\{RELEVANT_DATE\}\}/g, new Date().toISOString())
-        .replace(/\{\{AUTH_TOKEN\}\}/g, '')
+        .replace(/\\{\\{AUTH_TOKEN\\}\\}/g, carte.apple_auth_token || '')
         .replace(/\{\{NOTIF_BODY\}\}/g, notifMessage)
     );
 
