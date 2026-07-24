@@ -209,8 +209,8 @@ async function notifyPush(serialNumber) {
       ':method': 'POST',
       ':path': `/3/device/${carte.apple_push_token}`,
       'apns-topic': APNS_TOPIC,
-      'apns-push-type': 'background',
-      'apns-priority': '5',
+      'apns-push-type': 'alert', // Apple DTS : pass update = payload JSON vide, type alert (background = throttling iOS)
+      'apns-priority': '10',
     });
 
     req.on('response', (headers) => {
@@ -285,8 +285,8 @@ async function updatePoints(serialNumber, newPoints) {
       ':method': 'POST',
       ':path': `/3/device/${carte.apple_push_token}`,
       'apns-topic': APNS_TOPIC,
-      'apns-push-type': 'background',
-      'apns-priority': '5',
+      'apns-push-type': 'alert', // Apple DTS : pass update = payload JSON vide, type alert (background = throttling iOS)
+      'apns-priority': '10',
     });
 
     req.on('response', (headers) => {
@@ -394,7 +394,7 @@ async function generatePkpassBuffer(carte, commercant) {
       passData.locations = [{
         latitude: parseFloat(commercant.latitude),
         longitude: parseFloat(commercant.longitude),
-        relevantText: 'Vous êtes à proximité ! 🎉',
+        relevantText: `🎁 ${commercant.nom_enseigne || 'Votre commerce'} : votre carte de fidélité vous attend !`,
       }];
     }
 
