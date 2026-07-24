@@ -124,6 +124,7 @@ async function servePkpass(req, res) {
       .single();
 
     if (carteErr || !carte) {
+      console.error(`[AppleWallet] servePkpass 404 carte ${serialNumber}:`, carteErr?.message || 'introuvable');
       return res.status(404).json({ error: 'Carte introuvable' });
     }
 
@@ -143,8 +144,11 @@ async function servePkpass(req, res) {
       return res.status(500).json({ error: 'Erreur génération du pass' });
     }
 
+    // Pas de Content-Disposition : Safari iOS route le fichier vers Wallet
+    // via le Content-Type seul. 'attachment' ET 'inline' cassent tous deux
+    // le flux d'ajout sur certains iOS (constaté en réel).
     res.setHeader('Content-Type', 'application/vnd.apple.pkpass');
-    res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+    res.setHeader('Content-Length', pkpassBuffer.length);
     return res.send(pkpassBuffer);
   } catch (error) {
     console.error('[AppleWallet] servePkpass error:', error.message);
