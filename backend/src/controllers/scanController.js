@@ -56,7 +56,7 @@ const scanQR = async (req, res) => {
     if (carteId) {
       const { data, error } = await supabase
         .from('cartes')
-        .select('id, pass_serial_number, points, commercant_id, actif')
+        .select('id, pass_serial_number, points, visites, commercant_id, actif')
         .eq('id', carteId)
         .eq('commercant_id', commercantId)
         .single();
@@ -67,7 +67,7 @@ const scanQR = async (req, res) => {
     if (!carte) {
       const { data, error } = await supabase
         .from('cartes')
-        .select('id, pass_serial_number, points, commercant_id, actif')
+        .select('id, pass_serial_number, points, visites, commercant_id, actif')
         .eq('pass_serial_number', passSerialNumber)
         .eq('commercant_id', commercantId)
         .single();
@@ -138,6 +138,7 @@ const scanQR = async (req, res) => {
       .from('cartes')
       .update({
         points: newTampons,
+        visites: (carte.visites || 0) + 1,
         last_visit_at: now_iso,
         updated_at: now_iso
       })
@@ -185,17 +186,11 @@ const scanQR = async (req, res) => {
     // --- Mettre à jour la carte Apple Wallet via APNS (best-effort) ---
     appleWalletService.updatePoints(carte.pass_serial_number, newTampons);
 
-    // --- Notifier les cartes Wallet (message + push) ---
-    walletNotificationService.sendToWalletCards(carte.id, {
-      titre: '💳 Visite enregistrée',
-      message: newTampons > 0
-        ? `+${newTampons} point${newTampons > 1 ? 's' : ''} ! ${newTampons}/${seuil || 10}`
-        : 'Visite enregistrée par votre commerçant',
-      url: null,
-      imageUrl: null,
-    }).catch(err => {
-      console.error('[Scan] Erreur notification Wallet:', err.message);
-    });
+    // NOTE : pas de sendToWalletCards ici. La mise à jour des points suffit :
+    // - Apple : updatePoints() envoie le push APNS → le pass se rafraîchit et le
+    //   changeMessage "Vous avez %@ points !" s'affiche en notification système.
+    // - Google : les points se mettent à jour silencieusement (pas de TEXT_AND_NOTIFY,
+    //   pour préserver le quota de 3 notifications/24h par carte pour les vraies offres).
 
     // --- Vérifier et attribuer des badges ---
     const newBadges = await badgeService.checkAndAssignBadges(carte.id, commercantId, newTampons);

@@ -114,4 +114,63 @@ async function sendToWalletCards(commercantId, titre, message, logoUrl = null) {
   return { google: googleSent, apple: appleSent, total: googleSent + appleSent };
 }
 
-module.exports = { sendToWalletCards };
+/**
+ * Envoie une notification à UNE SEULE carte Wallet (ciblage individuel).
+ * Utilisé par la relance dormants et les anniversaires — surtout ne pas
+ * broadcaster un message personnel ("Joyeux anniversaire Marie") à tout le monde.
+ *
+ * @param {string} carteId - UUID de la carte
+ * @param {string} titre
+ * @param {string} message
+ * @returns {Promise<{google: boolean, apple: boolean}>}
+ */
+async function sendToWalletCard(carteId, titre, message) {
+  const { data: carte, error } = await supabase
+    .from('cartes')
+    .select('id, pass_serial_number, google_wallet_url, apple_push_token')
+    .eq('id', carteId)
+    .single();
+
+  if (error || !carte) {
+    console.warn(`[WalletNotify] Carte introuvable: ${carteId}`);
+    return { google: false, apple: false };
+  }
+
+  let google = false;
+  let apple = false;
+
+  if (carte.google_wallet_url) {
+    try {
+      google = !!(await googleWalletService.sendNotification(
+        carte.pass_serial_number, titre, message
+      ));
+    } catch (err) {
+      console.error(`[WalletNotify] Google échec ${carte.pass_serial_number}:`, err.message);
+    }
+  }
+
+  if (carte.apple_push_token) {
+    try {
+      const { error: storeError } = await supabase
+        .from('cartes')
+        .update({
+          last_notif_titre: titre,
+          last_notif_message: message,
+          last_notif_sent_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', carte.id);
+      if (storeError) {
+        console.error(`[WalletNotify] Erreur stockage message:`, storeError.message);
+      }
+      await appleWalletService.notifyPush(carte.pass_serial_number);
+      apple = true;
+    } catch (err) {
+      console.error(`[WalletNotify] Apple échec ${carte.pass_serial_number}:`, err.message);
+    }
+  }
+
+  return { google, apple };
+}
+
+module.exports = { sendToWalletCards, sendToWalletCard };
