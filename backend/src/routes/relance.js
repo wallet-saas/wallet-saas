@@ -42,10 +42,10 @@ router.post('/cron', async (req, res) => {
       const resultat = { commercant_id: commercant.id, nom: commercant.nom_enseigne };
       try {
         if (commercant.relance_auto) {
-          resultat.relance = await relanceService.relancerClientsDormants(commercant.id);
+          resultat.relance = await relanceService.relanceDormants(commercant.id);
         }
         if (commercant.anniversaire_auto) {
-          resultat.anniversaire = await relanceService.envoyerNotificationsAnniversaire(commercant.id);
+          resultat.anniversaire = await relanceService.anniversaire(commercant.id);
         }
       } catch (err) {
         resultat.erreur = err.message;
