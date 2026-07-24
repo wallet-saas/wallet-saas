@@ -205,7 +205,7 @@ router.post('/v1/log', async (req, res) => {
       try {
         await supabase.from('admin_logs').insert({
           action: 'apple_wallet_device_log',
-          details: logs.slice(0, 10).join('\\n'),
+          details: logs.slice(0, 10).join('\n'),
         });
       } catch (_) {
         // Non bloquant
@@ -226,6 +226,20 @@ router.delete('/v1/devices/:deviceId/registrations/:passTypeId/:serial', async (
     const expectedPassType = appleWalletService.APPLE_PASS_TYPE_ID;
     if (passTypeId !== expectedPassType) {
       return res.status(404).json({ error: 'Pass type not found' });
+    }
+
+    // Vérifier le token ApplePass (sinon n'importe qui peut désenregistrer un device)
+    const auth = req.headers.authorization;
+    if (!auth || !auth.startsWith('ApplePass ')) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const { data: carteAuth } = await supabase
+      .from('cartes')
+      .select('apple_auth_token')
+      .eq('pass_serial_number', serial)
+      .single();
+    if (!carteAuth || carteAuth.apple_auth_token !== auth.slice(10)) {
+      return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const { error } = await supabase
