@@ -5,6 +5,7 @@ const badgeService = require('../services/badgeService');
 const autoReviewService = require('../services/autoReviewService');
 const rewardService = require('../services/rewardService');
 const qrCodeService = require('../services/qrCodeService');
+const walletNotificationService = require('../services/walletNotificationService');
 
 // Rate limiting en mémoire : Map<carte_id, timestamp_last_scan>
 const scanRateLimit = new Map();
@@ -183,6 +184,18 @@ const scanQR = async (req, res) => {
 
     // --- Mettre à jour la carte Apple Wallet via APNS (best-effort) ---
     appleWalletService.updatePoints(carte.pass_serial_number, newTampons);
+
+    // --- Notifier les cartes Wallet (message + push) ---
+    walletNotificationService.sendToWalletCards(carte.id, {
+      titre: '💳 Visite enregistrée',
+      message: newTampons > 0
+        ? `+${newTampons} point${newTampons > 1 ? 's' : ''} ! ${newTampons}/${seuil || 10}`
+        : 'Visite enregistrée par votre commerçant',
+      url: null,
+      imageUrl: null,
+    }).catch(err => {
+      console.error('[Scan] Erreur notification Wallet:', err.message);
+    });
 
     // --- Vérifier et attribuer des badges ---
     const newBadges = await badgeService.checkAndAssignBadges(carte.id, commercantId, newTampons);
