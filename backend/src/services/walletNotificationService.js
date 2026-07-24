@@ -23,22 +23,36 @@ const appleWalletService = require('./appleWalletService');
  * @param {string} [logoUrl] - URL du logo du commerce (optionnel)
  * @returns {Promise<{google: number, apple: number, total: number}>}
  */
-async function sendToWalletCards(commercantId, titre, message, logoUrl = null) {
-  // Récupérer le nom du commerçant
+async function sendToWalletCards(commercantId, titre, message, logoUrl = null, cible = 'tous') {
+  // Récupérer le nom du commerçant + seuil de dormance
   const { data: commercant } = await supabase
     .from('commercants')
-    .select('nom_enseigne, carte_logo_url')
+    .select('nom_enseigne, carte_logo_url, relance_jours')
     .eq('id', commercantId)
     .single();
 
   const nomEnseigne = commercant?.nom_enseigne || 'Mon Commerce';
   const notifLogUrl = logoUrl || commercant?.carte_logo_url || null;
 
-  // Récupérer TOUTES les cartes de ce commerçant
-  const { data: cartes } = await supabase
+  // Récupérer les cartes selon la cible (tous | actifs | dormants)
+  let query = supabase
     .from('cartes')
     .select('id, pass_serial_number, google_wallet_url, apple_push_token, apple_device_id')
     .eq('commercant_id', commercantId);
+
+  if (cible === 'actifs' || cible === 'dormants') {
+    const seuilJours = commercant?.relance_jours || 30;
+    const dateSeuil = new Date();
+    dateSeuil.setDate(dateSeuil.getDate() - seuilJours);
+    if (cible === 'actifs') {
+      query = query.gte('last_visit_at', dateSeuil.toISOString());
+    } else {
+      // Dormants : pas de visite depuis le seuil (ou jamais venus avec last_visit_at null)
+      query = query.or(`last_visit_at.lt.${dateSeuil.toISOString()},last_visit_at.is.null`);
+    }
+  }
+
+  const { data: cartes } = await query;
 
   if (!cartes || cartes.length === 0) {
     console.log(`[WalletNotify] Aucune carte pour le commerçant ${commercantId}`);

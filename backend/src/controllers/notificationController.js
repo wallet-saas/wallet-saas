@@ -72,7 +72,9 @@ const sendNotification = async (req, res) => {
     const walletResult = await walletNotificationService.sendToWalletCards(
       commercantId,
       titre.trim(),
-      message.trim()
+      message.trim(),
+      null,
+      cible
     ).catch(err => {
       console.error('[Notifications] Erreur envoi Wallet:', err.message);
       return { google: 0, apple: 0, total: 0 };
