@@ -209,7 +209,7 @@ async function notifyPush(serialNumber) {
       ':method': 'POST',
       ':path': `/3/device/${carte.apple_push_token}`,
       'apns-topic': APNS_TOPIC,
-      'apns-push-type': 'alert',
+      'apns-push-type': 'background',
       'apns-priority': '5',
     });
 
@@ -285,7 +285,7 @@ async function updatePoints(serialNumber, newPoints) {
       ':method': 'POST',
       ':path': `/3/device/${carte.apple_push_token}`,
       'apns-topic': APNS_TOPIC,
-      'apns-push-type': 'alert',
+      'apns-push-type': 'background',
       'apns-priority': '5',
     });
 
