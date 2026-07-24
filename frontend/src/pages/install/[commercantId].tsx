@@ -51,6 +51,7 @@ export default function InstallPage() {
   const [clientDateNaissance, setClientDateNaissance] = useState('');
   const [consentementEmail, setConsentementEmail] = useState(false);
   const [consentementSms, setConsentementSms] = useState(false);
+  const [consentementCgu, setConsentementCgu] = useState(false);
   const [clientInfoLoading, setClientInfoLoading] = useState(false);
   const [clientInfoSkip, setClientInfoSkip] = useState(false);
   const [clientInfoError, setClientInfoError] = useState('');
@@ -357,6 +358,18 @@ export default function InstallPage() {
 
                 {/* Consentements */}
                 <div className="space-y-2">
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      required
+                      checked={consentementCgu}
+                      onChange={(e) => setConsentementCgu(e.target.checked)}
+                      className="mt-0.5"
+                    />
+                    <span className="text-xs text-white/70">
+                      J'accepte les <a href="/cgu" target="_blank" className="underline">conditions d'utilisation</a> et je comprends que ma carte de fidélité peut m'envoyer des notifications, y compris des rappels lorsque je me trouve à proximité du commerce. <span className="text-red-300">*</span>
+                    </span>
+                  </label>
                   <label className="flex items-start gap-2.5 cursor-pointer">
                     <input
                       type="checkbox"
