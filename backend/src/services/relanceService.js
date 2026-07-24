@@ -102,13 +102,11 @@ async function relanceDormants(commercantId) {
 
         // Envoyer la notification via walletNotificationService
         const titre = `${commercant.nom_enseigne} vous attend !`;
-        const messageComplet = `${message} — Carte: ${carte.client_nom || 'Client'}`;
 
-        await walletNotificationService.sendToWalletCards(
-          commercantId,
+        await walletNotificationService.sendToWalletCard(
+          carte.id,
           titre,
-          messageComplet,
-          null // logoUrl optionnel
+          message
         );
 
         // Enregistrer la relance
@@ -235,13 +233,12 @@ async function anniversaire(commercantId) {
 
         const titre = `🎂 Joyeux anniversaire ${client.nom || ''}!`.trim();
 
-        // Envoyer via walletNotificationService à toutes les cartes Wallet du commerçant
-        // (le message est générique pour le commerce, pas par carte)
-        await walletNotificationService.sendToWalletCards(
-          commercantId,
+        // Envoyer UNIQUEMENT à la carte du client dont c'est l'anniversaire
+        if (!client.carte_id) { ignore++; continue; }
+        await walletNotificationService.sendToWalletCard(
+          client.carte_id,
           titre,
-          messagePerso,
-          null
+          messagePerso
         );
 
         // Enregistrer dans notifications
