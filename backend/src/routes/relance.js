@@ -11,6 +11,57 @@ const authMiddleware = require('../middleware/authMiddleware');
 const relanceService = require('../services/relanceService');
 const commercantAnalyticsService = require('../services/commercantAnalyticsService');
 
+// ─── POST /api/relance/cron ─────────────────────────────────────────────────
+// Endpoint GLOBAL pour les crons Render : relance dormants + anniversaires
+// pour TOUS les commerçants ayant activé ces options.
+// Sécurisé par header x-cron-secret (env CRON_SECRET) — PAS par JWT commerçant,
+// car un cron n'a pas de session. Les autres endpoints restent par-commerçant.
+
+router.post('/cron', async (req, res) => {
+  try {
+    const cronSecret = process.env.CRON_SECRET;
+    if (!cronSecret) {
+      return res.status(503).json({ success: false, error: 'CRON_SECRET non configuré sur le serveur.' });
+    }
+    if (req.headers['x-cron-secret'] !== cronSecret) {
+      return res.status(401).json({ success: false, error: 'Secret cron invalide.' });
+    }
+
+    const { supabase } = require('../config/supabase');
+    const { data: commercants, error } = await supabase
+      .from('commercants')
+      .select('id, nom_enseigne, relance_auto, anniversaire_auto')
+      .or('relance_auto.eq.true,anniversaire_auto.eq.true');
+
+    if (error) {
+      return res.status(500).json({ success: false, error: error.message });
+    }
+
+    const resultats = [];
+    for (const commercant of commercants || []) {
+      const resultat = { commercant_id: commercant.id, nom: commercant.nom_enseigne };
+      try {
+        if (commercant.relance_auto) {
+          resultat.relance = await relanceService.relancerClientsDormants(commercant.id);
+        }
+        if (commercant.anniversaire_auto) {
+          resultat.anniversaire = await relanceService.envoyerNotificationsAnniversaire(commercant.id);
+        }
+      } catch (err) {
+        resultat.erreur = err.message;
+        console.error(`[Cron relance] Erreur ${commercant.id}:`, err.message);
+      }
+      resultats.push(resultat);
+    }
+
+    console.log(`[Cron relance] ✅ ${resultats.length} commerçants traités`);
+    return res.status(200).json({ success: true, traites: resultats.length, resultats });
+  } catch (err) {
+    console.error('[Cron relance] Erreur globale:', err.message);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ─── GET /api/relance/check ─────────────────────────────────────────────────
 // Vérifie si des relances ou anniversaires sont dus
 
