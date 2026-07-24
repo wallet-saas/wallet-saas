@@ -197,6 +197,7 @@ exports.updateCommercant = async (req, res) => {
       'delai_notif_avis_minutes', 'delai_avis_minutes',
       'rayon_geoloc_metres', 'latitude', 'longitude',
       'google_place_url',
+      'carte_type', 'carte_type_config',
       'module_notifications', 'notif_max_par_jour', 'notif_heure_debut', 'notif_heure_fin', 'notif_template_defaut', 'notif_mode_simulation',
       'avis_seuil_reponse', 'avis_template_auto', 'avis_reponse_auto',
       'menu_categories', 'menu_devise', 'menu_afficher_prix',

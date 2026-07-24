@@ -19,18 +19,17 @@
     "primaryFields": [
       {
         "key": "points",
-        "label": "POINTS",
-        "value": "{{POINTS}}",
-        "numberStyle": "PKNumberStyleDecimal",
-        "changeMessage": "Vous avez %@ points !",
+        "label": "{{HEADER_LABEL}}",
+        "value": "{{HEADER_VALUE}}",
+        "changeMessage": "{{HEADER_CHANGE}}",
         "textAlignment": "PKTextAlignmentRight"
       }
     ],
     "secondaryFields": [
       {
         "key": "reward",
-        "label": "PROCHAIN CADEAU À",
-        "value": "{{POINTS_REWARD}} points",
+        "label": "{{SECOND_LABEL}}",
+        "value": "{{SECOND_VALUE}}",
         "textAlignment": "PKTextAlignmentLeft"
       }
     ],
@@ -63,7 +62,12 @@
       {
         "key": "programme",
         "label": "PROGRAMME DE FIDÉLITÉ",
-        "value": "Cumulez 1 point par visite. {{POINTS_REWARD}} points = 1 récompense offerte."
+        "value": "{{PROGRAMME_DESC}}"
+      },
+      {
+        "key": "avis",
+        "label": "VOTRE AVIS COMPTE",
+        "value": "{{AVIS_LINK}}"
       },
       {
         "key": "conditions",

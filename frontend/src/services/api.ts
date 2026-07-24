@@ -112,10 +112,10 @@ export const walletApi = {
 
 // ─── Scan ─────────────────────────────────────────────────────────────────────
 export const scanApi = {
-  scan: (passSerialNumber: string) =>
+  scan: (passSerialNumber: string, extra?: { montant?: number; quantite?: number; action?: string }) =>
     request<ScanResult>('/api/scan', {
       method: 'POST',
-      body: JSON.stringify({ pass_serial_number: passSerialNumber }),
+      body: JSON.stringify({ pass_serial_number: passSerialNumber, ...(extra || {}) }),
     }),
   history: (limit = 20, offset = 0) =>
     request<{ visites: Visite[]; total: number }>(
@@ -529,6 +529,9 @@ export const autoReviewApi = {
 
 export interface WalletSetupData {
   template_type?: string;
+  // Système de fidélité multi-types
+  carte_type?: string;
+  carte_type_config?: Record<string, any>;
   programme_nom: string;
   couleur_primaire: string;
   couleur_secondaire?: string;

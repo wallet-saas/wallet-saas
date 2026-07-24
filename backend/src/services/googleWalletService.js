@@ -1,3 +1,4 @@
+const carteTypeService = require('./carteTypeService');
 /**
  * Service Google Wallet — Stamply
  *
@@ -290,13 +291,20 @@ async function generateSaveUrl(carte, commercant) {
     const classId = getClassId(commercant.id);
     const objectId = getObjectId(carte.pass_serial_number);
 
+    const { type: carteType, config: typeConfig } = carteTypeService.getTypeConfig(commercant || {});
+    const display = carteTypeService.displayFields({ type: carteType, config: typeConfig, carte, commercant });
+
     const loyaltyObject = {
       id: objectId,
       classId,
       state: 'ACTIVE',
       loyaltyPoints: {
-        label: 'Tampons',
-        balance: { int: carte.tampons || carte.points || 0 },
+        label: display.header_label,
+        balance: { string: display.header_value },
+      },
+      secondaryLoyaltyPoints: {
+        label: display.second_label,
+        balance: { string: display.second_value },
       },
       barcode: {
         type: 'QR_CODE',
@@ -305,13 +313,24 @@ async function generateSaveUrl(carte, commercant) {
       },
       textModulesData: [
         {
-          id: 'next_reward',
-          header: 'Prochaine recompense',
-          body: `${commercant.points_recompense || 10} tampons`,
+          id: 'programme',
+          header: 'Programme de fidélité',
+          body: display.programme,
         },
       ],
       hexBackgroundColor: commercant.carte_couleur_primaire || '#6366f1',
     };
+
+    // Lien "Donner mon avis" (rating gate) directement sur la carte
+    if (commercant.module_avis_google && commercant.id) {
+      loyaltyObject.linksModuleData = {
+        uris: [{
+          uri: `${process.env.API_URL || 'https://stamply-backend-gn8z.onrender.com'}/api/avis/collecte/${commercant.id}`,
+          description: '⭐ Donner mon avis',
+          id: 'avis',
+        }],
+      };
+    }
 
     // Add heroImage if available
     if (commercant.carte_background_image_url) {
@@ -360,7 +379,7 @@ async function generateSaveUrl(carte, commercant) {
  * @param {string} serialNumber - pass_serial_number de la carte
  * @param {number} newPoints    - nouveau solde de points
  */
-async function updateLoyaltyObjectPoints(serialNumber, newPoints) {
+async function updateLoyaltyObjectPoints(serialNumber, newPoints, displayOverride = null) {
   if (!isConfigured()) return;
 
   try {
@@ -371,8 +390,9 @@ async function updateLoyaltyObjectPoints(serialNumber, newPoints) {
       `${WALLET_API}/loyaltyObject/${objectId}`,
       {
         loyaltyPoints: {
-          label: 'Tampons',
-          balance: { int: newPoints },
+          ...(displayOverride
+            ? { label: displayOverride.label, balance: { string: displayOverride.value } }
+            : { label: 'Points', balance: { int: newPoints } }),
         },
       },
       {

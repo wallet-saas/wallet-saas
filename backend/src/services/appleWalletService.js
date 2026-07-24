@@ -12,6 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const carteTypeService = require('./carteTypeService');
 const archiver = require('archiver');
 const forge = require('node-forge');
 const { supabase } = require('../config/supabase');
@@ -130,7 +131,7 @@ async function servePkpass(req, res) {
 
     const { data: commercant, error: commErr } = await supabase
       .from('commercants')
-      .select('nom_enseigne, carte_couleur_primaire, carte_couleur_secondaire, points_recompense, adresse, ville, latitude, longitude, carte_logo_url')
+      .select('nom_enseigne, carte_couleur_primaire, carte_couleur_secondaire, points_recompense, adresse, ville, latitude, longitude, carte_logo_url, carte_type, carte_type_config, module_avis_google')
       .eq('id', carte.commercant_id)
       .single();
 
@@ -341,6 +342,12 @@ async function generatePkpassBuffer(carte, commercant) {
 
     // Générer pass.json
     const template = getPassTemplate();
+    const { type: carteType, config: typeConfig } = carteTypeService.getTypeConfig(commercant || {});
+    const display = carteTypeService.displayFields({ type: carteType, config: typeConfig, carte, commercant });
+    // Lien de collecte d'avis (rating gate) au dos du pass — iOS le rend cliquable
+    const avisLink = commercant?.module_avis_google && carte?.commercant_id
+      ? `${API_URL}/api/avis/collecte/${carte.commercant_id}`
+      : 'Merci de votre fidélité !';
     if (!template) throw new Error('Template pass.json introuvable');
 
     // Chercher le message de notif + le token d'auth (OBLIGATOIRE ≥16 chars,
@@ -352,9 +359,16 @@ async function generatePkpassBuffer(carte, commercant) {
     try {
       const { data: carteDb } = await supabase
         .from('cartes')
-        .select('id, last_notif_message, apple_auth_token')
+        .select('id, last_notif_message, apple_auth_token, points, visites, solde, total_depense, statut_palier, coupon_utilise')
         .eq('pass_serial_number', serialNumber)
         .single();
+      if (carteDb) {
+        // Compléter la carte passée en paramètre avec l'état multi-types
+        carte = { ...carteDb, ...carte, points: carte.points ?? carteDb.points,
+          solde: carte.solde ?? carteDb.solde, total_depense: carte.total_depense ?? carteDb.total_depense,
+          statut_palier: carte.statut_palier ?? carteDb.statut_palier,
+          coupon_utilise: carte.coupon_utilise ?? carteDb.coupon_utilise };
+      }
       if (carteDb?.last_notif_message) {
         notifMessage = `🎯 ${carteDb.last_notif_message}`;
       }
@@ -387,6 +401,13 @@ async function generatePkpassBuffer(carte, commercant) {
         .replace(/\{\{POINTS\}\}/g, String(carte.points || 0))
         .replace(/\{\{POINTS_REWARD\}\}/g, String(commercant.points_recompense || 10))
         .replace(/\{\{VISITS\}\}/g, String(carte.visites || 0))
+        .replace(/\{\{HEADER_LABEL\}\}/g, display.header_label)
+        .replace(/\{\{HEADER_VALUE\}\}/g, display.header_value)
+        .replace(/\{\{HEADER_CHANGE\}\}/g, display.header_change)
+        .replace(/\{\{SECOND_LABEL\}\}/g, display.second_label)
+        .replace(/\{\{SECOND_VALUE\}\}/g, display.second_value)
+        .replace(/\{\{PROGRAMME_DESC\}\}/g, display.programme)
+        .replace(/\{\{AVIS_LINK\}\}/g, avisLink)
         .replace(/\{\{ADDRESS\}\}/g, [commercant.adresse, commercant.ville].filter(Boolean).join(', ') || '')
         .replace(/\{\{RELEVANT_DATE\}\}/g, new Date().toISOString())
         .replace(/\{\{AUTH_TOKEN\}\}/g, authToken)

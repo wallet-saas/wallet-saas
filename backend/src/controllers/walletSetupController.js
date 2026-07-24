@@ -82,6 +82,12 @@ const setupWalletCard = async (req, res) => {
       template_type: template_type || null,
     };
     if (layout) rawPayload.carte_layout = layout;
+    if (req.body.carte_type) rawPayload.carte_type = req.body.carte_type;
+    if (req.body.carte_type_config) {
+      rawPayload.carte_type_config = typeof req.body.carte_type_config === 'string'
+        ? JSON.parse(req.body.carte_type_config)
+        : req.body.carte_type_config;
+    }
     if (req.body.texte_perso_bas_carte) rawPayload.texte_perso_bas_carte = req.body.texte_perso_bas_carte;
     if (req.body.style_texte) rawPayload.style_texte = req.body.style_texte;
     // Premium card design fields
@@ -163,6 +169,12 @@ const updateWalletCard = async (req, res) => {
       template_type: template_type || null,
     };
     if (layout) rawPayload.carte_layout = layout;
+    if (req.body.carte_type) rawPayload.carte_type = req.body.carte_type;
+    if (req.body.carte_type_config) {
+      rawPayload.carte_type_config = typeof req.body.carte_type_config === 'string'
+        ? JSON.parse(req.body.carte_type_config)
+        : req.body.carte_type_config;
+    }
     if (req.body.texte_perso_bas_carte) rawPayload.texte_perso_bas_carte = req.body.texte_perso_bas_carte;
     if (req.body.style_texte) rawPayload.style_texte = req.body.style_texte;
     // Premium card design fields

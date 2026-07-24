@@ -154,7 +154,7 @@ router.get('/v1/passes/:passTypeId/:serial', async (req, res) => {
 
     const { data: carte } = await supabase
       .from('cartes')
-      .select('id, pass_serial_number, points, visites, commercant_id, apple_auth_token')
+      .select('id, pass_serial_number, points, visites, solde, total_depense, statut_palier, coupon_utilise, commercant_id, apple_auth_token')
       .eq('pass_serial_number', serial)
       .single();
 
@@ -165,7 +165,7 @@ router.get('/v1/passes/:passTypeId/:serial', async (req, res) => {
     // Récupérer le commerçant
     const { data: commercant } = await supabase
       .from('commercants')
-      .select('id, nom_enseigne, carte_couleur_primaire, carte_couleur_secondaire, points_recompense, adresse, ville, latitude, longitude, carte_logo_url')
+      .select('id, nom_enseigne, carte_couleur_primaire, carte_couleur_secondaire, points_recompense, adresse, ville, latitude, longitude, carte_logo_url, carte_type, carte_type_config, module_avis_google')
       .eq('id', carte.commercant_id)
       .single();
 

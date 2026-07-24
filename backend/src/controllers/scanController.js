@@ -6,6 +6,7 @@ const autoReviewService = require('../services/autoReviewService');
 const rewardService = require('../services/rewardService');
 const qrCodeService = require('../services/qrCodeService');
 const walletNotificationService = require('../services/walletNotificationService');
+const carteTypeService = require('../services/carteTypeService');
 
 // Rate limiting en mémoire : Map<carte_id, timestamp_last_scan>
 const scanRateLimit = new Map();
@@ -18,7 +19,7 @@ const RATE_LIMIT_MS = 30 * 1000; // 30 secondes
  */
 const scanQR = async (req, res) => {
   try {
-    const { pass_serial_number, qr_string } = req.body;
+    const { pass_serial_number, qr_string, montant, quantite, action } = req.body;
     const { id: commercantId } = req.commercant;
 
     if (!pass_serial_number && !qr_string) {
@@ -56,7 +57,7 @@ const scanQR = async (req, res) => {
     if (carteId) {
       const { data, error } = await supabase
         .from('cartes')
-        .select('id, pass_serial_number, points, visites, commercant_id, actif')
+        .select('id, pass_serial_number, points, visites, solde, total_depense, statut_palier, coupon_utilise, commercant_id, actif')
         .eq('id', carteId)
         .eq('commercant_id', commercantId)
         .single();
@@ -67,7 +68,7 @@ const scanQR = async (req, res) => {
     if (!carte) {
       const { data, error } = await supabase
         .from('cartes')
-        .select('id, pass_serial_number, points, visites, commercant_id, actif')
+        .select('id, pass_serial_number, points, visites, solde, total_depense, statut_palier, coupon_utilise, commercant_id, actif')
         .eq('pass_serial_number', passSerialNumber)
         .eq('commercant_id', commercantId)
         .single();
@@ -107,50 +108,47 @@ const scanQR = async (req, res) => {
       }
     }
 
-    // --- Calcul des tampons et récompenses ---
+    // --- Logique de fidélité selon le type de carte du commerçant ---
     const { data: commercant } = await supabase
       .from('commercants')
-      .select('points_recompense, reward_config')
+      .select('points_recompense, reward_config, carte_type, carte_type_config, nom_enseigne')
       .eq('id', commercantId)
       .single();
 
-    const rewardConfig = commercant?.reward_config || {};
-    const seuil = commercant?.points_recompense || 10;
-    const now_iso = new Date().toISOString();
+    const { type: carteType, config: typeConfig } = carteTypeService.getTypeConfig(commercant || {});
+    const scanResult = carteTypeService.applyScan({
+      type: carteType,
+      config: typeConfig,
+      carte,
+      params: { montant, quantite, action },
+    });
 
-    // Logique de reset via config récompenses
-    const autoReset = rewardConfig.auto_reset !== false;
-    const maxNiveau = Math.max(
-      rewardConfig.visites_recompense_1 || 0,
-      rewardConfig.visites_recompense_2 || 0,
-      rewardConfig.visites_recompense_3 || 0,
-      seuil
-    );
+    if (!scanResult.ok) {
+      // Erreur métier (montant manquant, solde insuffisant, coupon déjà utilisé…)
+      scanRateLimit.delete(carte.id); // ne pas pénaliser un scan à corriger
+      return res.status(400).json({ success: false, error: scanResult.error, carte_type: carteType });
+    }
 
-    // carte.points = nombre de tampons actuels
-    const tamponsActuels = carte.points || 0;
-    const reset = autoReset && tamponsActuels >= maxNiveau;
-    const newTampons = reset ? 1 : tamponsActuels + 1;
-    const reward = !reset && newTampons === seuil;
-
-    // --- Mise à jour des tampons ---
     const { error: updateError } = await supabase
       .from('cartes')
-      .update({
-        points: newTampons,
-        visites: (carte.visites || 0) + 1,
-        last_visit_at: now_iso,
-        updated_at: now_iso
-      })
+      .update(scanResult.updates)
       .eq('id', carte.id);
 
     if (updateError) {
       console.error('Erreur update cartes:', updateError);
       return res.status(500).json({
         success: false,
-        error: 'Erreur lors de la mise à jour des tampons.'
+        error: 'Erreur lors de la mise à jour de la carte.'
       });
     }
+
+    const carteApres = { ...carte, ...scanResult.updates };
+    const newTampons = carteApres.points || 0;
+    const seuil = carteType === 'tampons' ? typeConfig.tampons_requis
+      : carteType === 'points' ? typeConfig.points_recompense
+      : null;
+    const reward = seuil !== null && newTampons >= seuil;
+    const reset = false;
 
     // --- Récupérer le client_id depuis la table clients via carte_id ---
     let clientId = null;
@@ -169,7 +167,7 @@ const scanQR = async (req, res) => {
           commercant_id: commercantId,
           carte_id: carte.id,
           client_id: clientId,
-          points_gagnes: 1,
+          points_gagnes: (carteApres.points || 0) - (carte.points || 0),
           source: qrType === 'dynamic' ? 'qr_dynamic' : 'scan'
         }]);
 
@@ -181,7 +179,13 @@ const scanQR = async (req, res) => {
     }
 
     // --- Mettre à jour la carte Google Wallet (best-effort) ---
-    googleWalletService.updateLoyaltyObjectPoints(carte.pass_serial_number, newTampons);
+    const displayApres = carteTypeService.displayFields({
+      type: carteType, config: typeConfig, carte: carteApres, commercant,
+    });
+    googleWalletService.updateLoyaltyObjectPoints(carte.pass_serial_number, newTampons, {
+      label: displayApres.header_label,
+      value: displayApres.header_value,
+    });
 
     // --- Mettre à jour la carte Apple Wallet via APNS (best-effort) ---
     appleWalletService.updatePoints(carte.pass_serial_number, newTampons);
@@ -204,12 +208,8 @@ const scanQR = async (req, res) => {
     await autoReviewService.scheduleReviewNotification(carte.id, commercantId, newTampons);
 
     // --- Message de réponse ---
-    let message = reward
-      ? `🎉 Récompense débloquée ! (${seuil} tampons atteints)`
-      : reset
-        ? `Nouveau cycle ! Tampons remis à 1.`
-        : 'Visite enregistrée !';
-
+    let message = scanResult.resume || 'Visite enregistrée !';
+    if (reward) message += ` — 🎉 Récompense disponible !`;
     if (newRewards && newRewards.length > 0) {
       message = newRewards.map(r => `🎁 ${r.label}`).join(' | ');
     }
@@ -217,6 +217,16 @@ const scanQR = async (req, res) => {
     return res.status(200).json({
       success: true,
       qr_type: qrType,
+      carte_type: carteType,
+      resume: scanResult.resume,
+      carte_etat: {
+        points: carteApres.points || 0,
+        solde: carteApres.solde || 0,
+        total_depense: carteApres.total_depense || 0,
+        statut_palier: carteApres.statut_palier || null,
+        coupon_utilise: carteApres.coupon_utilise || false,
+        visites: carteApres.visites || 0,
+      },
       tampons: newTampons,
       seuil,
       reward,
