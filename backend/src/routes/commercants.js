@@ -25,8 +25,8 @@ router.post('/save-client-info', async (req, res) => {
     if (!commercantId || !serial_number) {
       return res.status(400).json({ success: false, error: 'Paramètres manquants.' });
     }
-    // Mettre à jour la carte avec les infos client
-    const { error } = await supabase
+    // Mettre à jour la carte avec les infos client (affichage pass + relance)
+    const { data: carteMaj, error } = await supabase
       .from('cartes')
       .update({
         client_nom: nom || '',
@@ -34,8 +34,41 @@ router.post('/save-client-info', async (req, res) => {
         client_telephone: telephone || '',
         client_date_naissance: date_naissance || null,
       })
-      .eq('pass_serial_number', serial_number);
+      .eq('pass_serial_number', serial_number)
+      .select('id, commercant_id')
+      .single();
     if (error) throw error;
+
+    // Créer/mettre à jour le client dans la table clients — c'est elle qui
+    // alimente les visites, les anniversaires, le ciblage et les stats.
+    if (carteMaj?.id) {
+      const clientRow = {
+        commercant_id: carteMaj.commercant_id || commercantId,
+        carte_id: carteMaj.id,
+        nom: nom || '',
+        email: email || '',
+        telephone: telephone || '',
+        date_naissance: date_naissance || null,
+        consentement_email: consentement_email === true,
+        consentement_sms: consentement_sms === true,
+        consentement_rgpd: true,
+        consentement_date: new Date().toISOString(),
+      };
+      const { data: existing } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('carte_id', carteMaj.id)
+        .maybeSingle();
+      const { error: clientError } = existing?.id
+        ? await supabase.from('clients').update(clientRow).eq('id', existing.id)
+        : await supabase.from('clients').insert([clientRow]);
+      if (clientError) {
+        // Non bloquant pour l'installation, mais loggé : sans ligne clients,
+        // anniversaires et stats ne fonctionneront pas pour ce client.
+        console.error('Erreur upsert clients:', clientError.message);
+      }
+    }
+
     return res.status(200).json({ success: true, data: { message: 'Informations enregistrées.' } });
   } catch (err) {
     console.error('Erreur save-client-info:', err);
