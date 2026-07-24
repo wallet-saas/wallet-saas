@@ -42,7 +42,8 @@ const generateWalletCard = async (req, res) => {
     }
 
     const serialNumber = uuidv4();
-    const carteObj = { pass_serial_number: serialNumber, points: 0 };
+    const appleAuthToken = uuidv4(); // requis (>=16 chars) pour l'enregistrement push Apple
+    const carteObj = { pass_serial_number: serialNumber, points: 0, apple_auth_token: appleAuthToken };
 
     // Générer les URLs wallet (non-bloquant si non configuré)
     const walletUrls = await generateWalletUrls(carteObj, commercant);
@@ -55,6 +56,7 @@ const generateWalletCard = async (req, res) => {
         pass_type: 'universal',
         pass_serial_number: serialNumber,
         points: 0,
+        apple_auth_token: appleAuthToken,
         google_wallet_url: walletUrls.google,
         apple_wallet_url: walletUrls.apple,
       }])
