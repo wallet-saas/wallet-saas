@@ -182,7 +182,7 @@ router.get('/v1/passes/:passTypeId/:serial', async (req, res) => {
     }
 
     res.setHeader('Content-Type', 'application/vnd.apple.pkpass');
-    res.setHeader('Content-Disposition', `attachment; filename="${serial}.pkpass"`);
+    res.setHeader('Content-Disposition', `filename="${serial}.pkpass"`);
     res.setHeader('Last-Modified', new Date().toUTCString());
     return res.send(pkpassBuffer);
   } catch (err) {

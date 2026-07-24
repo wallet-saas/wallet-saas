@@ -481,8 +481,6 @@ export default function InstallPage() {
                     <a
                       href={cardData.apple_wallet_url}
                       className="block w-full"
-                      target="_blank"
-                      rel="noreferrer"
                     >
                       <div className="flex items-center justify-center gap-3 bg-black text-white rounded-xl px-5 py-3.5 font-semibold text-base shadow-lg hover:bg-gray-900 transition-colors">
                         <svg viewBox="0 0 24 24" className="h-6 w-6 fill-white" xmlns="http://www.w3.org/2000/svg">
