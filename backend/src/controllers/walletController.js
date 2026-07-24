@@ -269,10 +269,11 @@ const generateCardForClient = async (req, res) => {
     }
 
     // Note: on ne bloque pas si abonnement inactif — le commerçant peut tester
-    // le flux d'installation même sans abonnement actif (mode démo)
-    // if (commercant.abonnement_statut !== 'actif') {
-    //   return res.status(403).json({ success: false, error: 'Programme de fidélité inactif pour ce commerce.' });
-    // }
+    // Paywall : activé via env REQUIRE_SUBSCRIPTION=true (mode démo par défaut).
+    // Passer la variable sur Render quand prêt à vendre — aucun redeploy de code requis.
+    if (process.env.REQUIRE_SUBSCRIPTION === 'true' && commercant.abonnement_statut !== 'actif') {
+      return res.status(403).json({ success: false, error: 'Programme de fidélité inactif pour ce commerce.' });
+    }
 
     if (commercant.wallet_class_configured !== true) {
       return res.status(403).json({ success: false, error: 'Ce commerçant n\'a pas encore configuré sa carte de fidélité.' });

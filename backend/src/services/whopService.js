@@ -80,7 +80,10 @@ function verifyWebhook(rawBody, signature) {
     .createHmac('sha256', WHOP_WEBHOOK_SECRET)
     .update(rawBody)
     .digest('hex');
-  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+  const sigBuf = Buffer.from(signature);
+  const expBuf = Buffer.from(expected);
+  if (sigBuf.length !== expBuf.length) return false; // timingSafeEqual jette sinon
+  return crypto.timingSafeEqual(sigBuf, expBuf);
 }
 
 // ─── Map Whop status to Stamply status ─────────────────────────────────────────
