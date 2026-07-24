@@ -144,7 +144,7 @@ async function servePkpass(req, res) {
     }
 
     res.setHeader('Content-Type', 'application/vnd.apple.pkpass');
-    res.setHeader('Content-Disposition', `filename="${fileName}"`);
+    res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
     return res.send(pkpassBuffer);
   } catch (error) {
     console.error('[AppleWallet] servePkpass error:', error.message);

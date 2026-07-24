@@ -165,7 +165,7 @@ router.get('/v1/passes/:passTypeId/:serial', async (req, res) => {
     // Récupérer le commerçant
     const { data: commercant } = await supabase
       .from('commercants')
-      .select('id, nom_enseigne, carte_couleur_primaire, carte_couleur_secondaire, points_recompense, adresse, ville')
+      .select('id, nom_enseigne, carte_couleur_primaire, carte_couleur_secondaire, points_recompense, adresse, ville, latitude, longitude, carte_logo_url')
       .eq('id', carte.commercant_id)
       .single();
 
@@ -182,7 +182,7 @@ router.get('/v1/passes/:passTypeId/:serial', async (req, res) => {
     }
 
     res.setHeader('Content-Type', 'application/vnd.apple.pkpass');
-    res.setHeader('Content-Disposition', `filename="${serial}.pkpass"`);
+    res.setHeader('Content-Disposition', `inline; filename="${serial}.pkpass"`);
     res.setHeader('Last-Modified', new Date().toUTCString());
     return res.send(pkpassBuffer);
   } catch (err) {
