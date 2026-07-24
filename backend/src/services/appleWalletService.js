@@ -339,16 +339,34 @@ async function generatePkpassBuffer(carte, commercant) {
     const template = getPassTemplate();
     if (!template) throw new Error('Template pass.json introuvable');
 
-    // Chercher si un message de notification est stocké pour cette carte
+    // Chercher le message de notif + le token d'auth (OBLIGATOIRE ≥16 chars,
+    // sinon iOS rejette silencieusement le pass à l'ajout car webServiceURL est présent)
     let notifMessage = '';
+    let authToken = (carte.apple_auth_token && carte.apple_auth_token.length >= 16)
+      ? carte.apple_auth_token
+      : '';
     try {
       const { data: carteDb } = await supabase
         .from('cartes')
-        .select('last_notif_message')
+        .select('id, last_notif_message, apple_auth_token')
         .eq('pass_serial_number', serialNumber)
         .single();
       if (carteDb?.last_notif_message) {
         notifMessage = `🎯 ${carteDb.last_notif_message}`;
+      }
+      if (!authToken && carteDb?.apple_auth_token && carteDb.apple_auth_token.length >= 16) {
+        authToken = carteDb.apple_auth_token;
+      }
+      if (!authToken && carteDb?.id) {
+        // Carte legacy sans token : en générer un et le persister
+        authToken = crypto.randomBytes(16).toString('hex');
+        const { error: tokenError } = await supabase
+          .from('cartes')
+          .update({ apple_auth_token: authToken })
+          .eq('id', carteDb.id);
+        if (tokenError) {
+          console.error('[AppleWallet] Erreur persistance apple_auth_token:', tokenError.message);
+        }
       }
     } catch (_) {
       // Non bloquant
@@ -367,7 +385,7 @@ async function generatePkpassBuffer(carte, commercant) {
         .replace(/\{\{VISITS\}\}/g, String(carte.visites || 0))
         .replace(/\{\{ADDRESS\}\}/g, [commercant.adresse, commercant.ville].filter(Boolean).join(', ') || '')
         .replace(/\{\{RELEVANT_DATE\}\}/g, new Date().toISOString())
-        .replace(/\\{\\{AUTH_TOKEN\\}\\}/g, carte.apple_auth_token || '')
+        .replace(/\{\{AUTH_TOKEN\}\}/g, authToken)
         .replace(/\{\{NOTIF_BODY\}\}/g, notifMessage)
     );
 

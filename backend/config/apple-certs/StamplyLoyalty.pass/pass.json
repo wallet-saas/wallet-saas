@@ -45,7 +45,7 @@
         "key": "stamply_notif",
         "label": " ",
         "value": "{{NOTIF_BODY}}",
-        "changeMessage": "🎯 {{NOTIF_BODY}}",
+        "changeMessage": "%@",
         "textAlignment": "PKTextAlignmentLeft"
       }
     ],
@@ -77,6 +77,5 @@
   "relevantDate": "{{RELEVANT_DATE}}",
   "voided": false,
   "webServiceURL": "https://stamply-backend-gn8z.onrender.com/api/wallet",
-  "authenticationToken": "{{AUTH_TOKEN}}",
-  "locations": []
+  "authenticationToken": "{{AUTH_TOKEN}}"
 }
