@@ -69,47 +69,33 @@ const sendReviewNotification = async (carteId, commercantId, commercant) => {
 
     if (carte?.avis_notif_sent) return;
 
-    // Trouver le client lié à cette carte
-    const { data: client } = await supabase
-      .from('clients')
-      .select('id, device_token, platform')
-      .eq('carte_id', carteId)
-      .maybeSingle();
-
-    if (!client?.device_token) {
-      console.log(`[AUTO-AVIS] Pas de device_token pour carte ${carteId}`);
-      return;
-    }
-
-    // Construire le lien vers le formulaire d'avis
-    const avisFormUrl = `${process.env.FRONTEND_URL || 'https://stamply-gamma.vercel.app'}/avis/${carteId}`;
-
+    // Envoi via la carte Wallet (Apple push + Google TEXT_AND_NOTIFY).
+    // Le lien "⭐ Donner mon avis" est au dos du pass Apple et dans les liens
+    // de la carte Google — la notification invite le client à l'ouvrir.
+    const walletNotificationService = require('./walletNotificationService');
     const titre = `Comment s'est passée votre visite ?`;
-    const message = `Chez ${commercant.nom_enseigne} — Donnez votre avis ⭐`;
+    const message = `Chez ${commercant.nom_enseigne} — donnez votre avis depuis votre carte ⭐ (lien au dos de la carte)`;
+    const envoi = await walletNotificationService.sendToWalletCard(carteId, titre, message);
 
-    // Enregistrer la notification
-    await supabase
-      .from('notifications')
-      .insert([{
-        commercant_id: commercantId,
-        titre,
-        message,
-        type: 'push',
-        cible: 'tous',
-        total_envoyes: 1,
-        envoyee: true,
-        action_url: avisFormUrl,
-      }]);
-
-    // Marquer comme envoyée
     await supabase
       .from('cartes')
       .update({ avis_notif_sent: true })
       .eq('id', carteId);
 
-    // TODO: Envoyer via FCM si configuré
-    console.log(`[AUTO-AVIS] Notification envoyée → carte ${carteId} | form: ${avisFormUrl}`);
-  } catch (err) {
+    await supabase.from('notifications').insert([{
+      commercant_id: commercantId,
+      titre,
+      message,
+      type: 'avis_auto',
+      cible: 'tous',
+      total_envoyes: 1,
+      envoyee: true,
+    }]);
+
+    console.log(`[AUTO-AVIS] Demande d'avis envoyée via Wallet pour carte ${carteId} (google: ${envoi.google}, apple: ${envoi.apple})`);
+    return { success: true, ...envoi };
+
+    } catch (err) {
     console.error('[AUTO-AVIS] Erreur envoi:', err.message);
   }
 };

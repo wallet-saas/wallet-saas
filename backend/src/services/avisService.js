@@ -60,20 +60,15 @@ async function sendReviewRequest(carteId, delaiMinutes) {
       return { success: false, reason: 'already_sent' };
     }
 
-    // Chercher le client lié à cette carte pour son device_token
-    const { data: client } = await supabase
-      .from('clients')
-      .select('id, device_token, platform')
-      .eq('carte_id', carteId)
-      .maybeSingle();
-
-    if (!client?.device_token) {
-      console.log(`[AVIS] Pas de device_token pour la carte ${carteId} — notification non envoyée.`);
-      return { success: false, reason: 'no_device_token' };
-    }
-
+    // Envoi via la carte Wallet (le lien d'avis est au dos du pass / dans les liens Google)
+    const walletNotificationService = require('./walletNotificationService');
     const titre = `Comment s'est passée votre visite ?`;
-    const message = `Chez ${nomEnseigne} — Donnez votre avis sur Google ⭐`;
+    const message = `Chez ${nomEnseigne} — donnez votre avis depuis votre carte ⭐ (lien au dos de la carte)`;
+    const envoiWallet = await walletNotificationService.sendToWalletCard(carteId, titre, message);
+    if (!envoiWallet.google && !envoiWallet.apple) {
+      console.log(`[AVIS] Carte ${carteId} sans canal Wallet actif — notification non envoyée.`);
+      return { success: false, reason: 'no_wallet_channel' };
+    }
 
     // Enregistrer la notification en DB (avec le lien Google direct comme URL d'action)
     const { data: notif } = await supabase

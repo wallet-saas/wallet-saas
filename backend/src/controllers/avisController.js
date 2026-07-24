@@ -375,7 +375,7 @@ const submitCollecte = async (req, res) => {
         commercant_id,
         note: parseInt(note),
         contenu: contenu?.trim() || null,
-        source: 'google'
+        source: parseInt(note) >= 4 ? 'google' : 'formulaire_prive'
       }])
       .select()
       .single();
