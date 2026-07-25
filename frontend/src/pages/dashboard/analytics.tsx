@@ -101,14 +101,22 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Performances clés type Panthera */}
-          {commercantOverview && (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard label="Chiffre d'affaires brut" value={`${formatNumber(commercantOverview.chiffreAffairesBrut || 0)} €`} icon={TrendingUp} iconBg="bg-green-50" iconColor="text-green-600" trend={commercantOverview.evolutionCA ? { value: `+${commercantOverview.evolutionCA}%`, positive: true } : undefined} />
-              <StatCard label="Revenus de fidélité" value={`${formatNumber(commercantOverview.revenusFidelite || 0)} €`} icon={TrendingUp} iconBg="bg-blue-50" iconColor="text-blue-600" />
-              <StatCard label="Valeur vie client" value={`${commercantOverview.valeurVieClient || 0} €`} icon={Users} iconBg="bg-purple-50" iconColor="text-purple-600" trend={commercantOverview.evolutionCLV ? { value: `+${commercantOverview.evolutionCLV}%`, positive: true } : undefined} />
-              <StatCard label="ROI" value={`1 € → ${commercantOverview.roi || '0,00'} €`} icon={TrendingUp} iconBg="bg-orange-50" iconColor="text-orange-600" trend={commercantOverview.evolutionROI ? { value: `+${commercantOverview.evolutionROI}%`, positive: true } : undefined} />
+          {commercantOverview && (commercantOverview.suitLesMontants ? (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <StatCard label="Chiffre d'affaires suivi" value={`${formatNumber(commercantOverview.chiffreAffairesBrut ?? 0)} €`} icon={TrendingUp} iconBg="bg-green-50" iconColor="text-green-600" />
+              <StatCard label="CA sur 30 jours" value={`${formatNumber(commercantOverview.chiffreAffaires30j ?? 0)} €`} icon={TrendingUp} iconBg="bg-blue-50" iconColor="text-blue-600" />
+              <StatCard label="Panier moyen" value={`${formatNumber(commercantOverview.panierMoyen ?? 0)} €`} icon={CreditCard} iconBg="bg-purple-50" iconColor="text-purple-600" />
+              <StatCard label="Valeur par client" value={`${formatNumber(commercantOverview.valeurVieClient ?? 0)} €`} icon={Users} iconBg="bg-orange-50" iconColor="text-orange-600" />
             </div>
-          )}
+          ) : (
+            <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 mb-6">
+              <p className="text-xs text-gray-600">
+                Les indicateurs de chiffre d'affaires apparaissent avec les programmes qui enregistrent
+                le montant des achats en caisse (points, cashback, remise, carte cadeau).
+                En carte à tampons, aucun montant n'est saisi : afficher un chiffre d'affaires serait inventé.
+              </p>
+            </div>
+          ))}
 
           {/* Charts row 1 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

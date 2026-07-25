@@ -15,7 +15,7 @@ async function getDashboard(commercantId) {
     // 1️⃣ Récupérer les infos du commerçant
     const { data: commercant, error: errComm } = await supabase
       .from('commercants')
-      .select('id, nom_enseigne, type_fidelite, relance_auto, anniversaire_auto, points_recompense')
+      .select('id, nom_enseigne, type_fidelite, carte_type, relance_auto, anniversaire_auto, points_recompense')
       .eq('id', commercantId)
       .single();
 
@@ -233,6 +233,40 @@ async function getDashboard(commercantId) {
 
     // ─── Assemblage du dashboard ──────────────────────────────────────
 
+    // ---- Indicateurs financiers réels (basés sur les montants saisis en caisse) ----
+    // Ils n'existent que pour les programmes qui demandent le montant de l'achat
+    // (points, cashback, remise, carte cadeau). En carte à tampons, aucun montant
+    // n'est saisi : on renvoie null plutôt qu'un chiffre inventé.
+    const typesAvecMontant = ['points', 'cashback', 'remise', 'carte_cadeau'];
+    const suitLesMontants = typesAvecMontant.includes(commercant.carte_type || 'tampons');
+
+    let chiffreAffairesBrut = null;
+    let panierMoyen = null;
+    let valeurVieClient = null;
+    let chiffreAffaires30j = null;
+
+    if (suitLesMontants) {
+      const { data: visitesMontants } = await supabase
+        .from('visites')
+        .select('montant, created_at, carte_id')
+        .eq('commercant_id', commercantId)
+        .not('montant', 'is', null);
+
+      const lignes = visitesMontants || [];
+      const total = lignes.reduce((sum, v) => sum + (parseFloat(v.montant) || 0), 0);
+      chiffreAffairesBrut = Math.round(total * 100) / 100;
+      panierMoyen = lignes.length ? Math.round((total / lignes.length) * 100) / 100 : 0;
+
+      const il30j = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      chiffreAffaires30j = Math.round(
+        lignes.filter(v => new Date(v.created_at) >= il30j)
+              .reduce((sum, v) => sum + (parseFloat(v.montant) || 0), 0) * 100
+      ) / 100;
+
+      const clientsUniques = new Set(lignes.map(v => v.carte_id)).size;
+      valeurVieClient = clientsUniques ? Math.round((total / clientsUniques) * 100) / 100 : 0;
+    }
+
     return {
       totalCartes,
       nouvellesVisites30j,
@@ -247,7 +281,12 @@ async function getDashboard(commercantId) {
       repartitionTampons,
       clientsRecents,
       meilleursClients,
-      carteFormat: commercant.type_fidelite || 'tampons',
+      carteFormat: commercant.carte_type || commercant.type_fidelite || 'tampons',
+      suitLesMontants,
+      chiffreAffairesBrut,
+      chiffreAffaires30j,
+      panierMoyen,
+      valeurVieClient,
       relanceActive: !!commercant.relance_auto,
       anniversaireActif: !!commercant.anniversaire_auto
     };

@@ -168,6 +168,7 @@ const scanQR = async (req, res) => {
           carte_id: carte.id,
           client_id: clientId,
           points_gagnes: (carteApres.points || 0) - (carte.points || 0),
+          montant: montant !== undefined && !isNaN(parseFloat(montant)) ? parseFloat(montant) : null,
           source: qrType === 'dynamic' ? 'qr_dynamic' : 'scan'
         }]);
 
