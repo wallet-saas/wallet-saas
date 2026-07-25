@@ -167,9 +167,19 @@ const sendOffre = async (req, res) => {
     const message = offre.description || `Profitez de cette offre exclusive${offre.code_promo ? ` avec le code ${offre.code_promo}` : ''} !`;
 
     // Envoyer via le service de notifications
-    const { totalCible, totalEnvoyes, simulation } = await sendPushNotification(
+    const { totalCible, simulation } = await sendPushNotification(
       commercantId, titre, message, cible
     );
+
+    // Canal réel : les cartes Wallet des clients
+    const walletNotificationService = require('../services/walletNotificationService');
+    const walletResult = await walletNotificationService
+      .sendToWalletCards(commercantId, titre, message, null, cible)
+      .catch(err => {
+        console.error('[Offres] Erreur envoi Wallet:', err.message);
+        return { google: 0, apple: 0, total: 0 };
+      });
+    const totalEnvoyes = walletResult.total || 0;
 
     // Mettre à jour total_envoyes de l'offre
     await supabase
@@ -194,7 +204,7 @@ const sendOffre = async (req, res) => {
     return res.status(200).json({
       success: true,
       simulation,
-      message: `Offre flash envoyée à ${totalEnvoyes}/${totalCible} clients.`,
+      message: `Offre flash envoyée à ${totalEnvoyes} carte(s) Wallet.`,
       data: { totalCible, totalEnvoyes }
     });
 

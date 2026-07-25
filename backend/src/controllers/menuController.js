@@ -261,6 +261,16 @@ const pushSelection = async (req, res) => {
       'tous'
     );
 
+    // Canal réel : les cartes Wallet des clients (Apple push + Google TEXT_AND_NOTIFY)
+    const walletNotificationService = require('../services/walletNotificationService');
+    const walletResult = await walletNotificationService
+      .sendToWalletCards(commercantId, titre, message, null, 'tous')
+      .catch(err => {
+        console.error('[Menus] Erreur envoi Wallet:', err.message);
+        return { google: 0, apple: 0, total: 0 };
+      });
+    result.totalEnvoyes = walletResult.total || 0;
+
     // ── Insérer dans l'historique des notifications ──
     const { data: nomsGroupes } = await supabase
       .from('commercants')
