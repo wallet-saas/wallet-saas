@@ -13,7 +13,7 @@ const scheduleReviewNotification = async (carteId, commercantId, points) => {
     // Récupérer les paramètres du commerçant
     const { data: commercant } = await supabase
       .from('commercants')
-      .select('module_avis_google, delai_notif_avis_minutes, google_place_url, google_place_id, nom_enseigne')
+      .select('module_avis_google, delai_notif_avis_minutes, google_place_url, google_place_id, nom_enseigne, auto_review_message')
       .eq('id', commercantId)
       .single();
 
@@ -74,7 +74,8 @@ const sendReviewNotification = async (carteId, commercantId, commercant) => {
     // de la carte Google — la notification invite le client à l'ouvrir.
     const walletNotificationService = require('./walletNotificationService');
     const titre = `Comment s'est passée votre visite ?`;
-    const message = `Chez ${commercant.nom_enseigne} — donnez votre avis depuis votre carte ⭐ (lien au dos de la carte)`;
+    const message = commercant.auto_review_message?.trim()
+      || `Chez ${commercant.nom_enseigne} — donnez votre avis depuis votre carte ⭐ (lien au dos de la carte)`;
     const envoi = await walletNotificationService.sendToWalletCard(carteId, titre, message);
 
     await supabase
@@ -457,8 +458,48 @@ const getFeedbackFormHTML = async (carteId) => {
 </html>`;
 };
 
+/**
+ * Traite les demandes d'avis arrivées à échéance.
+ * Le setTimeout ci-dessus meurt si Render redémarre : ce rattrapage, appelé par
+ * le cron, garantit que la demande part quand même.
+ *
+ * @param {number} limite Nombre maximum de cartes traitées par passage
+ */
+const processDueReviewNotifications = async (limite = 100) => {
+  const maintenant = new Date().toISOString();
+  const { data: cartes, error } = await supabase
+    .from('cartes')
+    .select('id, commercant_id')
+    .eq('avis_notif_sent', false)
+    .not('avis_notif_scheduled_at', 'is', null)
+    .lte('avis_notif_scheduled_at', maintenant)
+    .limit(limite);
+
+  if (error) {
+    console.error('[AUTO-AVIS] Erreur rattrapage:', error.message);
+    return { traitees: 0, erreur: error.message };
+  }
+  if (!cartes?.length) return { traitees: 0 };
+
+  let traitees = 0;
+  for (const carte of cartes) {
+    const { data: commercant } = await supabase
+      .from('commercants')
+      .select('module_avis_google, google_place_url, google_place_id, nom_enseigne, auto_review_message')
+      .eq('id', carte.commercant_id)
+      .single();
+    if (!commercant?.module_avis_google) continue;
+    await sendReviewNotification(carte.id, carte.commercant_id, commercant);
+    traitees++;
+  }
+
+  console.log(`[AUTO-AVIS] Rattrapage : ${traitees} demande(s) d'avis envoyée(s)`);
+  return { traitees };
+};
+
 module.exports = {
   scheduleReviewNotification,
+  processDueReviewNotifications,
   sendReviewNotification,
   getInternalFeedback,
   getReviewFormHTML,

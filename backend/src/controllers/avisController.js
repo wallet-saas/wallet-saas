@@ -206,7 +206,7 @@ const getCollecteForm = async (req, res) => {
 
     const { data: commercant, error } = await supabase
       .from('commercants')
-      .select('id, nom_enseigne, carte_couleur_primaire, google_place_url')
+      .select('id, nom_enseigne, carte_couleur_primaire, google_place_url, auto_review_seuil_etoiles, auto_review_message')
       .eq('id', commercantId)
       .single();
 
@@ -217,6 +217,7 @@ const getCollecteForm = async (req, res) => {
     const nom = commercant.nom_enseigne || 'notre commerce';
     const color = commercant.carte_couleur_primaire || '#6366f1';
     const googleUrl = commercant.google_place_url || '';
+    const seuilEtoiles = commercant.auto_review_seuil_etoiles || 4;
     const submitUrl = '/api/avis/submit-collecte';
 
     res.send(`<!DOCTYPE html>
@@ -292,6 +293,7 @@ const getCollecteForm = async (req, res) => {
   let selectedNote = 0;
   const commercantId = '${commercantId}';
   const googleUrl = '${googleUrl}';
+  const seuilEtoiles = ${seuilEtoiles};
 
   document.querySelectorAll('.star').forEach(star => {
     star.addEventListener('click', () => {
@@ -323,7 +325,7 @@ const getCollecteForm = async (req, res) => {
     document.getElementById('form-view').style.display = 'none';
     document.getElementById('merci').style.display = 'block';
 
-    if (googleUrl && selectedNote >= 4) {
+    if (googleUrl && selectedNote >= seuilEtoiles) {
       document.getElementById('merci-title').textContent = 'Merci pour votre avis 🌟';
       document.getElementById('merci-text').textContent = 'Partagez votre expérience sur Google pour aider d\\'autres clients !';
       const link = document.getElementById('google-link');
@@ -369,13 +371,23 @@ const submitCollecte = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Commerce introuvable.' });
     }
 
+    // Le seuil configuré par le commerçant décide si l'avis part sur Google
+    // ou reste en feedback interne — même règle que dans le formulaire.
+    const { data: reglages } = await supabase
+      .from('commercants')
+      .select('auto_review_seuil_etoiles, auto_review_alerte_email, email, nom_enseigne')
+      .eq('id', commercant_id)
+      .single();
+    const seuil = reglages?.auto_review_seuil_etoiles || 4;
+    const noteInt = parseInt(note);
+
     const { data: avis, error: insertError } = await supabase
       .from('avis')
       .insert([{
         commercant_id,
-        note: parseInt(note),
+        note: noteInt,
         contenu: contenu?.trim() || null,
-        source: parseInt(note) >= 4 ? 'google' : 'formulaire_prive'
+        source: noteInt >= seuil ? 'google' : 'formulaire_prive'
       }])
       .select()
       .single();

@@ -8,12 +8,13 @@ import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { StatCard } from '@/components/ui/StatCard';
 import { PageSpinner } from '@/components/ui/Spinner';
-import { avisApi, commercantApi, type Avis, type AvisTemplate, type AvisTemplatesFilled } from '@/services/api';
+import { avisApi, autoReviewApi, commercantApi, type Avis, type AvisTemplate, type AvisTemplatesFilled } from '@/services/api';
+import { Toggle } from '@/components/ui/Toggle';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/Toast';
 import { useAutoSave, SaveIndicator } from '@/hooks/useAutoSave';
 import { formatDate } from '@/utils/format';
-import { Star, MessageSquare, Send, CheckCircle, Filter, AlertTriangle, Plus, Trash2, Edit3, FileText } from 'lucide-react';
+import { Star, MessageSquare, Send, CheckCircle, Filter, AlertTriangle, Plus, Trash2, Edit3, FileText, Settings, Clock, Bell } from 'lucide-react';
 
 function Stars({ note, size = 'sm' }: { note: number; size?: 'sm' | 'md' }) {
   const s = size === 'sm' ? 'h-3.5 w-3.5' : 'h-5 w-5';
@@ -42,7 +43,8 @@ export default function AvisPage() {
   const [loading, setLoading] = useState(true);
   const [filterNote, setFilterNote] = useState<number | undefined>();
   const [modal, setModal] = useState<{ open: boolean; avis?: Avis; reponse?: string; templates?: AvisTemplatesFilled; selectedTemplateId?: string; sending?: boolean; loadingTemplates?: boolean }>({ open: false });
-  const [activeTab, setActiveTab] = useState<'avis' | 'templates'>('avis');
+  const [activeTab, setActiveTab] = useState<'parametres' | 'avis' | 'feedback' | 'templates'>('parametres');
+  const [feedback, setFeedback] = useState<Avis[]>([]);
 
   // Templates state
   const [templates, setTemplates] = useState<AvisTemplate[]>([]);
@@ -54,12 +56,18 @@ export default function AvisPage() {
   const [moduleEnabled, setModuleEnabled] = useState(false);
   const [googlePlaceUrl, setGooglePlaceUrl] = useState('');
   const [seuilEtoiles, setSeuilEtoiles] = useState(4);
+  const [delaiMinutes, setDelaiMinutes] = useState(60);
+  const [autoMessage, setAutoMessage] = useState('');
+  const [alerteEmail, setAlerteEmail] = useState(false);
 
   useEffect(() => {
     if (commercant) {
       setModuleEnabled(commercant.module_avis_google ?? false);
       setGooglePlaceUrl(commercant.google_place_url ?? '');
       setSeuilEtoiles(commercant.auto_review_seuil_etoiles ?? 4);
+      setDelaiMinutes(commercant.delai_notif_avis_minutes ?? 60);
+      setAutoMessage(commercant.auto_review_message ?? '');
+      setAlerteEmail(commercant.auto_review_alerte_email ?? false);
       // Charger les templates du commerçant, ou utiliser les defaults
       const saved = (commercant as any).avis_templates;
       if (saved && Array.isArray(saved) && saved.length > 0) {
@@ -83,11 +91,22 @@ export default function AvisPage() {
       module_avis_google: moduleEnabled,
       google_place_url: googlePlaceUrl,
       auto_review_seuil_etoiles: seuilEtoiles,
+      delai_notif_avis_minutes: delaiMinutes,
+      auto_review_message: autoMessage,
+      auto_review_alerte_email: alerteEmail,
     });
-  }, [moduleEnabled, googlePlaceUrl, seuilEtoiles]);
+    await refreshUser();
+  }, [moduleEnabled, googlePlaceUrl, seuilEtoiles, delaiMinutes, autoMessage, alerteEmail, refreshUser]);
+
+  // Feedback interne (avis sous le seuil, non publiés sur Google)
+  useEffect(() => {
+    autoReviewApi.feedback()
+      .then((res: any) => setFeedback(Array.isArray(res) ? res : (res?.avis || res?.data || [])))
+      .catch(() => setFeedback([]));
+  }, []);
 
   const { status: saveStatusSettings } = useAutoSave({
-    data: { moduleEnabled, googlePlaceUrl, seuilEtoiles },
+    data: { moduleEnabled, googlePlaceUrl, seuilEtoiles, delaiMinutes, autoMessage, alerteEmail },
     onSave: handleAutoSaveSettings,
     debounceMs: 800,
   });
@@ -210,63 +229,13 @@ export default function AvisPage() {
         <Badge variant={moduleEnabled ? 'green' : 'gray'}>{moduleEnabled ? 'Actif' : 'Inactif'}</Badge>
       </div>
 
-      {/* Settings rapides */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <Card>
-          <CardHeader><CardTitle>Paramètres de collecte</CardTitle></CardHeader>
-          <CardBody className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Activer la collecte automatique</p>
-                <p className="text-xs text-gray-500">Envoie une notification au client après installation de la carte</p>
-              </div>
-              <input type="checkbox" checked={moduleEnabled} onChange={e => setModuleEnabled(e.target.checked)} className="toggle" />
-            </div>
-            <Input label="URL de votre fiche Google Business" placeholder="https://g.page/votre-commerce" value={googlePlaceUrl} onChange={e => setGooglePlaceUrl(e.target.value)} />
-            <div>
-              <label className="label">Seuil étoiles pour Google</label>
-              <select value={seuilEtoiles} onChange={e => setSeuilEtoiles(Number(e.target.value))} className="input">
-                <option value={5}>5 étoiles — Uniquement les avis 5★</option>
-                <option value={4}>4 étoiles et plus — Avis 4★ et 5★</option>
-                <option value={3}>3 étoiles et plus — Avis 3★, 4★ et 5★</option>
-                <option value={2}>2 étoiles et plus — Avis 2★ à 5★</option>
-                <option value={1}>Tous les avis — Tous les avis vont sur Google</option>
-              </select>
-              <p className="text-xs text-gray-500 mt-1">Les avis avec note ≥ ce seuil seront redirigés vers Google. Les autres restent en feedback interne.</p>
-            </div>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle>Comment ça marche ?</CardTitle></CardHeader>
-          <CardBody>
-            <ol className="space-y-3 text-sm text-gray-600">
-              <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center">1</span>
-                <span>Le client installe votre carte de fidélité dans Google Wallet</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center">2</span>
-                <span>Après le délai défini, il reçoit une notification pour laisser un avis</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center">3</span>
-                <span>Si note ≥ seuil → redirection vers Google. Sinon → feedback interne</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center">4</span>
-                <span>Vous répondez avec vos templates personnalisés</span>
-              </li>
-            </ol>
-          </CardBody>
-        </Card>
-      </div>
-
       {/* Onglets */}
       <div className="flex gap-2 mb-6">
         {([
-          { id: 'avis' as const, label: 'Avis reçus', icon: MessageSquare, count: total },
-          { id: 'templates' as const, label: 'Mes templates', icon: FileText, count: templates.length },
+          { id: 'parametres' as const, label: 'Paramètres', icon: Settings, count: 0 },
+          { id: 'avis' as const, label: 'Avis Google', icon: Star, count: total },
+          { id: 'feedback' as const, label: 'Feedback interne', icon: AlertTriangle, count: feedback.length },
+          { id: 'templates' as const, label: 'Modèles de réponse', icon: FileText, count: templates.length },
         ]).map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:text-gray-700'}`}>
@@ -278,6 +247,141 @@ export default function AvisPage() {
 
       {loading ? <PageSpinner /> : (
         <>
+          {activeTab === 'parametres' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader><CardTitle>Collecte des avis</CardTitle></CardHeader>
+                <CardBody className="space-y-4">
+                  <div className="flex items-center justify-between p-3 rounded-lg border border-gray-100">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Collecte automatique</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Demande l'avis du client après sa visite, via sa carte de fidélité</p>
+                    </div>
+                    <Toggle checked={moduleEnabled} onChange={setModuleEnabled} />
+                  </div>
+
+                  <Input
+                    label="URL de votre fiche Google"
+                    placeholder="https://g.page/votre-commerce"
+                    value={googlePlaceUrl}
+                    onChange={e => setGooglePlaceUrl(e.target.value)}
+                  />
+                  <p className="text-xs text-gray-500 -mt-2">
+                    Dans Google Maps : votre fiche → Partager → copiez le lien. C'est là que sont envoyés les clients satisfaits.
+                  </p>
+
+                  <div>
+                    <label className="label">Note minimum pour envoyer vers Google</label>
+                    <select value={seuilEtoiles} onChange={e => setSeuilEtoiles(Number(e.target.value))} className="input">
+                      <option value={5}>5 étoiles uniquement</option>
+                      <option value={4}>4 étoiles et plus (recommandé)</option>
+                      <option value={3}>3 étoiles et plus</option>
+                      <option value={2}>2 étoiles et plus</option>
+                      <option value={1}>Tous les avis vont sur Google</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      En dessous de ce seuil, l'avis reste privé et s'affiche dans l'onglet « Feedback interne ».
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="label flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5 text-gray-400" /> Délai avant la demande d'avis
+                    </label>
+                    <select value={delaiMinutes} onChange={e => setDelaiMinutes(Number(e.target.value))} className="input">
+                      <option value={0}>Immédiatement après la visite</option>
+                      <option value={30}>30 minutes après</option>
+                      <option value={60}>1 heure après (recommandé)</option>
+                      <option value={180}>3 heures après</option>
+                      <option value={1440}>Le lendemain</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      La notification part sur la carte du client. Une seule demande par client, jamais de relance.
+                    </p>
+                  </div>
+                </CardBody>
+              </Card>
+
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader><CardTitle>Message et alertes</CardTitle></CardHeader>
+                  <CardBody className="space-y-4">
+                    <Textarea
+                      label="Message de la demande d'avis"
+                      placeholder="Merci pour votre visite ! Votre avis compte beaucoup pour nous."
+                      rows={3}
+                      value={autoMessage}
+                      onChange={e => setAutoMessage(e.target.value)}
+                    />
+                    <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Alerte email sur avis négatif</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Être prévenu dès qu'un client laisse un feedback sous 3 étoiles</p>
+                      </div>
+                      <Toggle checked={alerteEmail} onChange={setAlerteEmail} />
+                    </div>
+                  </CardBody>
+                </Card>
+
+                <Card>
+                  <CardHeader><CardTitle>Comment ça marche</CardTitle></CardHeader>
+                  <CardBody>
+                    <ol className="space-y-3 text-sm text-gray-600">
+                      {[
+                        'Le client passe en caisse et sa carte est scannée.',
+                        `${delaiMinutes === 0 ? 'Aussitôt après' : delaiMinutes >= 1440 ? 'Le lendemain' : `${delaiMinutes} minutes plus tard`}, une notification arrive sur sa carte de fidélité.`,
+                        'Il ouvre le lien « Donner mon avis » et met une note.',
+                        `${seuilEtoiles} étoiles ou plus → il est envoyé sur votre fiche Google. En dessous → le message reste privé, pour vous seul.`,
+                        'Vous répondez aux avis publics avec vos modèles de réponse.',
+                      ].map((txt, i) => (
+                        <li key={i} className="flex gap-3">
+                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center">{i + 1}</span>
+                          <span>{txt}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </CardBody>
+                </Card>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'feedback' && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2.5">
+                  <AlertTriangle className="h-4 w-4 text-gray-500" />
+                  <div>
+                    <CardTitle>Feedback interne ({feedback.length})</CardTitle>
+                    <p className="text-sm text-gray-500 mt-0.5">
+                      Avis sous {seuilEtoiles} étoiles — visibles par vous uniquement, jamais publiés sur Google.
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardBody className="p-0">
+                {feedback.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <CheckCircle className="h-10 w-10 text-green-200 mx-auto mb-3" />
+                    <p className="text-sm text-gray-400">Aucun avis négatif — bravo !</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-50">
+                    {feedback.map((a) => (
+                      <div key={a.id} className="px-6 py-4">
+                        <div className="flex items-center gap-2 mb-1">
+                          {a.note > 0 && <Stars note={a.note} />}
+                          <span className="text-xs text-gray-400">{formatDate(a.created_at)}</span>
+                        </div>
+                        {a.contenu && <p className="text-sm text-gray-700">{a.contenu}</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+          )}
+
           {activeTab === 'avis' && (
             <div className="space-y-6">
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

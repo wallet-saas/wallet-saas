@@ -54,8 +54,18 @@ router.post('/cron', async (req, res) => {
       resultats.push(resultat);
     }
 
-    console.log(`[Cron relance] ✅ ${resultats.length} commerçants traités`);
-    return res.status(200).json({ success: true, traites: resultats.length, resultats });
+    // Rattrapage des demandes d'avis échues (survit aux redémarrages Render)
+    let avisRattrapes = 0;
+    try {
+      const autoReviewService = require('../services/autoReviewService');
+      const res2 = await autoReviewService.processDueReviewNotifications();
+      avisRattrapes = res2?.traitees || 0;
+    } catch (err) {
+      console.error('[Cron relance] Rattrapage avis échoué:', err.message);
+    }
+
+    console.log(`[Cron relance] ✅ ${resultats.length} commerçants traités, ${avisRattrapes} demande(s) d'avis rattrapée(s)`);
+    return res.status(200).json({ success: true, traites: resultats.length, avis_rattrapes: avisRattrapes, resultats });
   } catch (err) {
     console.error('[Cron relance] Erreur globale:', err.message);
     return res.status(500).json({ success: false, error: err.message });

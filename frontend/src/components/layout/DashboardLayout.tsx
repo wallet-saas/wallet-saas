@@ -31,7 +31,6 @@ const navItems: NavItem[] = [
   { label: 'Géolocalisation', href: '/dashboard/geolocalisation', icon: MapPin, module: 'module_geoloc' },
   { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
 
-  { label: 'Avis automatiques', href: '/dashboard/auto-review', icon: MessageSquare },
 ];
 
 const bottomItems = [
