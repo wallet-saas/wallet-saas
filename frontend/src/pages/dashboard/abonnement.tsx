@@ -59,12 +59,12 @@ export default function AbonnementPage() {
       });
       const data = await res.json();
       if (data.url) {
-        window.open(data.url, '_blank');
+        window.open(data.url, '_blank', 'noopener');
       } else {
-        alert('Portail non disponible');
+        alert(data.error || "La gestion de l'abonnement est momentanément indisponible.");
       }
     } catch {
-      alert('Erreur lors de l\'ouverture du portail');
+      alert("Impossible d'ouvrir la gestion de l'abonnement. Réessayez dans un instant.");
     } finally { setPortalLoading(false); }
   };
 

@@ -246,6 +246,64 @@ export default function ParametresPage() {
                 <Input label="Ville" value={ville} onChange={e => setVille(e.target.value)} />
                 <Input label="Code postal" value={codePostal} onChange={e => setCodePostal(e.target.value)} />
               </div>
+              <div className="pt-4 border-t border-gray-100">
+                <label className="label">Logo du commerce</label>
+                <p className="text-xs text-gray-500 mb-3">
+                  Utilisé sur la carte de fidélité et dans les notifications envoyées à vos clients.
+                  Format carré recommandé (PNG ou JPG, 512×512 px).
+                </p>
+                <div className="flex items-center gap-4">
+                  <div className="h-16 w-16 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0">
+                    {cardDesign.logo_url ? (
+                      <img src={cardDesign.logo_url} alt="Logo" className="h-full w-full object-cover" />
+                    ) : (
+                      <Store className="h-6 w-6 text-gray-300" />
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="btn-secondary cursor-pointer text-sm">
+                      {isUploading ? 'Envoi…' : cardDesign.logo_url ? 'Changer le logo' : 'Ajouter un logo'}
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        className="hidden"
+                        disabled={isUploading}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            const url = await handleImageUpload(file, 'logo');
+                            const design = { ...cardDesign, logo_url: url };
+                            setCardDesign(design);
+                            await commercantApi.update({
+                              carte_logo_url: url,
+                              card_design: JSON.stringify(design),
+                            });
+                            await refreshUser();
+                            toast('Logo enregistré');
+                          } catch { /* toast déjà affiché */ }
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                    {cardDesign.logo_url && (
+                      <Button
+                        variant="secondary"
+                        onClick={async () => {
+                          const design = { ...cardDesign, logo_url: '' };
+                          setCardDesign(design);
+                          await commercantApi.update({ carte_logo_url: '', card_design: JSON.stringify(design) });
+                          await refreshUser();
+                          toast('Logo retiré');
+                        }}
+                      >
+                        Retirer
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="flex items-center">
                 <SaveIndicator status={saveStatusCommerce} />
               </div>

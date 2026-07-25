@@ -61,17 +61,21 @@ const portal = async (req, res) => {
   try {
     const commercant = await getCommercant(req.commercant.id);
 
+    // Whop n'expose pas de portail client par lien signé : on renvoie
+    // l'espace commandes Whop (gestion / annulation) quand un abonnement
+    // existe, sinon la page de souscription. Dans les deux cas le bouton
+    // ouvre quelque chose d'utile au lieu d'échouer.
     if (!commercant.whop_subscription_id) {
-      return res.status(400).json({
-        success: false,
-        error: 'Aucun abonnement Whop associé à ce compte',
+      return res.json({
+        url: whopService.getCheckoutUrl(commercant.id),
+        mode: 'souscription',
       });
     }
 
-    // Whop n'a pas de portail client dédié
-    // On redirige vers la page produit Whop où l'utilisateur peut gérer
-    const url = `https://whop.com/checkout/${process.env.WHOP_PRODUCT_ID}/manage?membership_id=${commercant.whop_subscription_id}`;
-    return res.json({ url });
+    return res.json({
+      url: 'https://whop.com/orders/',
+      mode: 'gestion',
+    });
   } catch (error) {
     console.error('[subscription] portal error:', error.message);
     return res.status(500).json({ success: false, error: error.message });
