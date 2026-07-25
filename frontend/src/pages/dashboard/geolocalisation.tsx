@@ -29,6 +29,10 @@ export default function GeolocalisationPage() {
   const [rayon, setRayon] = useState(200);
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
+  // Saisie par adresse (géocodage OpenStreetMap — gratuit, sans clé API)
+  const [adresseGeo, setAdresseGeo] = useState('');
+  const [adresseTrouvee, setAdresseTrouvee] = useState('');
+  const [geocoding, setGeocoding] = useState(false);
   const [message, setMessage] = useState('');
   const [heureDebut, setHeureDebut] = useState(8);
   const [heureFin, setHeureFin] = useState(22);
@@ -41,6 +45,7 @@ export default function GeolocalisationPage() {
       setLatitude(commercant.latitude?.toString() ?? '');
       setLongitude(commercant.longitude?.toString() ?? '');
       setMessage(commercant.geoloc_message ?? '');
+      setAdresseGeo([commercant.adresse, commercant.code_postal, commercant.ville].filter(Boolean).join(', '));
       setHeureDebut(commercant.geoloc_heure_debut ?? 8);
       setHeureFin(commercant.geoloc_heure_fin ?? 22);
     }
@@ -86,6 +91,51 @@ export default function GeolocalisationPage() {
     }
   }
 
+  // Adresse -> coordonnées (Nominatim OpenStreetMap, sans clé API ni coût)
+  async function handleLocaliserAdresse() {
+    if (!adresseGeo.trim()) {
+      toast('Saisissez d\'abord l\'adresse de votre commerce.', 'error');
+      return;
+    }
+    setGeocoding(true);
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=fr&q=${encodeURIComponent(adresseGeo)}`,
+        { headers: { 'Accept-Language': 'fr' } }
+      );
+      const results = await res.json();
+      if (!results?.length) {
+        toast('Adresse introuvable. Essayez avec le code postal et la ville.', 'error');
+        return;
+      }
+      setLatitude(parseFloat(results[0].lat).toFixed(6));
+      setLongitude(parseFloat(results[0].lon).toFixed(6));
+      setAdresseTrouvee(results[0].display_name || adresseGeo);
+      toast('Position trouvée — vérifiez le repère sur la carte.', 'success');
+    } catch {
+      toast('Impossible de localiser cette adresse pour le moment.', 'error');
+    } finally {
+      setGeocoding(false);
+    }
+  }
+
+  // Coordonnées -> adresse (quand on utilise la position du navigateur)
+  async function remplirAdresseDepuisCoords(lat: number, lon: number) {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,
+        { headers: { 'Accept-Language': 'fr' } }
+      );
+      const data = await res.json();
+      if (data?.display_name) {
+        setAdresseGeo(data.display_name);
+        setAdresseTrouvee(data.display_name);
+      }
+    } catch {
+      // Non bloquant : les coordonnées sont déjà enregistrées
+    }
+  }
+
   function handleUseMyPosition() {
     setLocating(true);
     if (!navigator.geolocation) {
@@ -97,6 +147,7 @@ export default function GeolocalisationPage() {
       (position) => {
         setLatitude(position.coords.latitude.toFixed(6));
         setLongitude(position.coords.longitude.toFixed(6));
+        remplirAdresseDepuisCoords(position.coords.latitude, position.coords.longitude);
         setLocating(false);
       },
       (error) => {
@@ -199,9 +250,9 @@ export default function GeolocalisationPage() {
                 <CardBody>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {[
-                      { step: '1', title: 'Configuration', desc: 'Activez le module dans les Paramètres et définissez votre adresse GPS et le rayon de détection (50m – 1000m).', color: 'bg-blue-50 text-blue-600' },
-                      { step: '2', title: 'Détection proximité', desc: 'Quand un client avec votre carte de fidélité s\'approche de votre commerce, une notification push est envoyée automatiquement.', color: 'bg-primary-50 text-primary-600' },
-                      { step: '3', title: 'Conversion visite', desc: 'Le client entre dans votre commerce et présente sa carte pour valider ses points. La visite est comptabilisée.', color: 'bg-green-50 text-green-600' },
+                      { step: '1', title: 'Configuration', desc: 'Activez le module, saisissez l\'adresse de votre commerce et choisissez le rayon de détection (50m – 1000m).', color: 'bg-blue-50 text-blue-600' },
+                      { step: '2', title: 'Rappel à proximité', desc: 'L\'adresse et le rayon sont intégrés dans la carte de fidélité. Quand un client passe à proximité, sa carte remonte sur l\'écran verrouillé de son iPhone avec votre message.', color: 'bg-primary-50 text-primary-600' },
+                      { step: '3', title: 'Conversion visite', desc: 'Le client entre et présente sa carte : la visite est comptabilisée. Aucune position n\'est collectée par Stamply — tout est calculé sur le téléphone du client.', color: 'bg-green-50 text-green-600' },
                     ].map(item => (
                       <div key={item.step} className="flex gap-4">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${item.color}`}>{item.step}</div>
@@ -235,22 +286,86 @@ export default function GeolocalisationPage() {
                     <div className="flex justify-between text-xs text-gray-400">
                       <span>50m</span><span>500m</span><span>1000m</span>
                     </div>
+                    <p className="text-xs text-gray-500 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+                      Le rayon est transmis à la carte du client. iOS ajuste légèrement la portée réelle selon l'environnement (zone dense, intérieur…). Un changement s'applique aux cartes déjà installées après leur prochaine mise à jour.
+                    </p>
                   </div>
                 </CardBody>
               </Card>
 
               <Card>
-                <CardHeader><CardTitle className="flex items-center gap-2"><Navigation className="h-4 w-4 text-primary-600" /> Position GPS</CardTitle></CardHeader>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><MapPin className="h-4 w-4 text-primary-600" /> Adresse de votre commerce</CardTitle>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Saisissez votre adresse : nous plaçons le repère automatiquement. Vérifiez qu'il est au bon endroit sur la carte.
+                  </p>
+                </CardHeader>
                 <CardBody>
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Input label="Latitude" type="number" step="any" placeholder="Ex: 48.8584" value={latitude} onChange={(e) => setLatitude(e.target.value)} />
-                      <Input label="Longitude" type="number" step="any" placeholder="Ex: 2.2945" value={longitude} onChange={(e) => setLongitude(e.target.value)} />
+                    <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
+                      <div className="flex-1">
+                        <Input
+                          label="Adresse complète"
+                          placeholder="12 rue de la Paix, 75002 Paris"
+                          value={adresseGeo}
+                          onChange={(e) => setAdresseGeo(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleLocaliserAdresse(); } }}
+                        />
+                      </div>
+                      <Button onClick={handleLocaliserAdresse} disabled={geocoding} className="sm:mb-0.5">
+                        {geocoding ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
+                        {geocoding ? 'Recherche...' : 'Localiser'}
+                      </Button>
                     </div>
-                    <Button variant="secondary" size="sm" onClick={handleUseMyPosition} disabled={locating}>
-                      {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
-                      {locating ? 'Localisation...' : 'Utiliser ma position'}
-                    </Button>
+
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <Button variant="secondary" size="sm" onClick={handleUseMyPosition} disabled={locating}>
+                        {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
+                        {locating ? 'Localisation...' : 'Utiliser ma position'}
+                      </Button>
+                      {latitude && longitude ? (
+                        <Badge variant="green">Position enregistrée</Badge>
+                      ) : (
+                        <Badge variant="gray">Position non définie</Badge>
+                      )}
+                    </div>
+
+                    {latitude && longitude ? (
+                      <div className="space-y-2">
+                        <div className="rounded-xl overflow-hidden border border-gray-200">
+                          <iframe
+                            title="Position du commerce"
+                            className="w-full h-64"
+                            loading="lazy"
+                            src={`https://www.openstreetmap.org/export/embed.html?bbox=${(parseFloat(longitude) - 0.004).toFixed(6)},${(parseFloat(latitude) - 0.003).toFixed(6)},${(parseFloat(longitude) + 0.004).toFixed(6)},${(parseFloat(latitude) + 0.003).toFixed(6)}&layer=mapnik&marker=${latitude},${longitude}`}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                          <p className="text-xs text-gray-500">
+                            {adresseTrouvee || 'Repère placé'} — rayon de {rayon} m autour de ce point.
+                          </p>
+                          <a
+                            href={`https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=17/${latitude}/${longitude}`}
+                            target="_blank" rel="noreferrer"
+                            className="text-xs text-primary-600 hover:underline"
+                          >
+                            Voir en plein écran
+                          </a>
+                        </div>
+                        <details className="text-xs text-gray-400">
+                          <summary className="cursor-pointer">Coordonnées précises (avancé)</summary>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                            <Input label="Latitude" type="number" step="any" value={latitude} onChange={(e) => setLatitude(e.target.value)} />
+                            <Input label="Longitude" type="number" step="any" value={longitude} onChange={(e) => setLongitude(e.target.value)} />
+                          </div>
+                        </details>
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 py-10 text-center">
+                        <MapPin className="h-6 w-6 text-gray-300 mx-auto mb-2" />
+                        <p className="text-xs text-gray-500">La carte s'affichera ici une fois votre adresse localisée.</p>
+                      </div>
+                    )}
                   </div>
                 </CardBody>
               </Card>
@@ -259,7 +374,35 @@ export default function GeolocalisationPage() {
                 <CardHeader><CardTitle className="flex items-center gap-2"><MessageSquare className="h-4 w-4 text-primary-600" /> Message & Horaires</CardTitle></CardHeader>
                 <CardBody>
                   <div className="space-y-5">
-                    <Input label="Message de notification personnalisé" placeholder="Ex: 🎉 Bonjour ! Passez nous voir, vous pouvez gagner des points !" value={message} onChange={(e) => setMessage(e.target.value)} />
+                    <Input label="Message de notification personnalisé" placeholder="Ex: 🎉 Bonjour ! Passez nous voir, vous pouvez gagner des points !" value={message} onChange={(e) => setMessage(e.target.value)} maxLength={90} />
+
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        '🎁 Vous passez par là ? Votre carte de fidélité vous attend !',
+                        '☕ Une petite pause ? On vous garde une place.',
+                        '🔥 Offre du jour à deux pas de chez vous !',
+                        '⭐ Plus que quelques points avant votre récompense !',
+                      ].map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          type="button"
+                          onClick={() => setMessage(suggestion)}
+                          className="text-xs px-3 py-1.5 rounded-full border border-gray-200 text-gray-600 hover:border-primary-300 hover:text-primary-600 transition-colors"
+                        >
+                          {suggestion.length > 38 ? suggestion.slice(0, 36) + '…' : suggestion}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="rounded-xl bg-gray-900 p-4">
+                      <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-2">Aperçu sur l'écran verrouillé</p>
+                      <div className="rounded-lg bg-white/10 backdrop-blur px-3 py-2.5">
+                        <p className="text-xs font-semibold text-white">{commercant?.nom_enseigne || 'Votre commerce'}</p>
+                        <p className="text-xs text-white/70 mt-0.5">
+                          {message || '🎁 Vous passez par là ? Votre carte de fidélité vous attend !'}
+                        </p>
+                      </div>
+                    </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="label flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-gray-400" /> Heure début</label>
