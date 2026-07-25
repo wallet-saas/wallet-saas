@@ -165,7 +165,7 @@ router.get('/v1/passes/:passTypeId/:serial', async (req, res) => {
     // Récupérer le commerçant
     const { data: commercant } = await supabase
       .from('commercants')
-      .select('id, nom_enseigne, carte_couleur_primaire, carte_couleur_secondaire, points_recompense, adresse, ville, latitude, longitude, carte_logo_url, carte_type, carte_type_config, module_avis_google')
+      .select('id, nom_enseigne, carte_couleur_primaire, carte_couleur_secondaire, points_recompense, adresse, ville, latitude, longitude, carte_logo_url, carte_type, carte_type_config, module_avis_google, module_geolocalisation, rayon_geoloc_metres, geoloc_message')
       .eq('id', carte.commercant_id)
       .single();
 

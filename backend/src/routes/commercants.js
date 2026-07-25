@@ -17,6 +17,66 @@ router.put('/me', authMiddleware, commercantsController.updateMe);
 router.get('/me', authMiddleware, commercantsController.getMe);
 router.get('/qr-code', authMiddleware, commercantsController.getQrCode);
 
+// POST /api/commercants/change-carte-type
+// Change le type de programme de fidélité. Comme les compteurs ne sont pas
+// convertibles d'un type à l'autre (10 tampons ≠ 10 points ≠ 10 €), toutes les
+// cartes du commerçant sont remises à zéro. Action volontaire et confirmée côté UI.
+router.post('/change-carte-type', authMiddleware, async (req, res) => {
+  try {
+    const commercantId = req.commercant.id;
+    const { carte_type, carte_type_config } = req.body;
+
+    const TYPES_VALIDES = ['points', 'tampons', 'cashback', 'remise', 'carte_cadeau', 'membre', 'coupon'];
+    if (!TYPES_VALIDES.includes(carte_type)) {
+      return res.status(400).json({ success: false, error: 'Type de carte invalide.' });
+    }
+
+    const { data: actuel } = await supabase
+      .from('commercants')
+      .select('carte_type')
+      .eq('id', commercantId)
+      .single();
+
+    const changementDeType = (actuel?.carte_type || 'tampons') !== carte_type;
+
+    const { error: majError } = await supabase
+      .from('commercants')
+      .update({
+        carte_type,
+        carte_type_config: carte_type_config || {},
+      })
+      .eq('id', commercantId);
+    if (majError) throw majError;
+
+    let cartesReinitialisees = 0;
+    if (changementDeType) {
+      const { data: cartesMaj, error: resetError } = await supabase
+        .from('cartes')
+        .update({
+          points: 0,
+          solde: 0,
+          total_depense: 0,
+          statut_palier: null,
+          coupon_utilise: false,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('commercant_id', commercantId)
+        .select('id');
+      if (resetError) throw resetError;
+      cartesReinitialisees = cartesMaj?.length || 0;
+      console.log(`[CarteType] ${commercantId} : ${actuel?.carte_type} -> ${carte_type}, ${cartesReinitialisees} cartes remises a zero`);
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: { carte_type, changement: changementDeType, cartes_reinitialisees: cartesReinitialisees },
+    });
+  } catch (err) {
+    console.error('Erreur change-carte-type:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // POST /api/commercants/save-client-info
 // Sauvegarde les infos client saisies sur la page d'installation
 router.post('/save-client-info', async (req, res) => {

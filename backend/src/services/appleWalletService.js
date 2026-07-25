@@ -131,7 +131,7 @@ async function servePkpass(req, res) {
 
     const { data: commercant, error: commErr } = await supabase
       .from('commercants')
-      .select('nom_enseigne, carte_couleur_primaire, carte_couleur_secondaire, points_recompense, adresse, ville, latitude, longitude, carte_logo_url, carte_type, carte_type_config, module_avis_google')
+      .select('nom_enseigne, carte_couleur_primaire, carte_couleur_secondaire, points_recompense, adresse, ville, latitude, longitude, carte_logo_url, carte_type, carte_type_config, module_avis_google, module_geolocalisation, rayon_geoloc_metres, geoloc_message')
       .eq('id', carte.commercant_id)
       .single();
 
@@ -414,13 +414,19 @@ async function generatePkpassBuffer(carte, commercant) {
         .replace(/\{\{NOTIF_BODY\}\}/g, notifMessage)
     );
 
-    // Ajouter les données de géolocalisation si disponibles
-    if (commercant.latitude && commercant.longitude) {
+    // Géolocalisation Apple native : le pass s'affiche sur l'écran verrouillé
+    // quand l'iPhone entre dans le rayon. maxDistance = rayon configuré par le
+    // commerçant, relevantText = son message personnalisé.
+    if (commercant.module_geolocalisation !== false && commercant.latitude && commercant.longitude) {
+      const rayon = parseInt(commercant.rayon_geoloc_metres) || 200;
       passData.locations = [{
         latitude: parseFloat(commercant.latitude),
         longitude: parseFloat(commercant.longitude),
-        relevantText: `🎁 ${commercant.nom_enseigne || 'Votre commerce'} : votre carte de fidélité vous attend !`,
+        relevantText: commercant.geoloc_message
+          || `🎁 ${commercant.nom_enseigne || 'Votre commerce'} : votre carte de fidélité vous attend !`,
       }];
+      // Rayon de déclenchement (Apple borne en pratique entre ~100m et 1km)
+      passData.maxDistance = Math.min(Math.max(rayon, 50), 1000);
     }
 
     fs.writeFileSync(path.join(tmpDir, 'pass.json'), JSON.stringify(passData, null, 2));
