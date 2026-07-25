@@ -84,7 +84,8 @@ const sendNotification = async (req, res) => {
     const { error: updateError } = await supabase
       .from('notifications')
       .update({
-        total_envoyes: totalEnvoyes,
+        // Le canal réel, ce sont les cartes Wallet : c'est ce chiffre qui compte.
+        total_envoyes: walletResult.total || 0,
         envoyee: true
       })
       .eq('id', notif.id);
@@ -99,7 +100,7 @@ const sendNotification = async (req, res) => {
       simulation,
       message: simulation
         ? `Notification simulée. ${totalEnvoyes}/${totalCible} clients ciblés.`
-        : `Notification envoyée à ${totalEnvoyes}/${totalCible} clients + ${walletResult.total} cartes Wallet.`,
+        : `Notification envoyée à ${walletResult.total} carte(s) Wallet (${walletResult.google} Google, ${walletResult.apple} Apple).`,
       data: {
         notificationId: notif.id,
         totalCible,
@@ -183,9 +184,28 @@ const getStats = async (req, res) => {
     const totalNotifications = notifications.length;
     const totalEnvoyes = notifications.reduce((sum, n) => sum + (n.total_envoyes || 0), 0);
     const totalOuverts = notifications.reduce((sum, n) => sum + (n.total_ouverts || 0), 0);
+    // Apple et Google ne remontent aucun accusé de lecture sur les cartes Wallet :
+    // un « taux d'ouverture » serait inventé. On expose des chiffres vérifiables.
     const tauxOuverture = totalEnvoyes > 0
       ? Math.round((totalOuverts / totalEnvoyes) * 100 * 10) / 10
       : 0;
+
+    const debutMois = new Date();
+    debutMois.setDate(1);
+    debutMois.setHours(0, 0, 0, 0);
+    const notifsCeMois = notifications.filter(n => new Date(n.created_at) >= debutMois).length;
+    const envoyesCeMois = notifications
+      .filter(n => new Date(n.created_at) >= debutMois)
+      .reduce((sum, n) => sum + (n.total_envoyes || 0), 0);
+
+    // Cartes joignables : celles qui ont un canal Wallet actif
+    const { data: cartesJoignables } = await supabase
+      .from('cartes')
+      .select('id, google_wallet_url, apple_push_token')
+      .eq('commercant_id', commercantId);
+    const totalJoignables = (cartesJoignables || []).filter(
+      c => c.google_wallet_url || c.apple_push_token
+    ).length;
 
     // Stats par cible
     const parCible = CIBLES_VALIDES.reduce((acc, cible) => {
@@ -206,6 +226,9 @@ const getStats = async (req, res) => {
     return res.status(200).json({
       success: true,
       data: {
+        notifsCeMois,
+        envoyesCeMois,
+        totalJoignables,
         totalNotifications,
         totalEnvoyes,
         totalOuverts,

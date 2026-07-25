@@ -17,7 +17,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/Toast';
 import { useAutoSave, SaveIndicator } from '@/hooks/useAutoSave';
 import { formatDateTime, formatPercent, formatNumber } from '@/utils/format';
-import { Bell, Send, Users, Eye, TrendingUp, CheckCircle, AlertCircle, Settings, Zap, Gift, Clock } from 'lucide-react';
+import { Bell, Send, Users, Eye, TrendingUp, CheckCircle, AlertCircle, Settings, Zap, Gift, Clock, Plus, Calendar } from 'lucide-react';
 
 const schema = z.object({
   titre: z.string().min(1, 'Titre requis').max(80, '80 car. max'),
@@ -51,6 +51,7 @@ export default function NotificationsPage() {
   const [heureDebut, setHeureDebut] = useState(8);
   const [heureFin, setHeureFin] = useState(22);
   const [templateDefaut, setTemplateDefaut] = useState('');
+  const [notifTemplates, setNotifTemplates] = useState<Array<{ id: string; nom: string; titre: string; message: string }>>([]);
   const [modeSimulation, setModeSimulation] = useState(false); // sera écrasé par le useEffect
 
   // Relance & anniversaire
@@ -68,6 +69,7 @@ export default function NotificationsPage() {
       setHeureDebut(commercant.notif_heure_debut ?? 8);
       setHeureFin(commercant.notif_heure_fin ?? 22);
       setTemplateDefaut(commercant.notif_template_defaut ?? '');
+      setNotifTemplates(((commercant as any).notif_templates as any[]) ?? []);
       setModeSimulation(commercant.notif_mode_simulation ?? false);
       setRelanceAuto(commercant?.relance_auto ?? false);
       setRelanceJours(commercant?.relance_jours ?? 14);
@@ -128,6 +130,41 @@ export default function NotificationsPage() {
       setValue('titre', parts[0] || '');
       setValue('message', parts.slice(1).join('\n') || '');
     }
+  };
+
+  // Modèles nommés : un clic remplit le formulaire, prêt à envoyer
+  const appliquerTemplate = (t: { titre: string; message: string }) => {
+    setValue('titre', t.titre);
+    setValue('message', t.message);
+  };
+
+  const enregistrerTemplate = async () => {
+    const titre = (watch('titre') || '').trim();
+    const message = (watch('message') || '').trim();
+    if (!titre || !message) {
+      toast('Écrivez un titre et un message avant de les enregistrer.', 'error');
+      return;
+    }
+    const nom = window.prompt('Nom du modèle (ex. « Offre du weekend »)', titre.slice(0, 40));
+    if (!nom) return;
+    const nouveaux = [...notifTemplates, { id: String(Date.now()), nom, titre, message }];
+    setNotifTemplates(nouveaux);
+    try {
+      await commercantApi.update({ notif_templates: nouveaux } as any);
+      await refreshUser();
+      toast('Modèle enregistré', 'success');
+    } catch (e: any) {
+      toast(e?.message || 'Erreur enregistrement', 'error');
+    }
+  };
+
+  const supprimerTemplate = async (id: string) => {
+    const nouveaux = notifTemplates.filter(t => t.id !== id);
+    setNotifTemplates(nouveaux);
+    try {
+      await commercantApi.update({ notif_templates: nouveaux } as any);
+      await refreshUser();
+    } catch { /* non bloquant */ }
   };
 
   const cibleLabel: Record<string, string> = { tous: 'Tous', actifs: 'Actifs', dormants: 'Dormants' };
@@ -224,6 +261,24 @@ export default function NotificationsPage() {
                         <p className={`text-sm ${sendResult.success ? 'text-green-700' : 'text-red-600'}`}>{sendResult.message}</p>
                       </div>
                     )}
+                    {notifTemplates.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Mes modèles</p>
+                        <div className="flex flex-wrap gap-2">
+                          {notifTemplates.map(t => (
+                            <div key={t.id} className="group flex items-center gap-1 rounded-full border border-gray-200 pl-3 pr-1 py-1 hover:border-indigo-300 transition-colors">
+                              <button type="button" onClick={() => appliquerTemplate(t)} className="text-xs text-gray-700 hover:text-indigo-600">
+                                {t.nom}
+                              </button>
+                              <button type="button" onClick={() => supprimerTemplate(t.id)}
+                                className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-opacity px-1" title="Supprimer">
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                       <Input label="Titre" placeholder="Offre spéciale ce weekend !" error={errors.titre?.message} {...register('titre')} />
                       <Textarea label="Message" placeholder="Profitez de -20% sur toute la carte…" rows={4} error={errors.message?.message} {...register('message')} />
@@ -237,9 +292,14 @@ export default function NotificationsPage() {
                           </div>
                         )}
                       </div>
-                      <Button type="submit" className="w-full" loading={isSubmitting} disabled={!moduleEnabled}>
-                        <Send className="h-4 w-4" /> Envoyer
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button type="submit" className="flex-1" loading={isSubmitting} disabled={!moduleEnabled}>
+                          <Send className="h-4 w-4" /> Envoyer
+                        </Button>
+                        <Button type="button" variant="secondary" onClick={enregistrerTemplate} title="Enregistrer comme modèle réutilisable">
+                          <Plus className="h-4 w-4" /> Modèle
+                        </Button>
+                      </div>
                     </form>
                   </CardBody>
                 </Card>
@@ -248,9 +308,15 @@ export default function NotificationsPage() {
                 <Card>
                   <CardHeader><CardTitle>Statistiques</CardTitle></CardHeader>
                   <CardBody className="space-y-3">
+                    <p className="text-xs text-gray-500">
+                      Apple et Google ne transmettent aucun accusé de lecture sur les cartes Wallet :
+                      seuls les envois réellement effectués sont comptés ici.
+                    </p>
                     <div className="grid grid-cols-2 gap-3">
-                      <StatCard label="Total envoyés" value={formatNumber(stats?.totalEnvoyes ?? 0)} icon={Send} iconBg="bg-blue-50" iconColor="text-blue-600" />
-                      <StatCard label="Taux d'ouverture" value={formatPercent(stats?.tauxOuverture ?? 0)} icon={TrendingUp} iconBg="bg-purple-50" iconColor="text-purple-600" />
+                      <StatCard label="Cartes touchées (total)" value={formatNumber(stats?.totalEnvoyes ?? 0)} icon={Send} iconBg="bg-blue-50" iconColor="text-blue-600" />
+                      <StatCard label="Cartes joignables" value={formatNumber((stats as any)?.totalJoignables ?? 0)} icon={Bell} iconBg="bg-green-50" iconColor="text-green-600" />
+                      <StatCard label="Envois ce mois-ci" value={formatNumber((stats as any)?.notifsCeMois ?? 0)} icon={Calendar} iconBg="bg-purple-50" iconColor="text-purple-600" />
+                      <StatCard label="Cartes touchées ce mois" value={formatNumber((stats as any)?.envoyesCeMois ?? 0)} icon={TrendingUp} iconBg="bg-orange-50" iconColor="text-orange-600" />
                     </div>
                   </CardBody>
                 </Card>

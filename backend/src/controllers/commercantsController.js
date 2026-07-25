@@ -62,6 +62,7 @@ async function detectExistingColumns() {
       'offres_duree_defaut', 'offres_limite_client', 'offres_notif_auto', 'offres_code_auto',
       'geoloc_message', 'geoloc_heure_debut', 'geoloc_heure_fin',
       'auto_review_message', 'auto_review_seuil_etoiles', 'auto_review_alerte_email',
+      'notif_templates',
       'module_boutiques', 'boutique_defaut_id',
       'texte_perso_bas_carte', 'style_texte', 'carte_layout',
       // Premium card design
@@ -205,6 +206,7 @@ exports.updateCommercant = async (req, res) => {
       'offres_duree_defaut', 'offres_limite_client', 'offres_notif_auto', 'offres_code_auto',
       'geoloc_message', 'geoloc_heure_debut', 'geoloc_heure_fin',
       'auto_review_message', 'auto_review_seuil_etoiles', 'auto_review_alerte_email',
+      'notif_templates',
       'module_boutiques', 'boutique_defaut_id',
       'carte_programme_nom', 'carte_recompense_description', 'carte_layout',
       'texte_perso_bas_carte', 'style_texte',
