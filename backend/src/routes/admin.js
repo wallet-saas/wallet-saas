@@ -105,13 +105,48 @@ router.get('/stats', adminAuth, async (req, res) => {
       .from('visites').select('id', { count: 'exact', head: true })
       .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
 
+    // Chiffres complémentaires, tous issus des tables réelles
+    const il7j = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const il30j = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { count: visites_7j } = await supabase
+      .from('visites').select('id', { count: 'exact', head: true }).gte('created_at', il7j);
+
+    const { count: cartes_30j } = await supabase
+      .from('cartes').select('id', { count: 'exact', head: true }).gte('created_at', il30j);
+
+    const { count: commercants_30j } = await supabase
+      .from('commercants').select('id', { count: 'exact', head: true }).gte('created_at', il30j);
+
+    const { count: notifications_30j } = await supabase
+      .from('notifications').select('id', { count: 'exact', head: true }).gte('created_at', il30j);
+
+    const { count: avis_total } = await supabase
+      .from('avis').select('id', { count: 'exact', head: true });
+
+    // Cartes réellement joignables (canal Wallet actif)
+    const { data: cartesCanal } = await supabase
+      .from('cartes').select('google_wallet_url, apple_push_token');
+    const cartes_joignables = (cartesCanal || []).filter(c => c.google_wallet_url || c.apple_push_token).length;
+
     res.json({
       success: true,
       data: {
-        commerçants: { total: totalCommercants || 0, actifs: actifs || 0, inactifs: (totalCommercants || 0) - (actifs || 0) },
+        commerçants: {
+          total: totalCommercants || 0,
+          actifs: actifs || 0,
+          inactifs: (totalCommercants || 0) - (actifs || 0),
+          nouveaux_30j: commercants_30j || 0,
+        },
         cartes: cartes || 0,
+        cartes_30j: cartes_30j || 0,
+        cartes_joignables,
         boutiques: boutiques || 0,
+        visites_7j: visites_7j || 0,
         visites_30j: visites_30j || 0,
+        notifications_30j: notifications_30j || 0,
+        avis_total: avis_total || 0,
+        mrr_estime: (actifs || 0) * 49,
       }
     });
   } catch (err) {
@@ -163,9 +198,36 @@ router.get('/commercants', adminAuth, async (req, res) => {
 
     if (error) throw error;
 
+    // Compteurs réels par commerçant (cartes installées, visites 30j)
+    const liste = data || [];
+    const ids = liste.map(c => c.id);
+    let cartesParCommercant = {};
+    let visitesParCommercant = {};
+
+    if (ids.length) {
+      const { data: cartesRows } = await supabase
+        .from('cartes').select('commercant_id').in('commercant_id', ids);
+      for (const r of cartesRows || []) {
+        cartesParCommercant[r.commercant_id] = (cartesParCommercant[r.commercant_id] || 0) + 1;
+      }
+
+      const il30j = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: visitesRows } = await supabase
+        .from('visites').select('commercant_id').in('commercant_id', ids).gte('created_at', il30j);
+      for (const r of visitesRows || []) {
+        visitesParCommercant[r.commercant_id] = (visitesParCommercant[r.commercant_id] || 0) + 1;
+      }
+    }
+
+    const enrichis = liste.map(c => ({
+      ...c,
+      nb_cartes: cartesParCommercant[c.id] || 0,
+      nb_visites_30j: visitesParCommercant[c.id] || 0,
+    }));
+
     res.json({
       success: true,
-      data: { commerçants: data || [], total: count || 0, page, totalPages: Math.max(1, Math.ceil((count || 0) / limit)) }
+      data: { commerçants: enrichis, total: count || 0, page, totalPages: Math.max(1, Math.ceil((count || 0) / limit)) }
     });
   } catch (err) {
     console.error('[Admin] List commerçants error:', err);
@@ -242,6 +304,63 @@ router.put('/commercants/:id', adminAuth, async (req, res) => {
   } catch (err) {
     console.error('[Admin] Update commerçant error:', err);
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── POST /api/admin/commercants/:id/abonnement ────────────────────────────────
+// Activer ou retirer manuellement l'abonnement d'un commerçant, sans passer
+// par Whop (geste commercial, période d'essai, client qui paie autrement…).
+// Chaque changement est tracé dans admin_logs.
+
+router.post('/commercants/:id/abonnement', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { actif, motif } = req.body;
+
+    if (typeof actif !== 'boolean') {
+      return res.status(400).json({ success: false, error: 'Champ "actif" (booléen) requis.' });
+    }
+
+    const { data: avant } = await supabase
+      .from('commercants')
+      .select('abonnement_statut, nom_enseigne, email')
+      .eq('id', id)
+      .single();
+
+    if (!avant) {
+      return res.status(404).json({ success: false, error: 'Commerçant introuvable.' });
+    }
+
+    const { data, error } = await supabase
+      .from('commercants')
+      .update({
+        abonnement_statut: actif ? 'actif' : 'inactif',
+        is_active: actif,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select('id, nom_enseigne, email, abonnement_statut, is_active')
+      .single();
+
+    if (error) throw error;
+
+    await supabase.from('admin_logs').insert({
+      action: actif ? 'abonnement_active_manuellement' : 'abonnement_retire_manuellement',
+      target_id: id,
+      details: JSON.stringify({
+        enseigne: avant.nom_enseigne,
+        email: avant.email,
+        avant: avant.abonnement_statut,
+        apres: actif ? 'actif' : 'inactif',
+        motif: motif || null,
+      }),
+    });
+
+    console.log(`[Admin] Abonnement ${actif ? 'activé' : 'retiré'} pour ${avant.nom_enseigne} (${id})`);
+    return res.json({ success: true, data });
+  } catch (err) {
+    console.error('[Admin] Abonnement error:', err);
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 

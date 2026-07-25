@@ -28,29 +28,25 @@ async function sendProximityNotification(carteId, commercantId) {
   // Récupérer les infos du commerçant
   const { data: commercant, error: commError } = await supabase
     .from('commercants')
-    .select('nom_enseigne, module_geolocalisation, rayon_geoloc_metres')
+    .select('nom_enseigne, module_geolocalisation, rayon_geoloc_metres, geoloc_message')
     .eq('id', commercantId)
     .single();
 
   if (commError || !commercant) throw new Error('Commerçant introuvable.');
   if (!commercant.module_geolocalisation) throw new Error('Module géolocalisation désactivé.');
 
-  // Récupérer le client lié à la carte
-  const { data: client, error: clientError } = await supabase
-    .from('clients')
-    .select('id, device_token, platform, consentement_geoloc')
-    .eq('carte_id', carteId)
-    .maybeSingle();
-
-  if (!client) throw new Error('Client non trouvé pour cette carte.');
-  if (!client.consentement_geoloc) throw new Error('Client n\'a pas consenti à la géolocalisation.');
-  if (!client.device_token) throw new Error('Pas de device token pour ce client.');
-
+  // Envoi via la carte Wallet du client — l'ancien canal exigeait un
+  // device_token d'application mobile, qui n'existe pas (Stamply fonctionne
+  // sans app installée). Le consentement est recueilli à l'installation.
   const titre = commercant.nom_enseigne;
-  const message = `Vous passez par là ? 👋 Venez nous voir — votre carte de fidélité vous attend !`;
+  const message = commercant.geoloc_message?.trim()
+    || `Vous passez par là ? 👋 Venez nous voir — votre carte de fidélité vous attend !`;
 
-  // Utiliser le service de notification (simulation ou réel)
-  const { sendPushNotification } = require('./notificationService');
+  const walletNotificationService = require('./walletNotificationService');
+  const envoiWallet = await walletNotificationService.sendToWalletCard(carteId, titre, message);
+  if (!envoiWallet.google && !envoiWallet.apple) {
+    return { success: false, reason: 'no_wallet_channel' };
+  }
 
   // Enregistrer la notification en DB pour stats
   const { data: notif } = await supabase

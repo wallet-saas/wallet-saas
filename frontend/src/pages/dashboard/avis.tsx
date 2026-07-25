@@ -313,13 +313,10 @@ export default function AvisPage() {
                       value={autoMessage}
                       onChange={e => setAutoMessage(e.target.value)}
                     />
-                    <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Alerte email sur avis négatif</p>
-                        <p className="text-xs text-gray-500 mt-0.5">Être prévenu dès qu'un client laisse un feedback sous 3 étoiles</p>
-                      </div>
-                      <Toggle checked={alerteEmail} onChange={setAlerteEmail} />
-                    </div>
+                    <p className="text-xs text-gray-500">
+                      Les avis négatifs n'apparaissent jamais publiquement : retrouvez-les dans
+                      l'onglet « Feedback interne », qui affiche un compteur dès qu'un nouveau message arrive.
+                    </p>
                   </CardBody>
                 </Card>
 
