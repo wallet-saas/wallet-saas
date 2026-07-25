@@ -35,12 +35,27 @@ export interface CardDesign {
   overlay_gradient_direction: 'horizontal' | 'vertical' | 'diagonal';
 }
 
+const PROGRAMME_LABELS: Record<string, string> = {
+  points: 'Carte de points',
+  tampons: 'Carte à tampons',
+  cashback: 'Cashback',
+  remise: 'Remise à paliers',
+  carte_cadeau: 'Carte cadeau',
+  membre: 'Carte de membre',
+  coupon: 'Coupon rabais',
+};
+
+// Types dont le compteur repose sur points/palier (les autres sont pilotés par le solde ou le statut)
+const COMPTEUR_TYPES = ['tampons', 'points'];
+
 export interface CardProgramData {
   commercantNom: string;
   programmeNom: string;
   clientNom: string;
   tamponsActuels: number;
   tamponsPalier: number;
+  carteType?: string;
+  typeConfig?: Record<string, any>;
   recompense: string;
 }
 
@@ -452,6 +467,13 @@ export function CardEditor({ design, onChange, cardData, onCardDataChange, onIma
         </div>
         <PremiumCardPreview format={previewFormat} design={design} data={cardData} />
 
+        {cardData.carteType && cardData.carteType !== 'tampons' && (
+          <div className="rounded-lg bg-indigo-50 border border-indigo-100 px-3 py-2 text-xs text-indigo-700">
+            Aperçu du programme « {PROGRAMME_LABELS[cardData.carteType] || cardData.carteType} » —
+            le compteur affiché s'adapte automatiquement au programme choisi.
+          </div>
+        )}
+
         {/* Données de la carte — modifiables */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
           <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
@@ -498,8 +520,10 @@ export function CardEditor({ design, onChange, cardData, onCardDataChange, onIma
                 disabled={readOnly}
               />
             </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Tampons actuels</label>
+            <div className={COMPTEUR_TYPES.includes(cardData.carteType || 'tampons') ? '' : 'hidden'}>
+              <label className="block text-xs text-gray-500 mb-1">
+                {(cardData.carteType || 'tampons') === 'points' ? 'Points actuels (exemple)' : 'Tampons actuels (exemple)'}
+              </label>
               <input
                 type="number"
                 min={0}
@@ -509,8 +533,10 @@ export function CardEditor({ design, onChange, cardData, onCardDataChange, onIma
                 disabled={readOnly}
               />
             </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Palier (tampons requis)</label>
+            <div className={COMPTEUR_TYPES.includes(cardData.carteType || 'tampons') ? '' : 'hidden'}>
+              <label className="block text-xs text-gray-500 mb-1">
+                {(cardData.carteType || 'tampons') === 'points' ? 'Points pour la récompense' : 'Palier (tampons requis)'}
+              </label>
               <input
                 type="number"
                 min={1}

@@ -5,13 +5,14 @@ import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PageSpinner } from '@/components/ui/Spinner';
-import { commercantApi } from '@/services/api';
+import { commercantApi, carteTypeApi } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/Toast';
 import { CardEditor, CardDesign, DEFAULT_CARD_DESIGN, CardProgramData, DEFAULT_CARD_DATA } from '@/components/CardEditor';
 import { PremiumCardPreview } from '@/components/PremiumCardPreview';
 import { uploadCardImage } from '@/lib/cardUpload';
-import { Store, Save, Sparkles } from 'lucide-react';
+import { Store, Save, Sparkles, Gift } from 'lucide-react';
+import { LoyaltyTypeGrid, LoyaltyTypeConfigFields, ChangeTypeConfirmModal, scanHint, typeLabel } from '@/components/LoyaltyTypeSelector';
 import { useAutoSave, SaveIndicator } from '@/hooks/useAutoSave';
 
 export default function ParametresPage() {
@@ -28,6 +29,13 @@ export default function ParametresPage() {
   const [ville, setVille] = useState('');
   const [codePostal, setCodePostal] = useState('');
   const [email, setEmail] = useState('');
+
+  // Programme de fidélité (modifiable à tout moment)
+  const [carteType, setCarteType] = useState<string>('tampons');
+  const [typeConfig, setTypeConfig] = useState<Record<string, any>>({});
+  const [pendingType, setPendingType] = useState<string | null>(null);
+  const [changingType, setChangingType] = useState(false);
+  const setCfg = (key: string, value: any) => setTypeConfig(prev => ({ ...prev, [key]: value }));
 
   // Premium card design
   const [cardDesign, setCardDesign] = useState<CardDesign>(DEFAULT_CARD_DESIGN);
@@ -57,6 +65,10 @@ export default function ParametresPage() {
           // Keep defaults
         }
       }
+
+      // Programme de fidélité enregistré
+      setCarteType((commercant as any).carte_type || 'tampons');
+      setTypeConfig((commercant as any).carte_type_config || {});
 
       // Sync card data from commercant
       setCardData({
@@ -111,6 +123,39 @@ export default function ParametresPage() {
     } catch (e: any) { toast(e?.message || 'Erreur', 'error'); }
   };
 
+  // Changer de type = remise à zéro des compteurs : passe par une confirmation
+  const handleSelectType = (t: string) => {
+    if (t === carteType) return;
+    setPendingType(t);
+  };
+
+  const handleConfirmChangeType = async () => {
+    if (!pendingType) return;
+    setChangingType(true);
+    try {
+      const res = await carteTypeApi.change(pendingType, typeConfig);
+      setCarteType(pendingType);
+      setPendingType(null);
+      await refreshUser();
+      toast(
+        res.cartes_reinitialisees > 0
+          ? `Programme changé — ${res.cartes_reinitialisees} carte(s) remise(s) à zéro.`
+          : 'Programme de fidélité mis à jour.',
+        'success'
+      );
+    } catch (e: any) {
+      toast(e?.message || 'Erreur lors du changement de programme', 'error');
+    } finally {
+      setChangingType(false);
+    }
+  };
+
+  // La config du type s'enregistre seule (sans remise à zéro)
+  const handleAutoSaveTypeConfig = async () => {
+    await commercantApi.update({ carte_type_config: typeConfig } as any);
+    await refreshUser();
+  };
+
   const handleSaveDesign = async () => {
     try {
       await commercantApi.update({
@@ -142,6 +187,12 @@ export default function ParametresPage() {
     data: { nomEnseigne, telephone, adresse, ville, codePostal },
     onSave: handleAutoSaveCommerce,
     debounceMs: 800,
+  });
+
+  const { status: saveStatusTypeConfig } = useAutoSave({
+    data: { typeConfig },
+    onSave: handleAutoSaveTypeConfig,
+    debounceMs: 900,
   });
 
   const { status: saveStatusDesign } = useAutoSave({
@@ -208,6 +259,39 @@ export default function ParametresPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2.5">
+                <Gift className="h-4 w-4 text-indigo-500" />
+                <div>
+                  <CardTitle>Programme de fidélité</CardTitle>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    Programme actuel : <strong>{typeLabel(carteType)}</strong>. Le design de la carte et le
+                    scan en caisse s'adaptent automatiquement.
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardBody>
+              <div className="space-y-4">
+                <LoyaltyTypeGrid type={carteType} onSelectType={handleSelectType} disabled={changingType} />
+
+                <div className="rounded-lg bg-gray-50 border border-gray-100 px-3 py-2 text-xs text-gray-600">
+                  {scanHint(carteType)}
+                </div>
+
+                <div className="pt-2 border-t border-gray-100">
+                  <p className="text-sm font-medium text-gray-900 mb-3">Réglages du programme</p>
+                  <LoyaltyTypeConfigFields type={carteType} config={typeConfig} setCfg={setCfg} />
+                </div>
+
+                <div className="flex items-center justify-end">
+                  <SaveIndicator status={saveStatusTypeConfig} />
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2.5">
                 <Sparkles className="h-4 w-4 text-indigo-500" />
                 <div>
                   <CardTitle>Éditeur de carte premium</CardTitle>
@@ -221,7 +305,7 @@ export default function ParametresPage() {
               <CardEditor
                 design={cardDesign}
                 onChange={setCardDesign}
-                cardData={cardData}
+                cardData={{ ...cardData, carteType, typeConfig } as any}
                 onCardDataChange={setCardData}
                 onImageUpload={handleImageUpload}
                 isUploading={isUploading}
@@ -235,6 +319,16 @@ export default function ParametresPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {pendingType && (
+        <ChangeTypeConfirmModal
+          fromType={carteType}
+          toType={pendingType}
+          loading={changingType}
+          onCancel={() => setPendingType(null)}
+          onConfirm={handleConfirmChangeType}
+        />
       )}
     </DashboardLayout>
   );

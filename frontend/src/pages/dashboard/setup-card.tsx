@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import { walletApi } from '@/services/api';
 import { CardEditor, CardDesign, DEFAULT_CARD_DESIGN, CardProgramData, DEFAULT_CARD_DATA } from '@/components/CardEditor';
+import { LoyaltyTypeGrid, LoyaltyTypeConfigFields, scanHint } from '@/components/LoyaltyTypeSelector';
 import { uploadCardImage } from '@/lib/cardUpload';
 import { AlertCircle, CreditCard, Sparkles } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
@@ -132,125 +133,22 @@ export default function SetupCardPage() {
           {/* ── Type de système de fidélité ─────────────────────────────── */}
           <Card>
             <CardHeader>
-              <CardTitle>Type de programme de fidélité</CardTitle>
+              <CardTitle>Programme de fidélité</CardTitle>
               <p className="text-sm text-gray-500 mt-0.5">
-                Choisissez la mécanique de fidélité. Le scan en caisse s'adapte automatiquement.
+                Choisissez la mécanique. Le design de la carte et le scan en caisse s'adaptent automatiquement.
+                Vous pourrez en changer plus tard dans Paramètres.
               </p>
             </CardHeader>
             <CardBody>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                {[
-                  { id: 'tampons', nom: 'Carte à tampons', desc: '1 visite = 1 tampon' },
-                  { id: 'points', nom: 'Carte de points', desc: '1€ dépensé = X points' },
-                  { id: 'cashback', nom: 'Cashback', desc: '% des achats en cagnotte' },
-                  { id: 'remise', nom: 'Remise à paliers', desc: 'Statuts Bronze/Argent/Or' },
-                  { id: 'carte_cadeau', nom: 'Carte cadeau', desc: 'Solde prépayé' },
-                  { id: 'membre', nom: 'Carte de membre', desc: 'Statut sans points' },
-                  { id: 'coupon', nom: 'Coupon rabais', desc: 'Devient carte fidélité après usage' },
-                ].map(t => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setCarteType(t.id)}
-                    className={`text-left rounded-xl border-2 p-3 transition ${carteType === t.id ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'}`}
-                  >
-                    <div className="font-medium text-sm">{t.nom}</div>
-                    <div className="text-xs text-gray-500 mt-0.5">{t.desc}</div>
-                  </button>
-                ))}
-              </div>
-
-              {/* Config spécifique au type choisi */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {carteType === 'points' && (<>
-                  <label className="block text-sm">
-                    <span className="text-gray-700">Points par euro dépensé</span>
-                    <input type="number" min={1} className="mt-1 w-full rounded-lg border-gray-300 border p-2"
-                      value={typeConfig.points_par_euro ?? 1}
-                      onChange={e => setCfg('points_par_euro', parseInt(e.target.value) || 1)} />
-                  </label>
-                  <label className="block text-sm">
-                    <span className="text-gray-700">Points pour une récompense</span>
-                    <input type="number" min={1} className="mt-1 w-full rounded-lg border-gray-300 border p-2"
-                      value={typeConfig.points_recompense ?? 100}
-                      onChange={e => setCfg('points_recompense', parseInt(e.target.value) || 100)} />
-                  </label>
-                </>)}
-                {carteType === 'tampons' && (<>
-                  <label className="block text-sm">
-                    <span className="text-gray-700">Tampons pour la récompense</span>
-                    <input type="number" min={1} className="mt-1 w-full rounded-lg border-gray-300 border p-2"
-                      value={typeConfig.tampons_requis ?? cardData.tamponsPalier ?? 10}
-                      onChange={e => setCfg('tampons_requis', parseInt(e.target.value) || 10)} />
-                  </label>
-                  <label className="block text-sm">
-                    <span className="text-gray-700">Emoji du tampon</span>
-                    <input type="text" maxLength={4} className="mt-1 w-full rounded-lg border-gray-300 border p-2"
-                      value={typeConfig.tampon_emoji ?? '⭐'}
-                      onChange={e => setCfg('tampon_emoji', e.target.value || '⭐')} />
-                  </label>
-                </>)}
-                {carteType === 'cashback' && (
-                  <label className="block text-sm">
-                    <span className="text-gray-700">% de cashback sur chaque achat</span>
-                    <input type="number" min={1} max={100} className="mt-1 w-full rounded-lg border-gray-300 border p-2"
-                      value={typeConfig.cashback_pourcent ?? 5}
-                      onChange={e => setCfg('cashback_pourcent', parseInt(e.target.value) || 5)} />
-                  </label>
-                )}
-                {carteType === 'remise' && (
-                  <div className="md:col-span-3 space-y-2">
-                    <span className="text-sm text-gray-700">Paliers de remise (dépenses cumulées)</span>
-                    {(typeConfig.paliers ?? [
-                      { seuil: 0, nom: 'Bronze', remise: 0 },
-                      { seuil: 200, nom: 'Argent', remise: 5 },
-                      { seuil: 500, nom: 'Or', remise: 10 },
-                    ]).map((pal: any, i: number) => (
-                      <div key={i} className="flex gap-2 items-center text-sm">
-                        <input type="text" className="w-28 rounded-lg border-gray-300 border p-2" value={pal.nom}
-                          onChange={e => { const ps = [...(typeConfig.paliers ?? [{ seuil: 0, nom: 'Bronze', remise: 0 },{ seuil: 200, nom: 'Argent', remise: 5 },{ seuil: 500, nom: 'Or', remise: 10 }])]; ps[i] = { ...ps[i], nom: e.target.value }; setCfg('paliers', ps); }} />
-                        <span className="text-gray-500">dès</span>
-                        <input type="number" className="w-24 rounded-lg border-gray-300 border p-2" value={pal.seuil}
-                          onChange={e => { const ps = [...(typeConfig.paliers ?? [{ seuil: 0, nom: 'Bronze', remise: 0 },{ seuil: 200, nom: 'Argent', remise: 5 },{ seuil: 500, nom: 'Or', remise: 10 }])]; ps[i] = { ...ps[i], seuil: parseFloat(e.target.value) || 0 }; setCfg('paliers', ps); }} />
-                        <span className="text-gray-500">€ →</span>
-                        <input type="number" className="w-20 rounded-lg border-gray-300 border p-2" value={pal.remise}
-                          onChange={e => { const ps = [...(typeConfig.paliers ?? [{ seuil: 0, nom: 'Bronze', remise: 0 },{ seuil: 200, nom: 'Argent', remise: 5 },{ seuil: 500, nom: 'Or', remise: 10 }])]; ps[i] = { ...ps[i], remise: parseFloat(e.target.value) || 0 }; setCfg('paliers', ps); }} />
-                        <span className="text-gray-500">% de remise</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {carteType === 'coupon' && (<>
-                  <label className="block text-sm md:col-span-2">
-                    <span className="text-gray-700">Offre du coupon</span>
-                    <input type="text" className="mt-1 w-full rounded-lg border-gray-300 border p-2"
-                      value={typeConfig.offre ?? '-10% sur votre première commande'}
-                      onChange={e => setCfg('offre', e.target.value)} />
-                  </label>
-                  <label className="block text-sm">
-                    <span className="text-gray-700">Après usage, devient</span>
-                    <select className="mt-1 w-full rounded-lg border-gray-300 border p-2"
-                      value={typeConfig.type_apres_usage ?? 'tampons'}
-                      onChange={e => setCfg('type_apres_usage', e.target.value)}>
-                      <option value="tampons">Carte à tampons</option>
-                      <option value="points">Carte de points</option>
-                      <option value="cashback">Carte cashback</option>
-                    </select>
-                  </label>
-                </>)}
-                {carteType === 'membre' && (
-                  <label className="block text-sm">
-                    <span className="text-gray-700">Libellé du statut</span>
-                    <input type="text" className="mt-1 w-full rounded-lg border-gray-300 border p-2"
-                      value={typeConfig.statut_defaut ?? 'Membre'}
-                      onChange={e => setCfg('statut_defaut', e.target.value)} />
-                  </label>
-                )}
-                {carteType === 'carte_cadeau' && (
-                  <p className="text-sm text-gray-500 md:col-span-3">
-                    Le solde de chaque carte cadeau se crédite au moment de la vente, directement depuis la page Scanner.
-                  </p>
-                )}
+              <div className="space-y-4">
+                <LoyaltyTypeGrid type={carteType} onSelectType={setCarteType} />
+                <div className="rounded-lg bg-gray-50 border border-gray-100 px-3 py-2 text-xs text-gray-600">
+                  {scanHint(carteType)}
+                </div>
+                <div className="pt-2 border-t border-gray-100">
+                  <p className="text-sm font-medium text-gray-900 mb-3">Réglages du programme</p>
+                  <LoyaltyTypeConfigFields type={carteType} config={typeConfig} setCfg={setCfg} />
+                </div>
               </div>
             </CardBody>
           </Card>
@@ -274,7 +172,7 @@ export default function SetupCardPage() {
               <CardEditor
                 design={cardDesign}
                 onChange={setCardDesign}
-                cardData={cardData}
+                cardData={{ ...cardData, carteType, typeConfig } as any}
                 onCardDataChange={setCardData}
                 onImageUpload={handleImageUpload}
                 isUploading={isUploading}

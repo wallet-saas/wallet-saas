@@ -40,6 +40,8 @@ interface CardData {
   clientNom: string;
   tamponsActuels: number;
   tamponsPalier: number;
+  carteType?: string;
+  typeConfig?: Record<string, any>;
   recompense: string;
   qrValue: string;
 }
@@ -87,12 +89,12 @@ export function PremiumCardPreview({ format, design, data, className = '' }: Pre
   }
 
   if (format === 'google') {
-    return <GoogleWalletCard design={design} data={{ commercantNom, programmeNom, clientNom, tamponsActuels, tamponsPalier, recompense, qrValue }}
+    return <GoogleWalletCard design={design} data={{ commercantNom, programmeNom, clientNom, tamponsActuels, tamponsPalier, recompense, qrValue, carteType: (data as any)?.carteType, typeConfig: (data as any)?.typeConfig }}
       fontStyle={fontStyle} isItalic={isItalic} textColor={textColor}
       overlayStyle={overlayStyle} hasBg={hasBg} defaultBg={defaultBg} className={className} />;
   }
 
-  return <AppleWalletCard design={design} data={{ commercantNom, programmeNom, clientNom, tamponsActuels, tamponsPalier, recompense, qrValue }}
+  return <AppleWalletCard design={design} data={{ commercantNom, programmeNom, clientNom, tamponsActuels, tamponsPalier, recompense, qrValue, carteType: (data as any)?.carteType, typeConfig: (data as any)?.typeConfig }}
     fontStyle={fontStyle} isItalic={isItalic} textColor={textColor}
     overlayStyle={overlayStyle} hasBg={hasBg} defaultBg={defaultBg} className={className} />;
 }
@@ -106,6 +108,29 @@ interface CardProps {
    GOOGLE WALLET — 320×480px portrait
    Image de fond UNIQUEMENT dans la zone hero (30% bas)
    ═══════════════════════════════════════════════════════════════════════════ */
+
+
+// Compteur affiché en haut à droite de la carte selon le type de fidélité
+function typeCounter(data: any): { value: string; sub: string; label: string } {
+  const t = data.carteType || 'tampons';
+  const cfg = data.typeConfig || {};
+  switch (t) {
+    case 'points':
+      return { value: String(data.tamponsActuels ?? 250), sub: '', label: 'points' };
+    case 'cashback':
+      return { value: '23,50 €', sub: '', label: 'cagnotte' };
+    case 'remise':
+      return { value: (cfg.paliers?.[1]?.nom) || 'Argent', sub: '', label: 'statut' };
+    case 'carte_cadeau':
+      return { value: '50,00 €', sub: '', label: 'solde' };
+    case 'membre':
+      return { value: cfg.statut_defaut || 'Membre', sub: '', label: 'statut' };
+    case 'coupon':
+      return { value: '1', sub: '', label: 'coupon' };
+    default:
+      return { value: String(data.tamponsActuels), sub: String(data.tamponsPalier), label: 'tampons' };
+  }
+}
 
 function GoogleWalletCard({ design, data, fontStyle, isItalic, textColor, overlayStyle, hasBg, defaultBg, className }: CardProps) {
   const qrSize = 140;
@@ -139,11 +164,11 @@ function GoogleWalletCard({ design, data, fontStyle, isItalic, textColor, overla
             </div>
             <div className="flex-shrink-0 text-right">
               <div className="flex items-baseline gap-0.5 drop-shadow-lg">
-                <span className="text-[22px] font-bold leading-none">{data.tamponsActuels}</span>
-                <span className="text-[12px] opacity-60">/</span>
-                <span className="text-[14px] font-semibold opacity-80">{data.tamponsPalier}</span>
+                <span className="text-[22px] font-bold leading-none">{typeCounter(data).value}</span>
+                {typeCounter(data).sub && <span className="text-[12px] opacity-60">/</span>}
+                {typeCounter(data).sub && <span className="text-[14px] font-semibold opacity-80">{typeCounter(data).sub}</span>}
               </div>
-              <div className="text-[8px] opacity-60 uppercase tracking-wider">tampons</div>
+              <div className="text-[8px] opacity-60 uppercase tracking-wider">{typeCounter(data).label}</div>
             </div>
           </div>
 
@@ -237,11 +262,11 @@ function AppleWalletCard({ design, data, fontStyle, isItalic, textColor, overlay
             </div>
             <div className="flex-shrink-0 text-right">
               <div className="flex items-baseline gap-0.5 drop-shadow-lg">
-                <span className="text-[24px] font-bold leading-none">{data.tamponsActuels}</span>
-                <span className="text-[12px] opacity-60">/</span>
-                <span className="text-[15px] font-semibold opacity-80">{data.tamponsPalier}</span>
+                <span className="text-[24px] font-bold leading-none">{typeCounter(data).value}</span>
+                {typeCounter(data).sub && <span className="text-[12px] opacity-60">/</span>}
+                {typeCounter(data).sub && <span className="text-[15px] font-semibold opacity-80">{typeCounter(data).sub}</span>}
               </div>
-              <div className="text-[8px] opacity-60 uppercase tracking-wider">tampons</div>
+              <div className="text-[8px] opacity-60 uppercase tracking-wider">{typeCounter(data).label}</div>
             </div>
           </div>
 

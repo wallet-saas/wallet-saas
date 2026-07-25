@@ -224,6 +224,14 @@ export const offresApi = {
 };
 
 // ─── Géolocalisation ──────────────────────────────────────────────────────────
+export const carteTypeApi = {
+  change: (carte_type: string, carte_type_config: Record<string, any>) =>
+    request<{ carte_type: string; changement: boolean; cartes_reinitialisees: number }>(
+      '/api/commercants/change-carte-type',
+      { method: 'POST', body: JSON.stringify({ carte_type, carte_type_config }) }
+    ),
+};
+
 export const geolocationApi = {
   stats: () => request<GeoStats>('/api/geolocation/stats'),
   trigger: (carteId: string) =>
