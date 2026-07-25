@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -26,6 +26,12 @@ export default function SetupCardPage() {
   const [carteType, setCarteType] = useState<string>((commercant as any)?.carte_type || 'tampons');
   const [typeConfig, setTypeConfig] = useState<Record<string, any>>((commercant as any)?.carte_type_config || {});
   const setCfg = (key: string, value: any) => setTypeConfig(prev => ({ ...prev, [key]: value }));
+
+  // Pré-remplir avec le type déjà enregistré quand le profil finit de charger
+  useEffect(() => {
+    if ((commercant as any)?.carte_type) setCarteType((commercant as any).carte_type);
+    if ((commercant as any)?.carte_type_config) setTypeConfig((commercant as any).carte_type_config);
+  }, [commercant]);
 
   // Premium card design
   const [cardDesign, setCardDesign] = useState<CardDesign>(DEFAULT_CARD_DESIGN);
