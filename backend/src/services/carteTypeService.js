@@ -224,11 +224,20 @@ function displayFields({ type: carteType, config, carte, commercant }) {
       };
     case 'tampons': {
       const emoji = config.tampon_emoji || '⭐';
+      const requis = config.tampons_requis || 10;
+      const acquis = Math.min(points, requis);
+      // Rangée visuelle de tampons (pleins + vides), comme sur une carte papier.
+      // Au-delà de 12 cases la rangée devient illisible : on repasse en compteur.
+      const rangee = requis <= 12
+        ? emoji.repeat(acquis) + '◦'.repeat(Math.max(requis - acquis, 0))
+        : `${points}/${requis}`;
+      const restants = Math.max(requis - points, 0);
       return {
-        header_label: 'TAMPONS', header_value: `${points}/${config.tampons_requis}`,
+        header_label: 'VOS TAMPONS', header_value: rangee,
         header_change: 'Vos tampons : %@',
-        second_label: 'RÉCOMPENSE À', second_value: `${config.tampons_requis} tampons ${emoji}`,
-        programme: `1 visite = 1 tampon ${emoji}. ${config.tampons_requis} tampons = ${config.recompense_desc}.`,
+        second_label: 'JUSQU\'À LA RÉCOMPENSE',
+        second_value: restants > 0 ? `${restants} tampon${restants > 1 ? 's' : ''}` : 'Récompense disponible 🎉',
+        programme: `1 visite = 1 tampon ${emoji}. ${requis} tampons = ${config.recompense_desc}.`,
       };
     }
     case 'cashback':

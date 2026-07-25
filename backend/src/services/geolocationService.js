@@ -87,8 +87,11 @@ async function sendProximityNotification(carteId, commercantId) {
  * @param {number} latitude   Latitude du client
  * @param {number} longitude  Longitude du client
  */
-// Cooldown géolocalisation : 72 heures entre deux notifications par carte
-const GEOLOC_COOLDOWN_MS = 72 * 60 * 60 * 1000;
+// Fréquence anti-spam : délai minimum entre deux notifications de proximité
+// pour une même carte. Réglable par le commerçant (geoloc_frequence_jours),
+// 3 jours par défaut — un client qui passe 3 fois dans la journée n'est
+// notifié qu'une seule fois.
+const GEOLOC_FREQUENCE_DEFAUT_JOURS = 3;
 
 async function checkProximityAndNotify(carteId, latitude, longitude) {
   // Récupérer la carte + le commerçant + last_geoloc_notif_at pour le cooldown
@@ -103,7 +106,8 @@ async function checkProximityAndNotify(carteId, latitude, longitude) {
         latitude,
         longitude,
         rayon_geoloc_metres,
-        module_geolocalisation
+        module_geolocalisation,
+        geoloc_frequence_jours
       )
     `)
     .eq('id', carteId)
@@ -127,13 +131,15 @@ async function checkProximityAndNotify(carteId, latitude, longitude) {
     return { triggered: false, distance: Math.round(distance), rayon };
   }
 
-  // Vérifier le cooldown 72h
+  // Fréquence anti-spam configurée par le commerçant
+  const frequenceJours = carte.commercants.geoloc_frequence_jours || GEOLOC_FREQUENCE_DEFAUT_JOURS;
+  const cooldownMs = frequenceJours * 24 * 60 * 60 * 1000;
   if (carte.last_geoloc_notif_at) {
     const elapsed = Date.now() - new Date(carte.last_geoloc_notif_at).getTime();
-    if (elapsed < GEOLOC_COOLDOWN_MS) {
-      const heuresRestantes = Math.ceil((GEOLOC_COOLDOWN_MS - elapsed) / (60 * 60 * 1000));
-      console.log(`[GEOLOC] Cooldown actif pour carte ${carteId} — encore ${heuresRestantes}h avant prochaine notif.`);
-      return { triggered: false, reason: 'cooldown', heuresRestantes, distance: Math.round(distance), rayon };
+    if (elapsed < cooldownMs) {
+      const heuresRestantes = Math.ceil((cooldownMs - elapsed) / (60 * 60 * 1000));
+      console.log(`[GEOLOC] Fréquence ${frequenceJours}j — carte ${carteId} : encore ${heuresRestantes}h avant la prochaine notif.`);
+      return { triggered: false, reason: 'cooldown', frequenceJours, heuresRestantes, distance: Math.round(distance), rayon };
     }
   }
 
