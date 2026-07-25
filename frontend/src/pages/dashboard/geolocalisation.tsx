@@ -33,6 +33,7 @@ export default function GeolocalisationPage() {
   const [adresseGeo, setAdresseGeo] = useState('');
   const [adresseTrouvee, setAdresseTrouvee] = useState('');
   const [geocoding, setGeocoding] = useState(false);
+  const [frequenceJours, setFrequenceJours] = useState(3);
   const [message, setMessage] = useState('');
   const [heureDebut, setHeureDebut] = useState(8);
   const [heureFin, setHeureFin] = useState(22);
@@ -46,6 +47,7 @@ export default function GeolocalisationPage() {
       setLongitude(commercant.longitude?.toString() ?? '');
       setMessage(commercant.geoloc_message ?? '');
       setAdresseGeo([commercant.adresse, commercant.code_postal, commercant.ville].filter(Boolean).join(', '));
+      setFrequenceJours((commercant as any).geoloc_frequence_jours ?? 3);
       setHeureDebut(commercant.geoloc_heure_debut ?? 8);
       setHeureFin(commercant.geoloc_heure_fin ?? 22);
     }
@@ -59,12 +61,13 @@ export default function GeolocalisationPage() {
       geoloc_message: message,
       geoloc_heure_debut: heureDebut,
       geoloc_heure_fin: heureFin,
-    });
+      geoloc_frequence_jours: frequenceJours,
+    } as any);
     await refreshUser();
-  }, [rayon, latitude, longitude, message, heureDebut, heureFin, refreshUser]);
+  }, [rayon, latitude, longitude, message, heureDebut, heureFin, frequenceJours, refreshUser]);
 
   const { status: saveStatusSettings } = useAutoSave({
-    data: { rayon, latitude, longitude, message, heureDebut, heureFin },
+    data: { rayon, latitude, longitude, message, heureDebut, heureFin, frequenceJours },
     onSave: handleAutoSaveSettings,
     debounceMs: 800,
   });
@@ -239,10 +242,19 @@ export default function GeolocalisationPage() {
               </div>
 
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard label="Rayon détection" value={`${stats?.rayon ?? rayon}m`} icon={Radio} iconBg="bg-blue-50" iconColor="text-blue-600" />
-                <StatCard label="Notifications envoyées" value={formatNumber(stats?.totalNotifications ?? 0)} icon={Bell} iconBg="bg-primary-50" iconColor="text-primary-600" />
-                <StatCard label="Visites générées" value={formatNumber(stats?.totalVisitesGeoloc ?? 0)} icon={MapPin} iconBg="bg-green-50" iconColor="text-green-600" />
-                <StatCard label="Taux de conversion" value={formatPercent(stats?.tauxConversion ?? 0)} icon={TrendingUp} iconBg="bg-purple-50" iconColor="text-purple-600" />
+                <StatCard label="Rayon de détection" value={`${stats?.rayon ?? rayon} m`} icon={Radio} iconBg="bg-blue-50" iconColor="text-blue-600" />
+                <StatCard label="Fréquence maximum" value={frequenceJours === 1 ? '1 / jour' : `1 / ${frequenceJours} j`} icon={Bell} iconBg="bg-primary-50" iconColor="text-primary-600" />
+                <StatCard label="Adresse du commerce" value={latitude && longitude ? 'Configurée' : 'À définir'} icon={MapPin} iconBg="bg-green-50" iconColor="text-green-600" />
+                <StatCard label="Visites en boutique" value={formatNumber(stats?.totalVisitesGeoloc ?? 0)} icon={TrendingUp} iconBg="bg-purple-50" iconColor="text-purple-600" />
+              </div>
+
+              <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                <p className="text-xs text-gray-600 leading-relaxed">
+                  <strong>Bon à savoir :</strong> le rappel de proximité s'affiche sur l'écran verrouillé des iPhone.
+                  C'est iOS qui déclenche l'affichage, en local : ni Stamply ni vous ne recevez la position de vos clients,
+                  et aucun compteur d'affichage ne peut donc être remonté. Sur Android, Google ne propose pas
+                  l'équivalent sur les cartes de fidélité.
+                </p>
               </div>
 
               <Card>
@@ -403,6 +415,27 @@ export default function GeolocalisationPage() {
                         </p>
                       </div>
                     </div>
+                    <div>
+                      <label className="label flex items-center gap-1.5">
+                        <Bell className="h-3.5 w-3.5 text-gray-400" /> Fréquence maximum par client
+                      </label>
+                      <select
+                        value={frequenceJours}
+                        onChange={(e) => setFrequenceJours(Number(e.target.value))}
+                        className="input"
+                      >
+                        <option value={1}>Au maximum une fois par jour</option>
+                        <option value={3}>Au maximum une fois tous les 3 jours (recommandé)</option>
+                        <option value={7}>Au maximum une fois par semaine</option>
+                        <option value={14}>Au maximum une fois toutes les 2 semaines</option>
+                        <option value={30}>Au maximum une fois par mois</option>
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1.5">
+                        Un client qui passe trois fois devant votre commerce dans la journée ne sera notifié qu'une seule fois.
+                        Évite l'effet spam et les suppressions de carte.
+                      </p>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="label flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-gray-400" /> Heure début</label>

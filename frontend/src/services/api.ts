@@ -309,6 +309,7 @@ export interface Commercant {
   geoloc_message?: string;
   geoloc_heure_debut?: number;
   geoloc_heure_fin?: number;
+  geoloc_frequence_jours?: number;
   // Auto-review settings
   auto_review_message?: string;
   auto_review_seuil_etoiles?: number;
