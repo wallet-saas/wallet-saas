@@ -224,8 +224,26 @@ async function anniversaire(commercantId) {
     let ignore = 0;
     const erreurs = [];
 
+    // Garde anti-doublon : avec un cron qui tourne plusieurs fois par jour,
+    // sans ce filtre le client recevrait un message à chaque passage.
+    const debutJournee = new Date();
+    debutJournee.setHours(0, 0, 0, 0);
+    const { data: annivDejaEnvoyes } = await supabase
+      .from('notifications')
+      .select('message')
+      .eq('commercant_id', commercantId)
+      .eq('type', 'anniversaire')
+      .gte('created_at', debutJournee.toISOString());
+    const dejaFait = new Set(
+      (annivDejaEnvoyes || [])
+        .map(n => (n.message || '').match(/\[client:([^\]]+)\]/)?.[1])
+        .filter(Boolean)
+    );
+
     for (const client of clientsAnniversaire) {
       try {
+        if (dejaFait.has(String(client.id))) { ignore++; continue; }
+
         // Personnaliser le message
         const messagePerso = templateMessage
           .replace('{{nom}}', client.nom || 'Client')
