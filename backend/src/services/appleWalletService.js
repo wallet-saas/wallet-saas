@@ -131,7 +131,7 @@ async function servePkpass(req, res) {
 
     const { data: commercant, error: commErr } = await supabase
       .from('commercants')
-      .select('nom_enseigne, carte_couleur_primaire, carte_couleur_secondaire, points_recompense, adresse, ville, latitude, longitude, carte_logo_url, carte_type, carte_type_config, module_avis_google, module_geolocalisation, rayon_geoloc_metres, geoloc_message')
+      .select('nom_enseigne, carte_couleur_primaire, carte_couleur_secondaire, points_recompense, adresse, ville, latitude, longitude, carte_logo_url, carte_background_image_url, carte_type, carte_type_config, module_avis_google, module_geolocalisation, rayon_geoloc_metres, geoloc_message')
       .eq('id', carte.commercant_id)
       .single();
 
@@ -322,6 +322,79 @@ async function updatePoints(serialNumber, newPoints) {
  * @param {Object} commercant  - { nom_enseigne, carte_couleur_primaire, ... }
  * @returns {Buffer|null}
  */
+
+// ─── Images personnalisées du commerçant ──────────────────────────────────────
+// Le pass Apple embarque ses images : le logo et l'image de fond (strip) doivent
+// être téléchargés et convertis en PNG aux dimensions attendues par Apple.
+// Sans ça, toutes les cartes affichent le logo générique du template.
+
+const CACHE_IMAGES = new Map();
+const CACHE_TTL_MS = 10 * 60 * 1000;
+
+async function telechargerImage(url) {
+  if (!url || !/^https?:\/\//.test(url)) return null;
+
+  const enCache = CACHE_IMAGES.get(url);
+  if (enCache && Date.now() - enCache.at < CACHE_TTL_MS) return enCache.buffer;
+
+  try {
+    const reponse = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!reponse.ok) return null;
+    const buffer = Buffer.from(await reponse.arrayBuffer());
+    CACHE_IMAGES.set(url, { buffer, at: Date.now() });
+    return buffer;
+  } catch (err) {
+    console.error(`[AppleWallet] Image inaccessible (${url}):`, err.message);
+    return null;
+  }
+}
+
+/**
+ * Écrit les images du commerçant dans le dossier du pass.
+ * Toute erreur est absorbée : on garde alors les images du template.
+ */
+async function preparerImagesCommercant(tmpDir, commercant) {
+  if (!commercant) return;
+
+  let sharp;
+  try {
+    sharp = require('sharp');
+  } catch {
+    return; // sans sharp, on conserve les images du template
+  }
+
+  // Logo (affiché en haut de la carte et dans les notifications)
+  const logoBuffer = await telechargerImage(commercant.carte_logo_url);
+  if (logoBuffer) {
+    try {
+      await sharp(logoBuffer).resize(160, 50, { fit: 'inside', withoutEnlargement: false })
+        .png().toFile(path.join(tmpDir, 'logo.png'));
+      await sharp(logoBuffer).resize(320, 100, { fit: 'inside', withoutEnlargement: false })
+        .png().toFile(path.join(tmpDir, 'logo@2x.png'));
+      // L'icône (notifications, écran verrouillé) reprend le logo
+      await sharp(logoBuffer).resize(29, 29, { fit: 'cover' })
+        .png().toFile(path.join(tmpDir, 'icon.png'));
+      await sharp(logoBuffer).resize(58, 58, { fit: 'cover' })
+        .png().toFile(path.join(tmpDir, 'icon@2x.png'));
+    } catch (err) {
+      console.error('[AppleWallet] Conversion du logo échouée:', err.message);
+    }
+  }
+
+  // Image de fond → bandeau "strip" du storeCard
+  const fondBuffer = await telechargerImage(commercant.carte_background_image_url);
+  if (fondBuffer) {
+    try {
+      await sharp(fondBuffer).resize(375, 123, { fit: 'cover' })
+        .png().toFile(path.join(tmpDir, 'strip.png'));
+      await sharp(fondBuffer).resize(750, 246, { fit: 'cover' })
+        .png().toFile(path.join(tmpDir, 'strip@2x.png'));
+    } catch (err) {
+      console.error('[AppleWallet] Conversion de l\'image de fond échouée:', err.message);
+    }
+  }
+}
+
 async function generatePkpassBuffer(carte, commercant) {
   if (!isConfigured()) return null;
 
@@ -339,6 +412,9 @@ async function generatePkpassBuffer(carte, commercant) {
         fs.copyFileSync(src, path.join(tmpDir, img));
       }
     }
+
+    // Remplacer par les images du commerçant (logo, image de fond)
+    await preparerImagesCommercant(tmpDir, commercant);
 
     // Générer pass.json
     const template = getPassTemplate();
@@ -469,7 +545,12 @@ async function generatePkpassBuffer(carte, commercant) {
       archive.on('error', reject);
       archive.pipe(output);
 
-      const orderedFiles = ['pass.json', ...images, 'manifest.json', 'signature'];
+      // Le zip doit contenir EXACTEMENT les fichiers listés dans le manifest,
+      // sinon Apple rejette le pass. On repart donc du contenu réel du dossier
+      // (il inclut les images personnalisées du commerçant : logo, strip).
+      const fichiersReels = fs.readdirSync(tmpDir)
+        .filter(f => f !== 'manifest.json' && f !== 'signature');
+      const orderedFiles = ['pass.json', ...fichiersReels.filter(f => f !== 'pass.json'), 'manifest.json', 'signature'];
       for (const f of orderedFiles) {
         const fp = path.join(tmpDir, f);
         if (fs.existsSync(fp)) {

@@ -67,6 +67,14 @@ router.post('/change-carte-type', authMiddleware, async (req, res) => {
       console.log(`[CarteType] ${commercantId} : ${actuel?.carte_type} -> ${carte_type}, ${cartesReinitialisees} cartes remises a zero`);
     }
 
+    // Répercuter immédiatement le nouveau programme sur les cartes installées
+    try {
+      const walletSyncService = require('../services/walletSyncService');
+      await walletSyncService.syncCommercantCards(commercantId, { force: true });
+    } catch (err) {
+      console.error('[CarteType] Sync cartes échouée:', err.message);
+    }
+
     return res.status(200).json({
       success: true,
       data: { carte_type, changement: changementDeType, cartes_reinitialisees: cartesReinitialisees },

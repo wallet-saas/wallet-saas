@@ -119,6 +119,12 @@ const setupWalletCard = async (req, res) => {
     // Creer / mettre a jour la LoyaltyClass Google Wallet
     await googleWalletService.upsertLoyaltyClass(updatedCommercant);
 
+    // Rafraîchir les passes Apple déjà installés (non bloquant)
+    try {
+      const walletSyncService = require('../services/walletSyncService');
+      walletSyncService.syncCommercantCards(commercantId, { force: true }).catch(() => {});
+    } catch (_) { /* non bloquant */ }
+
     // Marquer la classe comme configuree
     const { error: flagError } = await supabase
       .from('commercants')
@@ -205,6 +211,12 @@ const updateWalletCard = async (req, res) => {
 
     // Mettre a jour la LoyaltyClass existante
     await googleWalletService.upsertLoyaltyClass(updatedCommercant);
+
+    // Rafraîchir les passes Apple déjà installés (non bloquant)
+    try {
+      const walletSyncService = require('../services/walletSyncService');
+      walletSyncService.syncCommercantCards(commercantId, { force: true }).catch(() => {});
+    } catch (_) { /* non bloquant */ }
 
     return res.status(200).json({
       success: true,

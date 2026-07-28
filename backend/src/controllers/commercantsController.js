@@ -273,6 +273,20 @@ exports.updateCommercant = async (req, res) => {
 
     if (error) throw error;
 
+    // Répercuter design / programme / géoloc sur les cartes déjà installées
+    // (Google : mise à jour de la classe ; Apple : push de rafraîchissement).
+    // Non bloquant : la réponse ne doit pas attendre les push.
+    try {
+      const walletSyncService = require('../services/walletSyncService');
+      if (walletSyncService.necessiteSync(filteredPayload)) {
+        walletSyncService.syncCommercantCards(req.commercant.id).catch(err => {
+          console.error('[Commercants] Sync cartes échouée:', err.message);
+        });
+      }
+    } catch (err) {
+      console.error('[Commercants] walletSyncService indisponible:', err.message);
+    }
+
     res.json({ success: true, data: { commercant: data } });
   } catch (error) {
     console.error('Erreur updateCommercant:', error);
