@@ -426,3 +426,28 @@
   mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
   -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
 }
+
+/* ── Ergonomie mobile ───────────────────────────────────────────────────────
+   Sur écran tactile, les cibles doivent faire au moins 44px (recommandation
+   Apple et Google) et les champs 16px pour éviter le zoom automatique d'iOS
+   à la mise au point. */
+@media (max-width: 767px) {
+  button,
+  a.btn-primary,
+  a.btn-secondary,
+  .btn-primary,
+  .btn-secondary {
+    min-height: 44px;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  /* Les tableaux gardent leur défilement horizontal mais l'annoncent */
+  .table-container {
+    -webkit-overflow-scrolling: touch;
+  }
+}

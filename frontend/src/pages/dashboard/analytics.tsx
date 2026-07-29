@@ -407,7 +407,7 @@ export default function AnalyticsPage() {
             <Card>
               <CardHeader><CardTitle>Performances des offres flash</CardTitle></CardHeader>
               <CardBody>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 gap-2 sm:gap-4">
                   {[
                     { label: 'Total envoyées', value: formatNumber(offresStats.totalEnvoyes ?? 0) },
                     { label: 'Total utilisées', value: formatNumber(offresStats.totalUtilises ?? 0) },

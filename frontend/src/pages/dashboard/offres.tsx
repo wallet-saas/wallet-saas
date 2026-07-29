@@ -272,7 +272,7 @@ export default function OffresPage() {
         {statsModal.offre && statsModal.stats && (
           <div className="space-y-4">
             <p className="text-sm font-semibold text-gray-900">{statsModal.offre.titre}</p>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               {[{ label: 'Envoyés', value: statsModal.stats.total_envoyes }, { label: 'Utilisés', value: statsModal.stats.total_utilises }, { label: 'Taux', value: `${statsModal.stats.taux_utilisation}%` }].map(s => (
                 <div key={s.label} className="bg-gray-50 rounded-xl p-3 text-center">
                   <p className="text-xl font-bold text-gray-900">{s.value}</p>

@@ -253,7 +253,7 @@ export default function App() {
         <meta property="og:title" content="Stamply — Fidélité Digitale" />
         <meta property="og:description" content="Transformez chaque visite en client à vie. Carte digitale Apple Wallet & Google Wallet." />
       </Head>
-    <div className="min-h-screen bg-background relative selection:bg-primary/20 selection:text-primary font-sans">
+    <div className="min-h-screen overflow-x-hidden bg-background relative selection:bg-primary/20 selection:text-primary font-sans">
       {/* Navbar */}
       <nav className="fixed top-0 w-full z-50 transition-all duration-300 bg-white/95 backdrop-blur-md shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-20 flex items-center justify-between">
@@ -862,27 +862,27 @@ export default function App() {
                   ].map((stat, i) => (
                     <div
                       key={i}
-                      className="bg-white/5 border border-white/5 rounded-2xl p-6"
+                      className="bg-white/5 border border-white/5 rounded-2xl p-3 sm:p-5 md:p-6"
                     >
-                      <div className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-2">
+                      <div className="text-gray-400 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-wider mb-1 sm:mb-2 leading-tight">
                         {stat.label}
                       </div>
-                      <div className="text-white text-3xl font-black mb-2">
+                      <div className="text-white text-xl sm:text-2xl md:text-3xl font-black mb-1 sm:mb-2 whitespace-nowrap">
                         {stat.val}
                       </div>
-                      <div className={cn("text-sm font-bold", stat.color)}>
+                      <div className={cn("text-[10px] sm:text-xs md:text-sm font-bold", stat.color)}>
                         {stat.trend} ce mois
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="bg-white/5 border border-white/5 rounded-3xl p-8 h-[300px] relative flex items-end">
-                  <div className="absolute top-6 left-8">
-                    <div className="text-white text-xl font-bold">
+                <div className="bg-white/5 border border-white/5 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 h-[220px] sm:h-[260px] md:h-[300px] relative flex items-end">
+                  <div className="absolute top-4 left-4 sm:top-6 sm:left-8 pr-4">
+                    <div className="text-white text-sm sm:text-lg md:text-xl font-bold leading-tight">
                       Évolution des revenus générés
                     </div>
-                    <div className="text-gray-400 text-sm">
+                    <div className="text-gray-400 text-[11px] sm:text-sm">
                       Les 6 derniers mois
                     </div>
                   </div>
@@ -1014,7 +1014,7 @@ export default function App() {
               {[...testimonials, ...testimonials].map((t, i) => (
                 <div
                   key={i}
-                  className="w-[400px] h-[220px] bg-[#1a1f2e] border border-white/10 rounded-[2rem] p-8 flex flex-col justify-between hover:bg-[#1f2537] transition-all hover:border-primary/50 shrink-0 group"
+                  className="w-[280px] sm:w-[340px] md:w-[400px] h-auto min-h-[190px] sm:min-h-[220px] bg-[#1a1f2e] border border-white/10 rounded-[1.5rem] sm:rounded-[2rem] p-5 sm:p-8 flex flex-col justify-between hover:bg-[#1f2537] transition-all hover:border-primary/50 shrink-0 group"
                 >
                   <div className="flex gap-1 mb-4 text-yellow-500">
                     {[1, 2, 3, 4, 5].map((star) => (
@@ -1043,7 +1043,7 @@ export default function App() {
               {[...testimonials].reverse().concat(testimonials).map((t, i) => (
                 <div
                   key={i}
-                  className="w-[400px] h-[220px] bg-[#1a1f2e] border border-white/10 rounded-[2rem] p-8 flex flex-col justify-between hover:bg-[#1f2537] transition-all hover:border-purple-500/50 shrink-0 group"
+                  className="w-[280px] sm:w-[340px] md:w-[400px] h-auto min-h-[190px] sm:min-h-[220px] bg-[#1a1f2e] border border-white/10 rounded-[1.5rem] sm:rounded-[2rem] p-5 sm:p-8 flex flex-col justify-between hover:bg-[#1f2537] transition-all hover:border-purple-500/50 shrink-0 group"
                 >
                   <div className="flex gap-1 mb-4 text-yellow-500">
                     {[1, 2, 3, 4, 5].map((star) => (
@@ -1071,7 +1071,10 @@ export default function App() {
         </section>
 
         {/* ROI CALCULATOR */}
-                {/* ── Barre d'action permanente (mobile) ── */}
+                {/* Espace réservé pour que la barre d'action ne masque pas le pied de page */}
+        <div className="md:hidden h-24" aria-hidden="true" />
+
+        {/* ── Barre d'action permanente (mobile) ── */}
         <div className="md:hidden fixed bottom-0 inset-x-0 z-40 px-4 pb-4 pt-3 bg-gradient-to-t from-white via-white to-transparent">
           <a
             href="/register"

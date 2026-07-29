@@ -195,10 +195,10 @@ export default function CartesPage() {
               <table className="table">
                 <thead>
                   <tr>
-                    <th>Serial Number</th>
+                    <th>Carte</th>
                     <th>Points</th>
-                    <th>Dernière visite</th>
-                    <th>Date création</th>
+                    <th className="hidden sm:table-cell">Dernière visite</th>
+                    <th className="hidden lg:table-cell">Date création</th>
                     <th className="text-right">Actions</th>
                   </tr>
                 </thead>
@@ -213,8 +213,9 @@ export default function CartesPage() {
                     filtered.map((carte) => (
                       <tr key={carte.id || carte.pass_serial_number}>
                         <td>
-                          <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
-                            {carte.pass_serial_number}
+                          <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded whitespace-nowrap">
+                            <span className="sm:hidden">{(carte.pass_serial_number || '').slice(0, 8)}…</span>
+                            <span className="hidden sm:inline">{carte.pass_serial_number}</span>
                           </span>
                         </td>
                         <td>
@@ -223,14 +224,14 @@ export default function CartesPage() {
                             <span className="font-medium">{carte.points}</span>
                           </div>
                         </td>
-                        <td>
+                        <td className="hidden sm:table-cell">
                           {carte.last_visit_at ? (
                             <span className="text-gray-600">{formatRelative(carte.last_visit_at)}</span>
                           ) : (
                             <Badge variant="gray">Jamais</Badge>
                           )}
                         </td>
-                        <td>
+                        <td className="hidden lg:table-cell">
                           <div className="flex items-center gap-1.5 text-gray-500">
                             <Calendar className="h-3.5 w-3.5" />
                             {formatDate(carte.created_at)}
