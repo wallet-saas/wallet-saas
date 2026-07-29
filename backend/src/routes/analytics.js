@@ -146,6 +146,20 @@ router.get('/projections', async (req, res) => {
 // ─── GET /api/analytics/commercant ────────────────────────────────────────────
 // Dashboard analytics pour le commerçant connecté
 
+// ─── Tableau de bord du commerçant ────────────────────────────────────────────
+// Ces routes alimentent la page d'accueil et le module Analytics. Leurs
+// handlers existaient dans analyticsController mais n'étaient montés nulle
+// part : le frontend recevait donc un 404 sur chacune d'elles.
+
+const analyticsController = require('../controllers/analyticsController');
+
+router.get('/overview', authMiddleware, analyticsController.overview);
+router.get('/cards', authMiddleware, analyticsController.cardsEvolution);
+router.get('/notifications', authMiddleware, analyticsController.notificationsStats);
+router.get('/clients-dormants', authMiddleware, analyticsController.clientsDormants);
+router.get('/avis', authMiddleware, analyticsController.avisStats);
+router.get('/offres', authMiddleware, analyticsController.offresStats);
+
 router.get('/commercant', authMiddleware, async (req, res) => {
   try {
     const commercantId = req.commercant.id;

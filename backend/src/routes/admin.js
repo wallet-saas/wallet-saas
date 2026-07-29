@@ -761,26 +761,20 @@ router.post('/push-test', adminAuth, async (req, res) => {
       return res.status(404).json({ success: false, error: 'Commerçant introuvable.' });
     }
 
-    if (commercant.notif_mode_simulation || !commercant.fcm_token) {
-      return res.json({
-        success: true,
-        message: 'Mode simulation actif ou aucun token FCM — push non envoyé (simulation).',
-        mode: 'simulation'
-      });
-    }
-
-    // Envoyer via FCM
-    const { sendPushToMerchant } = require('../services/notificationService');
-    const result = await sendPushToMerchant(
+    // Envoi via le canal réel : les cartes Wallet des clients de ce commerçant.
+    // L'ancien code appelait sendPushToMerchant, qui n'existe pas — la route
+    // renvoyait donc systématiquement une erreur 500.
+    const walletNotificationService = require('../services/walletNotificationService');
+    const result = await walletNotificationService.sendToWalletCards(
       commercant_id,
-      titre || 'Test Admin',
-      message || 'Ceci est un test de notification depuis le panel admin.'
+      titre || 'Test administrateur',
+      message || 'Ceci est un test de notification envoyé depuis la console Stamply.'
     );
 
     res.json({
       success: true,
-      message: 'Push envoyé avec succès.',
-      mode: 'real',
+      message: `Notification envoyée à ${result.total || 0} carte(s) Wallet.`,
+      mode: 'wallet',
       result
     });
   } catch (err) {
