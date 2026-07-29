@@ -112,6 +112,13 @@ export const walletApi = {
 
 // ─── Scan ─────────────────────────────────────────────────────────────────────
 export const scanApi = {
+  carteInfo: (serial: string) =>
+    request<any>(`/api/scan/carte/${encodeURIComponent(serial)}`),
+  ajuster: (serial: string, data: { points?: number; solde?: number; motif?: string }) =>
+    request<any>(`/api/scan/carte/${encodeURIComponent(serial)}/ajuster`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
   scan: (passSerialNumber: string, extra?: { montant?: number; quantite?: number; action?: string }) =>
     request<ScanResult>('/api/scan', {
       method: 'POST',

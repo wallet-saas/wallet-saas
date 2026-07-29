@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { scanQR, getScanHistory } = require('../controllers/scanController');
+const { scanQR, getScanHistory, getCarteInfo, ajusterCarte } = require('../controllers/scanController');
 const authMiddleware = require('../middleware/authMiddleware');
 const { scanRateLimiter } = require('../middleware/rateLimiter');
 const { scanValidation, handleValidationErrors } = require('../middleware/validation');
@@ -18,6 +18,12 @@ router.post('/', authMiddleware, scanRateLimiter, scanValidation, handleValidati
  * @access  Private (JWT commerçant requis)
  */
 router.get('/history', authMiddleware, getScanHistory);
+
+// GET /api/scan/carte/:serial — consulter une carte avant d'agir (aucune écriture)
+router.get('/carte/:serial', authMiddleware, getCarteInfo);
+
+// POST /api/scan/carte/:serial/ajuster — correction manuelle du compteur
+router.post('/carte/:serial/ajuster', authMiddleware, ajusterCarte);
 
 /**
  * @route   GET /api/scan/page

@@ -293,4 +293,141 @@ const getScanHistory = async (req, res) => {
   }
 };
 
-module.exports = { scanQR, getScanHistory };
+
+/**
+ * GET /api/scan/carte/:serial
+ * Consulter une carte AVANT d'agir : le commerçant voit à qui elle appartient,
+ * son état et les actions possibles selon le programme de fidélité.
+ * Aucune écriture, aucun décompte de scan.
+ */
+const getCarteInfo = async (req, res) => {
+  try {
+    const commercantId = req.commercant.id;
+    const serial = (req.params.serial || '').trim();
+    if (!serial) {
+      return res.status(400).json({ success: false, error: 'Numéro de carte manquant.' });
+    }
+
+    const { data: carte, error } = await supabase
+      .from('cartes')
+      .select('id, pass_serial_number, points, visites, solde, total_depense, statut_palier, coupon_utilise, actif, commercant_id, client_nom, client_email, client_telephone, last_visit_at, created_at')
+      .eq('pass_serial_number', serial)
+      .single();
+
+    if (error || !carte) {
+      return res.status(404).json({ success: false, error: 'Carte inconnue.' });
+    }
+    if (carte.commercant_id !== commercantId) {
+      return res.status(403).json({ success: false, error: 'Cette carte appartient à un autre commerce.' });
+    }
+
+    const { data: commercant } = await supabase
+      .from('commercants')
+      .select('nom_enseigne, carte_type, carte_type_config, points_recompense, carte_logo_url, carte_couleur_primaire')
+      .eq('id', commercantId)
+      .single();
+
+    const { type: carteType, config } = carteTypeService.getTypeConfig(commercant || {});
+    const display = carteTypeService.displayFields({ type: carteType, config, carte, commercant });
+
+    // Dernières visites, pour reconnaître un habitué d'un nouveau client
+    const { data: dernieresVisites } = await supabase
+      .from('visites')
+      .select('created_at, points_gagnes, montant')
+      .eq('carte_id', carte.id)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        carte: {
+          id: carte.id,
+          serial: carte.pass_serial_number,
+          points: carte.points || 0,
+          visites: carte.visites || 0,
+          solde: carte.solde || 0,
+          total_depense: carte.total_depense || 0,
+          statut_palier: carte.statut_palier,
+          coupon_utilise: carte.coupon_utilise || false,
+          actif: carte.actif !== false,
+          client_nom: carte.client_nom || null,
+          client_email: carte.client_email || null,
+          last_visit_at: carte.last_visit_at,
+          created_at: carte.created_at,
+        },
+        carte_type: carteType,
+        config,
+        affichage: display,
+        commercant: {
+          nom_enseigne: commercant?.nom_enseigne,
+          logo_url: commercant?.carte_logo_url,
+          couleur: commercant?.carte_couleur_primaire,
+        },
+        dernieres_visites: dernieresVisites || [],
+      },
+    });
+  } catch (err) {
+    console.error('Erreur getCarteInfo:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+/**
+ * POST /api/scan/carte/:serial/ajuster
+ * Correction manuelle du compteur par le commerçant (erreur de caisse,
+ * geste commercial). Tracée dans les visites avec la source "ajustement".
+ */
+const ajusterCarte = async (req, res) => {
+  try {
+    const commercantId = req.commercant.id;
+    const serial = (req.params.serial || '').trim();
+    const { points, solde, motif } = req.body;
+
+    const { data: carte, error } = await supabase
+      .from('cartes')
+      .select('id, points, solde, commercant_id')
+      .eq('pass_serial_number', serial)
+      .single();
+
+    if (error || !carte) return res.status(404).json({ success: false, error: 'Carte inconnue.' });
+    if (carte.commercant_id !== commercantId) {
+      return res.status(403).json({ success: false, error: 'Cette carte appartient à un autre commerce.' });
+    }
+
+    const updates = { updated_at: new Date().toISOString() };
+    if (points !== undefined && !isNaN(parseInt(points))) updates.points = Math.max(0, parseInt(points));
+    if (solde !== undefined && !isNaN(parseFloat(solde))) updates.solde = Math.max(0, parseFloat(solde));
+
+    if (Object.keys(updates).length === 1) {
+      return res.status(400).json({ success: false, error: 'Aucune valeur à ajuster.' });
+    }
+
+    const { error: majError } = await supabase.from('cartes').update(updates).eq('id', carte.id);
+    if (majError) throw majError;
+
+    await supabase.from('visites').insert([{
+      carte_id: carte.id,
+      commercant_id: commercantId,
+      points_gagnes: updates.points !== undefined ? updates.points - (carte.points || 0) : 0,
+      source: 'ajustement',
+    }]);
+
+    // Répercuter sur la carte du client
+    try {
+      const appleWalletService = require('../services/appleWalletService');
+      appleWalletService.notifyPush(serial).catch(() => {});
+      googleWalletService.updateLoyaltyObjectPoints(serial, updates.points ?? carte.points ?? 0);
+    } catch (_) { /* non bloquant */ }
+
+    console.log(`[Scan] Ajustement manuel carte ${serial} par ${commercantId}${motif ? ` (${motif})` : ''}`);
+    return res.status(200).json({ success: true, data: { ...carte, ...updates } });
+  } catch (err) {
+    console.error('Erreur ajusterCarte:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+module.exports = {
+  getCarteInfo,
+  ajusterCarte, scanQR, getScanHistory };

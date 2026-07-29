@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { scanApi, type Visite } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
+import { ScanCardModal } from '@/components/ScanCardModal';
 import { formatDateTime } from '@/utils/format';
 import {
   QrCode, Camera, CameraOff, CheckCircle, XCircle,
@@ -39,10 +40,7 @@ export default function ScanPage() {
   // Système multi-types : le panneau d'action dépend du type de carte du commerçant
   const { commercant } = useAuth();
   const carteType: string = (commercant as any)?.carte_type || 'tampons';
-  const [pendingSerial, setPendingSerial] = useState<string | null>(null);
-  const [montant, setMontant] = useState('');
-  const [actionLoading, setActionLoading] = useState(false);
-  const TYPES_INSTANTANES = ['tampons', 'membre'];
+  const [modalSerial, setModalSerial] = useState<string | null>(null);
 
   // Load jsQR dynamically (client-side only)
   const jsQRRef = useRef<any>(null);
@@ -133,8 +131,6 @@ export default function ScanPage() {
         points: data.carte_etat?.points ?? data.tampons,
         serial,
       });
-      setPendingSerial(null);
-      setMontant('');
       fetchHistory();
     } catch (e: any) {
       if (e?.status === 429) {
@@ -147,26 +143,11 @@ export default function ScanPage() {
 
   const processQR = async (raw: string) => {
     const serial = extractSerial(raw);
-    if (TYPES_INSTANTANES.includes(carteType)) {
-      // Tampon / visite : validation immédiate en un scan
-      await doScan(serial);
-      return;
-    }
-    // Types nécessitant une saisie (montant…) : ouvrir le panneau d'action
-    setPendingSerial(serial);
-    setResult({ state: 'scanning', message: 'Carte détectée — complétez l\'action ci-dessous', serial });
+    // Toujours montrer la carte avant d'agir : le commerçant vérifie le client,
+    // voit l'état de sa fidélité, puis déclenche l'action adaptée au programme.
+    setModalSerial(serial);
   };
 
-  const submitAction = async (action?: string) => {
-    if (!pendingSerial) return;
-    setActionLoading(true);
-    const m = parseFloat(montant.replace(',', '.'));
-    await doScan(pendingSerial, {
-      ...(isNaN(m) ? {} : { montant: m }),
-      ...(action ? { action } : {}),
-    });
-    setActionLoading(false);
-  };
 
   const handleManualScan = async () => {
     if (!manualSerial.trim()) return;
@@ -193,48 +174,6 @@ export default function ScanPage() {
         <h1 className="page-title">Scanner une carte</h1>
         <p className="page-subtitle">Validez les points de fidélité de vos clients</p>
       </div>
-
-      {/* Panneau d'action selon le type de carte */}
-      {pendingSerial && (
-        <div className="mb-6 rounded-xl border-2 border-indigo-300 bg-indigo-50 p-4">
-          <div className="text-sm font-medium mb-3">
-            Carte détectée : <span className="font-mono">{pendingSerial.slice(0, 8)}…</span>
-          </div>
-          {['points', 'cashback', 'remise', 'carte_cadeau'].includes(carteType) && (
-            <div className="flex flex-wrap items-center gap-3">
-              <input
-                type="number" step="0.01" min="0" inputMode="decimal"
-                placeholder="Montant de l'achat (€)"
-                className="rounded-lg border border-gray-300 p-2 w-48"
-                value={montant}
-                onChange={e => setMontant(e.target.value)}
-                autoFocus
-              />
-              {carteType === 'points' && (<>
-                <Button onClick={() => submitAction()} loading={actionLoading}>Ajouter les points</Button>
-                <Button variant="secondary" onClick={() => submitAction('recompense')} loading={actionLoading}>🎁 Utiliser la récompense</Button>
-              </>)}
-              {carteType === 'cashback' && (<>
-                <Button onClick={() => submitAction()} loading={actionLoading}>Créditer le cashback</Button>
-                <Button variant="secondary" onClick={() => submitAction('debit')} loading={actionLoading}>💶 Utiliser la cagnotte</Button>
-              </>)}
-              {carteType === 'remise' && (
-                <Button onClick={() => submitAction()} loading={actionLoading}>Enregistrer l'achat</Button>
-              )}
-              {carteType === 'carte_cadeau' && (<>
-                <Button onClick={() => submitAction('debit')} loading={actionLoading}>Débiter</Button>
-                <Button variant="secondary" onClick={() => submitAction('credit')} loading={actionLoading}>Créditer / Recharger</Button>
-              </>)}
-            </div>
-          )}
-          {carteType === 'coupon' && (
-            <Button onClick={() => submitAction('utiliser')} loading={actionLoading}>✅ Valider le coupon</Button>
-          )}
-          <button type="button" className="block mt-3 text-xs text-gray-500 underline" onClick={() => { setPendingSerial(null); setMontant(''); }}>
-            Annuler
-          </button>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Camera */}
@@ -352,6 +291,13 @@ export default function ScanPage() {
           </CardBody>
         </Card>
       </div>
+      {modalSerial && (
+        <ScanCardModal
+          serial={modalSerial}
+          onClose={() => setModalSerial(null)}
+          onDone={fetchHistory}
+        />
+      )}
     </DashboardLayout>
   );
 }
