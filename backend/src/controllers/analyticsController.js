@@ -1,3 +1,6 @@
+// Ces statistiques viennent de dashboardStatsService : analyticsService ne
+// contient que les métriques SaaS de l'administration (MRR, churn, LTV…) et
+// n'exportait aucune de ces fonctions — chaque appel échouait silencieusement.
 const {
   getOverview,
   getCardsEvolution,
@@ -5,7 +8,7 @@ const {
   getClientsDormants,
   getAvisStats,
   getOffresStats
-} = require('../services/analyticsService');
+} = require('../services/dashboardStatsService');
 const { supabase } = require('../config/supabase');
 
 // ---------------------------------------------------------------------------
