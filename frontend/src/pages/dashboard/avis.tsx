@@ -304,15 +304,24 @@ export default function AvisPage() {
 
               <div className="space-y-6">
                 <Card>
-                  <CardHeader><CardTitle>Message et alertes</CardTitle></CardHeader>
+                  <CardHeader>
+                    <CardTitle>Message envoyé au client</CardTitle>
+                    <p className="text-sm text-gray-500 mt-0.5">
+                      C'est le texte de la notification qui part sur sa carte de fidélité,
+                      une fois le délai ci-contre écoulé.
+                    </p>
+                  </CardHeader>
                   <CardBody className="space-y-4">
                     <Textarea
-                      label="Message de la demande d'avis"
+                      label="Texte de la notification"
                       placeholder="Merci pour votre visite ! Votre avis compte beaucoup pour nous."
                       rows={3}
                       value={autoMessage}
                       onChange={e => setAutoMessage(e.target.value)}
                     />
+                    <p className="text-xs text-gray-500">
+                      Laissé vide, un message par défaut mentionnant votre enseigne est utilisé.
+                    </p>
                     <p className="text-xs text-gray-500">
                       Les avis négatifs n'apparaissent jamais publiquement : retrouvez-les dans
                       l'onglet « Feedback interne », qui affiche un compteur dès qu'un nouveau message arrive.

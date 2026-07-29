@@ -251,8 +251,8 @@ export default function AbonnementPage() {
 
                 {/* Trial */}
                 <div className="mt-6 p-4 bg-primary-50 rounded-xl border border-primary-100 text-center">
-                  <p className="text-sm font-semibold text-primary-800">14 jours d&apos;essai gratuit</p>
-                  <p className="text-xs text-primary-700 mt-0.5">Aucun prélèvement pendant la période d&apos;essai</p>
+                  <p className="text-sm font-semibold text-primary-800">Sans engagement</p>
+                  <p className="text-xs text-primary-700 mt-0.5">Résiliable à tout moment, en 1 clic</p>
                 </div>
               </div>
             </div>

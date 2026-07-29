@@ -203,9 +203,9 @@ export default function AbonnementPage() {
             </ul>
 
             <div className="mt-6 p-4 bg-primary-50 rounded-xl border border-primary-100">
-              <p className="text-sm font-semibold text-primary-800 mb-1">Satisfait ou remboursé</p>
+              <p className="text-sm font-semibold text-primary-800 mb-1">Sans engagement</p>
               <p className="text-xs text-primary-700">
-                14 jours d'essai gratuit sans engagement. Annulation en 1 clic.
+                Abonnement mensuel résiliable à tout moment, en 1 clic.
               </p>
             </div>
           </CardBody>

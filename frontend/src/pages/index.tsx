@@ -1237,10 +1237,10 @@ export default function App() {
                   href="/register"
                   className="relative overflow-hidden rounded-full bg-foreground text-background px-8 py-4 font-bold shadow-xl transition-all hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98] w-full text-xl py-6 block text-center"
                 >
-                  Démarrer mon essai
+                  Créer ma carte de fidélité
                 </a>
                 <div className="mt-6 text-sm text-muted-foreground font-bold uppercase tracking-widest">
-                  14 jours gratuits • Sans carte bancaire
+                  49 € / mois • Sans engagement • Annulable en 1 clic
                 </div>
               </div>
             </div>
