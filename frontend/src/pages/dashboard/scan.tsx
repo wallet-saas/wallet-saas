@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/Badge';
 import { scanApi, type Visite } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
 import { ScanCardModal } from '@/components/ScanCardModal';
+import { PriseDeService } from '@/components/PriseDeService';
+import { useEmployeSession } from '@/hooks/useEmployeSession';
 import { formatDateTime } from '@/utils/format';
 import {
   QrCode, Camera, CameraOff, CheckCircle, XCircle,
@@ -41,6 +43,7 @@ export default function ScanPage() {
   const { commercant } = useAuth();
   const carteType: string = (commercant as any)?.carte_type || 'tampons';
   const [modalSerial, setModalSerial] = useState<string | null>(null);
+  const { session: employeSession } = useEmployeSession();
 
   // Load jsQR dynamically (client-side only)
   const jsQRRef = useRef<any>(null);
@@ -175,6 +178,8 @@ export default function ScanPage() {
         <p className="page-subtitle">Validez les points de fidélité de vos clients</p>
       </div>
 
+      <PriseDeService />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Camera */}
         <div className="space-y-4">
@@ -294,6 +299,7 @@ export default function ScanPage() {
       {modalSerial && (
         <ScanCardModal
           serial={modalSerial}
+          employeId={employeSession?.id || null}
           onClose={() => setModalSerial(null)}
           onDone={fetchHistory}
         />

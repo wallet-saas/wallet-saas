@@ -19,7 +19,7 @@ const RATE_LIMIT_MS = 30 * 1000; // 30 secondes
  */
 const scanQR = async (req, res) => {
   try {
-    const { pass_serial_number, qr_string, montant, quantite, action } = req.body;
+    const { pass_serial_number, qr_string, montant, quantite, action, employe_id } = req.body;
     const { id: commercantId } = req.commercant;
 
     if (!pass_serial_number && !qr_string) {
@@ -169,6 +169,7 @@ const scanQR = async (req, res) => {
           client_id: clientId,
           points_gagnes: (carteApres.points || 0) - (carte.points || 0),
           montant: montant !== undefined && !isNaN(parseFloat(montant)) ? parseFloat(montant) : null,
+          employe_id: employe_id || null,
           source: qrType === 'dynamic' ? 'qr_dynamic' : 'scan'
         }]);
 

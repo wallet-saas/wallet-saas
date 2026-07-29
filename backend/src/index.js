@@ -66,6 +66,7 @@ app.use('/api/geolocation', geolocationRoutes);
 app.use('/api/menus', menusRoutes);
 app.use('/api/offres', offresRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/employes', require('./routes/employes'));
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/images', imagesRoutes);
 app.use('/api/health', healthRoutes);

@@ -119,7 +119,7 @@ export const scanApi = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
-  scan: (passSerialNumber: string, extra?: { montant?: number; quantite?: number; action?: string }) =>
+  scan: (passSerialNumber: string, extra?: { montant?: number; quantite?: number; action?: string; employe_id?: string }) =>
     request<ScanResult>('/api/scan', {
       method: 'POST',
       body: JSON.stringify({ pass_serial_number: passSerialNumber, ...(extra || {}) }),
@@ -237,6 +237,30 @@ export const carteTypeApi = {
       '/api/commercants/change-carte-type',
       { method: 'POST', body: JSON.stringify({ carte_type, carte_type_config }) }
     ),
+};
+
+export interface Employe {
+  id: string;
+  prenom: string;
+  permissions: string[];
+  actif: boolean;
+  derniere_activite_at?: string | null;
+  scans_jour?: number;
+  scans_30j?: number;
+  ca_30j?: number;
+}
+
+export const employesApi = {
+  list: () => request<{ employes: Employe[]; modules: string[] }>('/api/employes'),
+  create: (data: { prenom: string; pin: string; permissions: string[] }) =>
+    request<Employe>('/api/employes', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Partial<{ prenom: string; pin: string; permissions: string[]; actif: boolean }>) =>
+    request<Employe>(`/api/employes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  remove: (id: string) => request<void>(`/api/employes/${id}`, { method: 'DELETE' }),
+  verifierPin: (pin: string) =>
+    request<{ id: string; prenom: string; permissions: string[] }>('/api/employes/pin', {
+      method: 'POST', body: JSON.stringify({ pin }),
+    }),
 };
 
 export const geolocationApi = {

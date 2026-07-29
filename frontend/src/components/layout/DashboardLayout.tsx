@@ -2,8 +2,9 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useEmployeSession } from '@/hooks/useEmployeSession';
 import { Spinner } from '@/components/ui/Spinner';
-import { LayoutDashboard, CreditCard, QrCode, Bell, Star, UtensilsCrossed, Tag, MapPin, BarChart3, Settings, CreditCard as CardIcon, LogOut, ChevronLeft, Menu, X, MessageSquare, Zap } from 'lucide-react';
+import { LayoutDashboard, CreditCard, QrCode, Bell, Star, UtensilsCrossed, Tag, MapPin, BarChart3, Settings, CreditCard as CardIcon, LogOut, ChevronLeft, Menu, X, MessageSquare, Zap, Users } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { commercantApi } from '@/services/api';
@@ -30,6 +31,7 @@ const navItems: NavItem[] = [
 ];
 
 const bottomItems = [
+  { label: 'Mon équipe', href: '/dashboard/employes', icon: Users },
   { label: 'Paramètres', href: '/dashboard/parametres', icon: Settings },
   { label: 'Abonnement', href: '/dashboard/abonnement', icon: CardIcon },
 ];
@@ -167,9 +169,29 @@ interface SidebarContentProps {
   onClose?: () => void;
 }
 
+// Correspondance entre une entrée de menu et la permission employé associée
+const PERMISSION_PAR_LIEN: Record<string, string> = {
+  '/dashboard/scan': 'scan',
+  '/dashboard/cartes': 'cartes',
+  '/dashboard/notifications': 'notifications',
+  '/dashboard/automatisations': 'automatisations',
+  '/dashboard/avis': 'avis',
+  '/dashboard/menus': 'menus',
+  '/dashboard/offres': 'offres',
+  '/dashboard/geolocalisation': 'geolocalisation',
+  '/dashboard/analytics': 'analytics',
+};
+
 function SidebarContent({ router, commercant, onLogout, onToggleModule, onClose }: SidebarContentProps) {
-  // All nav items are visible; disabled modules show as locked/greyed out
-  const visibleNavItems = navItems;
+  // Quand un employé est en service, le menu se limite à ses modules autorisés.
+  // Sans session employé (le commerçant lui-même), tout reste visible.
+  const { session: employeSession } = useEmployeSession();
+  const visibleNavItems = employeSession
+    ? navItems.filter(item => {
+        const permission = PERMISSION_PAR_LIEN[item.href];
+        return !permission || employeSession.permissions.includes(permission);
+      })
+    : navItems;
 
   return (
     <>
@@ -237,7 +259,7 @@ function SidebarContent({ router, commercant, onLogout, onToggleModule, onClose 
         </div>
 
         <div className="px-3 mt-4 pt-4 border-t border-gray-100 space-y-0.5">
-          {bottomItems.map((item) => {
+          {(employeSession ? [] : bottomItems).map((item) => {
             const active = router.pathname === item.href;
             return (
               <Link

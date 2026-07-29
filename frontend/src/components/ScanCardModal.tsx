@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/Button';
 
 type Props = {
   serial: string;
+  employeId?: string | null;
   onClose: () => void;
   onDone?: () => void;
 };
@@ -41,7 +42,7 @@ function labelBoutonPrincipal(type: string): string {
   }
 }
 
-export function ScanCardModal({ serial, onClose, onDone }: Props) {
+export function ScanCardModal({ serial, employeId, onClose, onDone }: Props) {
   const [info, setInfo] = useState<any>(null);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState('');
@@ -78,6 +79,7 @@ export function ScanCardModal({ serial, onClose, onDone }: Props) {
       const res: any = await scanApi.scan(serial, {
         ...(isNaN(m) ? {} : { montant: m }),
         ...(actionNom ? { action: actionNom } : {}),
+        ...(employeId ? { employe_id: employeId } : {}),
       });
       setResultat(res.resume || res.message || 'Carte mise à jour');
       setMontant('');
