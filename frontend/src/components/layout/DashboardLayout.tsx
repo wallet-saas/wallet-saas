@@ -3,12 +3,7 @@ import Link from 'next/link';
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Spinner } from '@/components/ui/Spinner';
-import {
-  LayoutDashboard, CreditCard, QrCode, Bell, Star,
-  UtensilsCrossed, Tag, MapPin, BarChart3, Settings,
-  CreditCard as CardIcon, LogOut, ChevronLeft, Menu, X,
-  MessageSquare
-} from 'lucide-react';
+import { LayoutDashboard, CreditCard, QrCode, Bell, Star, UtensilsCrossed, Tag, MapPin, BarChart3, Settings, CreditCard as CardIcon, LogOut, ChevronLeft, Menu, X, MessageSquare, Zap } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { commercantApi } from '@/services/api';
@@ -25,6 +20,7 @@ const navItems: NavItem[] = [
   { label: 'Cartes', href: '/dashboard/cartes', icon: CreditCard },
   { label: 'Scan QR', href: '/dashboard/scan', icon: QrCode },
   { label: 'Notifications', href: '/dashboard/notifications', icon: Bell, module: 'module_notifications' },
+  { label: 'Automatisations', href: '/dashboard/automatisations', icon: Zap },
   { label: 'Avis Google', href: '/dashboard/avis', icon: Star, module: 'module_avis' },
   { label: 'Menus', href: '/dashboard/menus', icon: UtensilsCrossed, module: 'module_menus' },
   { label: 'Offres Flash', href: '/dashboard/offres', icon: Tag, module: 'module_offres' },

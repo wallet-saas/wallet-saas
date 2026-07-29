@@ -15,7 +15,7 @@ async function relanceDormants(commercantId) {
     // 1️⃣ Vérifier que la relance automatique est activée
     const { data: commercant, error: errComm } = await supabase
       .from('commercants')
-      .select('id, nom_enseigne, relance_auto, relance_jours, relance_message')
+      .select('id, nom_enseigne, relance_auto, relance_jours, relance_message, relance_titre')
       .eq('id', commercantId)
       .single();
 
@@ -33,7 +33,9 @@ async function relanceDormants(commercantId) {
     }
 
     const relanceJours = commercant.relance_jours || 30;
-    const message = commercant.relance_message || 'Revenez nous voir ! Profitez de vos tampons et offres spéciales.';
+    const messageBrut = commercant.relance_message
+    || 'Revenez nous voir ! Profitez de vos tampons et offres spéciales.';
+  const message = messageBrut.replace('{{nom_enseigne}}', commercant.nom_enseigne || '');
 
     // 2️⃣ Trouver les cartes dormantes
     const dateSeuil = new Date();
@@ -101,7 +103,8 @@ async function relanceDormants(commercantId) {
         }
 
         // Envoyer la notification via walletNotificationService
-        const titre = `${commercant.nom_enseigne} vous attend !`;
+        const titre = (commercant.relance_titre?.trim() || `{{nom_enseigne}} vous attend !`)
+          .replace('{{nom_enseigne}}', commercant.nom_enseigne || '');
 
         await walletNotificationService.sendToWalletCard(
           carte.id,
@@ -152,7 +155,7 @@ async function anniversaire(commercantId) {
     // 1️⃣ Vérifier que l'anniversaire automatique est activé
     const { data: commercant, error: errComm } = await supabase
       .from('commercants')
-      .select('id, nom_enseigne, anniversaire_auto, anniversaire_message')
+      .select('id, nom_enseigne, anniversaire_auto, anniversaire_message, anniversaire_titre')
       .eq('id', commercantId)
       .single();
 
@@ -249,7 +252,10 @@ async function anniversaire(commercantId) {
           .replace('{{nom}}', client.nom || 'Client')
           .replace('{{nom_enseigne}}', commercant.nom_enseigne);
 
-        const titre = `🎂 Joyeux anniversaire ${client.nom || ''}!`.trim();
+        const titre = (commercant.anniversaire_titre?.trim()
+          || `🎂 Joyeux anniversaire {{nom}} !`)
+          .replace('{{nom}}', client.nom || '')
+          .trim();
 
         // Envoyer UNIQUEMENT à la carte du client dont c'est l'anniversaire
         if (!client.carte_id) { ignore++; continue; }

@@ -216,6 +216,7 @@ exports.updateCommercant = async (req, res) => {
       'carte_tier_color', 'carte_overlay_opacity', 'carte_overlay_color',
       // Relance & anniversaire (migration 007)
       'relance_auto', 'relance_jours', 'anniversaire_auto', 'anniversaire_message',
+      'relance_message', 'relance_titre', 'anniversaire_titre',
       'type_fidelite', 'type_fidelite_config',
     ];
 

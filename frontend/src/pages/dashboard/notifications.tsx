@@ -396,49 +396,26 @@ export default function NotificationsPage() {
                 </CardBody>
               </Card>
 
-              {/* ─── Relance automatique clients dormants ─── */}
-              <Card>
-                <CardHeader><CardTitle>Relance automatique</CardTitle></CardHeader>
-                <CardBody className="space-y-4">
-                  <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Relancer les clients inactifs</p>
-                      <p className="text-xs text-gray-500 mt-0.5">Envoie une notification push aux clients qui ne sont pas venus depuis X jours</p>
+              {/* ─── Renvoi vers le module Automatisations ─── */}
+              <Card className="lg:col-span-2">
+                <CardBody>
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div className="flex items-start gap-3">
+                      <div className="h-9 w-9 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
+                        <Zap className="h-4 w-4 text-indigo-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Relances et anniversaires</p>
+                        <p className="text-xs text-gray-500 mt-0.5 max-w-xl">
+                          Ces envois automatiques ont leur propre module : titre, message, variables
+                          personnalisables et aperçu du rendu sur la carte du client.
+                        </p>
+                      </div>
                     </div>
-                    <Toggle checked={relanceAuto} onChange={setRelanceAuto} />
+                    <a href="/dashboard/automatisations">
+                      <Button variant="secondary">Ouvrir les automatisations</Button>
+                    </a>
                   </div>
-                  {relanceAuto && (
-                    <>
-                      <Input label="Seuil d'inactivité (jours)" type="number" min={3} max={90} value={relanceJours} onChange={e => setRelanceJours(Number(e.target.value))} />
-                      <div className="text-xs text-gray-400">Une notification sera envoyée tous les {relanceJours || 14} jours maximum.</div>
-                      <Button variant="secondary" size="sm" loading={testRelanceLoading} onClick={handleTestRelance}>
-                        <Send className="h-3.5 w-3.5" /> Tester la relance maintenant
-                      </Button>
-                    </>
-                  )}
-                </CardBody>
-              </Card>
-
-              {/* ─── Anniversaire automatique ─── */}
-              <Card>
-                <CardHeader><CardTitle>Annonces d'anniversaire</CardTitle></CardHeader>
-                <CardBody className="space-y-4">
-                  <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Souhaiter l'anniversaire aux clients</p>
-                      <p className="text-xs text-gray-500 mt-0.5">Envoie une notification push personnalisée le jour de leur anniversaire</p>
-                    </div>
-                    <Toggle checked={anniversaireAuto} onChange={setAnniversaireAuto} />
-                  </div>
-                  {anniversaireAuto && (
-                    <>
-                      <Textarea label="Message d'anniversaire" rows={2} value={anniversaireMessage} onChange={e => setAnniversaireMessage(e.target.value)} />
-                      <div className="text-xs text-gray-400">Les clients doivent avoir renseigné leur date de naissance sur la page d'installation.</div>
-                      <Button variant="secondary" size="sm" loading={testAnnivLoading} onClick={handleTestAnniv}>
-                        <Send className="h-3.5 w-3.5" /> Tester l'anniversaire maintenant
-                      </Button>
-                    </>
-                  )}
                 </CardBody>
               </Card>
 
