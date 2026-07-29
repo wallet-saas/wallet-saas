@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { PremiumCardPreview } from '@/components/PremiumCardPreview';
 import { LOYALTY_TYPES, scanHint } from '@/components/LoyaltyTypeSelector';
 import { ArrowRight, Check, Smartphone, Bell, MapPin, Star } from 'lucide-react';
+import { DemoAnimee } from '@/components/DemoAnimee';
 
 const COULEURS = [
   { nom: 'Indigo', valeur: '#6366f1' },
@@ -54,6 +55,11 @@ export default function DemoPage() {
   const [couleur, setCouleur] = useState('#6366f1');
   const [enseigne, setEnseigne] = useState('Café des Amis');
   const [format, setFormat] = useState<'apple' | 'google'>('apple');
+
+  // Chiffres du commerce du visiteur, utilisés par le bloc de résultats
+  const [clientsParJour, setClientsParJour] = useState(20);
+  const [panierMoyen, setPanierMoyen] = useState(15);
+  const [joursOuverture, setJoursOuverture] = useState(24);
 
   const design = {
     background_image_url: '',
@@ -203,6 +209,49 @@ export default function DemoPage() {
                 Aperçu réel — c'est exactement ce que verront vos clients.
               </p>
             </div>
+          </div>
+        </section>
+
+        {/* ── Vos chiffres, en mouvement ── */}
+        <section className="bg-gradient-to-b from-white to-gray-50 py-16 px-5">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center max-w-2xl mx-auto mb-10">
+              <p className="text-xs font-bold uppercase tracking-widest text-indigo-600 mb-3">
+                Vos chiffres
+              </p>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
+                Réglez trois curseurs, voyez ce que vous laissez passer.
+              </h2>
+            </div>
+
+            {/* Curseurs — volontairement simples, trois questions suffisent */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 rounded-2xl bg-white border border-gray-100 p-6 shadow-sm mb-10">
+              {([
+                { label: 'Clients par jour', valeur: clientsParJour, set: setClientsParJour, min: 5, max: 300, pas: 5, suffixe: '' },
+                { label: 'Panier moyen', valeur: panierMoyen, set: setPanierMoyen, min: 5, max: 150, pas: 1, suffixe: ' €' },
+                { label: "Jours d'ouverture / mois", valeur: joursOuverture, set: setJoursOuverture, min: 10, max: 31, pas: 1, suffixe: ' j' },
+              ]).map((c) => (
+                <div key={c.label}>
+                  <div className="flex items-baseline justify-between mb-2">
+                    <span className="text-sm text-gray-600">{c.label}</span>
+                    <span className="text-lg font-bold text-gray-900">{c.valeur}{c.suffixe}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={c.min} max={c.max} step={c.pas}
+                    value={c.valeur}
+                    onChange={(e) => c.set(Number(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <DemoAnimee
+              clientsParJour={clientsParJour}
+              panierMoyen={panierMoyen}
+              joursOuverture={joursOuverture}
+            />
           </div>
         </section>
 
