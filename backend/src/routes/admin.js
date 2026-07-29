@@ -14,7 +14,15 @@ const { supabase } = require('../config/supabase');
 // ─── Config ────────────────────────────────────────────────────────────────────
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@stamply.fr';
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || '$2b$10$Y7HlJC62gdlhVD16LlqaB.kD8n/Npo.fODEZtNWJ10OeJXyKwpWvC'; // StamplyAdmin2024!
+// ⚠️ Le hash par défaut ci-dessous correspond à un mot de passe présent dans le
+// dépôt : n'importe qui lisant le code peut donc se connecter à la console
+// d'administration. Il FAUT définir ADMIN_PASSWORD_HASH sur Render.
+const HASH_PAR_DEFAUT = '$2b$10$Y7HlJC62gdlhVD16LlqaB.kD8n/Npo.fODEZtNWJ10OeJXyKwpWvC';
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || HASH_PAR_DEFAUT;
+
+if (!process.env.ADMIN_PASSWORD_HASH) {
+  console.warn('[Admin] ⚠️  SÉCURITÉ : ADMIN_PASSWORD_HASH n\'est pas défini. La console d\'administration accepte le mot de passe par défaut, qui figure dans le dépôt public. Définissez cette variable sur Render sans attendre.');
+}
 
 // ─── Helper: Admin Token ────────────────────────────────────────────────────────
 
