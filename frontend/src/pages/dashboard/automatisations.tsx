@@ -13,6 +13,7 @@ import Head from 'next/head';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Input, Textarea } from '@/components/ui/Input';
+import { ChampNombre } from '@/components/ui/ChampNombre';
 import { Toggle } from '@/components/ui/Toggle';
 import { useAutoSave, SaveIndicator } from '@/hooks/useAutoSave';
 import { useAuth } from '@/hooks/useAuth';
@@ -183,15 +184,15 @@ export default function AutomatisationsPage() {
           </CardHeader>
           <CardBody className="space-y-4">
             <div>
-              <Input
+              <ChampNombre
                 label="Déclencher après (jours sans visite)"
-                type="number" min={3} max={365}
                 value={relanceJours}
-                onChange={e => setRelanceJours(Number(e.target.value) || 30)}
+                onChange={setRelanceJours}
+                min={3}
+                max={365}
+                suffixe="j"
+                aide={`Un client sans visite depuis ${relanceJours} jours recevra ce message.`}
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Un client sans visite depuis {relanceJours} jours recevra ce message.
-              </p>
             </div>
 
             <Input

@@ -8,6 +8,7 @@
  */
 import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { ChampNombre } from '@/components/ui/ChampNombre';
 
 export const LOYALTY_TYPES = [
   { id: 'tampons', nom: 'Carte à tampons', desc: '1 visite = 1 tampon', emoji: '⭐' },
@@ -84,22 +85,20 @@ export function LoyaltyTypeConfigFields({ type, config, setCfg }: Omit<Props, 'o
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {type === 'points' && (
         <>
-          <label className="block text-sm">
-            <span className="text-gray-700">Points gagnés par euro dépensé</span>
-            <input type="number" min={1} className="mt-1 w-full rounded-lg border border-gray-300 p-2"
-              value={config.points_par_euro ?? 1}
-              onChange={e => setCfg('points_par_euro', parseInt(e.target.value) || 1)} />
-            <span className="text-xs text-gray-400">Ex. : 1 € = {config.points_par_euro ?? 1} point(s)</span>
-          </label>
-          <label className="block text-sm">
-            <span className="text-gray-700">Points pour une récompense</span>
-            <input type="number" min={1} className="mt-1 w-full rounded-lg border border-gray-300 p-2"
-              value={config.points_recompense ?? 100}
-              onChange={e => setCfg('points_recompense', parseInt(e.target.value) || 100)} />
-            <span className="text-xs text-gray-400">
-              Soit environ {Math.round((config.points_recompense ?? 100) / (config.points_par_euro || 1))} € d'achats
-            </span>
-          </label>
+          <ChampNombre
+            label="Points gagnés par euro dépensé"
+            value={config.points_par_euro ?? 1}
+            onChange={v => setCfg('points_par_euro', v)}
+            min={1}
+            aide={`Ex. : 1 € = ${config.points_par_euro ?? 1} point(s)`}
+          />
+          <ChampNombre
+            label="Points pour une récompense"
+            value={config.points_recompense ?? 100}
+            onChange={v => setCfg('points_recompense', v)}
+            min={1}
+            aide={`Soit environ ${Math.round((config.points_recompense ?? 100) / (config.points_par_euro || 1))} € d'achats`}
+          />
           <label className="block text-sm">
             <span className="text-gray-700">Récompense offerte</span>
             <input type="text" className="mt-1 w-full rounded-lg border border-gray-300 p-2"
@@ -112,12 +111,13 @@ export function LoyaltyTypeConfigFields({ type, config, setCfg }: Omit<Props, 'o
 
       {type === 'tampons' && (
         <>
-          <label className="block text-sm">
-            <span className="text-gray-700">Tampons pour la récompense</span>
-            <input type="number" min={1} className="mt-1 w-full rounded-lg border border-gray-300 p-2"
-              value={config.tampons_requis ?? 10}
-              onChange={e => setCfg('tampons_requis', parseInt(e.target.value) || 10)} />
-          </label>
+          <ChampNombre
+            label="Tampons pour la récompense"
+            value={config.tampons_requis ?? 10}
+            onChange={v => setCfg('tampons_requis', v)}
+            min={1}
+            max={20}
+          />
           <label className="block text-sm">
             <span className="text-gray-700">Emoji du tampon</span>
             <div className="mt-1 flex gap-2 flex-wrap items-center">
@@ -143,15 +143,15 @@ export function LoyaltyTypeConfigFields({ type, config, setCfg }: Omit<Props, 'o
       )}
 
       {type === 'cashback' && (
-        <label className="block text-sm">
-          <span className="text-gray-700">Cashback sur chaque achat (%)</span>
-          <input type="number" min={1} max={100} className="mt-1 w-full rounded-lg border border-gray-300 p-2"
-            value={config.cashback_pourcent ?? 5}
-            onChange={e => setCfg('cashback_pourcent', parseInt(e.target.value) || 5)} />
-          <span className="text-xs text-gray-400">
-            Ex. : 50 € d'achat = {((config.cashback_pourcent ?? 5) * 0.5).toFixed(2)} € crédités
-          </span>
-        </label>
+        <ChampNombre
+          label="Cashback sur chaque achat (%)"
+          value={config.cashback_pourcent ?? 5}
+          onChange={v => setCfg('cashback_pourcent', v)}
+          min={1}
+          max={100}
+          suffixe="%"
+          aide={`Ex. : 50 € d'achat = ${((config.cashback_pourcent ?? 5) * 0.5).toFixed(2)} € crédités`}
+        />
       )}
 
       {type === 'remise' && (
@@ -162,11 +162,20 @@ export function LoyaltyTypeConfigFields({ type, config, setCfg }: Omit<Props, 'o
               <input type="text" className="w-28 rounded-lg border border-gray-300 p-2" value={pal.nom}
                 onChange={e => updatePalier(i, { nom: e.target.value })} />
               <span className="text-gray-500">dès</span>
-              <input type="number" className="w-24 rounded-lg border border-gray-300 p-2" value={pal.seuil}
-                onChange={e => updatePalier(i, { seuil: parseFloat(e.target.value) || 0 })} />
+              <ChampNombre
+                className="w-24"
+                value={pal.seuil}
+                onChange={v => updatePalier(i, { seuil: v })}
+                min={0}
+              />
               <span className="text-gray-500">€ →</span>
-              <input type="number" className="w-20 rounded-lg border border-gray-300 p-2" value={pal.remise}
-                onChange={e => updatePalier(i, { remise: parseFloat(e.target.value) || 0 })} />
+              <ChampNombre
+                className="w-24"
+                value={pal.remise}
+                onChange={v => updatePalier(i, { remise: v })}
+                min={0}
+                max={100}
+              />
               <span className="text-gray-500">% de remise</span>
               {paliers.length > 1 && (
                 <button type="button" className="text-xs text-gray-400 hover:text-red-500 underline"

@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { ChampNombre } from '@/components/ui/ChampNombre';
 import { Input, Textarea, Select } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Toggle } from '@/components/ui/Toggle';
@@ -198,7 +199,7 @@ export default function OffresPage() {
               <Card>
                 <CardHeader><CardTitle>Réglages par défaut</CardTitle></CardHeader>
                 <CardBody className="space-y-4">
-                  <Input label="Durée par défaut (jours)" type="number" min={1} max={90} value={dureeDefaut} onChange={e => setDureeDefaut(Number(e.target.value))} />
+                  <ChampNombre label="Durée par défaut" value={dureeDefaut} onChange={setDureeDefaut} min={1} max={90} suffixe="j" />
                   <Input label="Limite par client par mois" type="number" min={1} max={20} value={limiteClient} onChange={e => setLimiteClient(Number(e.target.value))} />
                 </CardBody>
               </Card>

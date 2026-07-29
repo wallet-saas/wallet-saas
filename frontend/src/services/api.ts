@@ -114,6 +114,8 @@ export const walletApi = {
 export const scanApi = {
   carteInfo: (serial: string) =>
     request<any>(`/api/scan/carte/${encodeURIComponent(serial)}`),
+  supprimerCarte: (serial: string) =>
+    request<void>(`/api/scan/carte/${encodeURIComponent(serial)}`, { method: 'DELETE' }),
   ajuster: (serial: string, data: { points?: number; solde?: number; motif?: string }) =>
     request<any>(`/api/scan/carte/${encodeURIComponent(serial)}/ajuster`, {
       method: 'POST',
@@ -422,6 +424,11 @@ export interface RegisterData {
 }
 
 export interface Carte {
+  client_nom?: string | null;
+  client_email?: string | null;
+  visites?: number;
+  solde?: number;
+  statut_palier?: string | null;
   id: string;
   pass_serial_number: string;
   points: number;

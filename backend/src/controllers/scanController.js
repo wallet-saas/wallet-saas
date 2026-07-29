@@ -429,6 +429,40 @@ const ajusterCarte = async (req, res) => {
   }
 };
 
+
+/**
+ * DELETE /api/scan/carte/:serial
+ * Supprimer une carte (doublon, demande du client, test). L'historique de
+ * visites est conservé pour ne pas fausser les statistiques passées.
+ */
+const supprimerCarte = async (req, res) => {
+  try {
+    const commercantId = req.commercant.id;
+    const serial = (req.params.serial || '').trim();
+
+    const { data: carte, error } = await supabase
+      .from('cartes')
+      .select('id, commercant_id, client_nom')
+      .eq('pass_serial_number', serial)
+      .single();
+
+    if (error || !carte) return res.status(404).json({ success: false, error: 'Carte inconnue.' });
+    if (carte.commercant_id !== commercantId) {
+      return res.status(403).json({ success: false, error: 'Cette carte appartient à un autre commerce.' });
+    }
+
+    const { error: suppError } = await supabase.from('cartes').delete().eq('id', carte.id);
+    if (suppError) throw suppError;
+
+    console.log(`[Scan] Carte ${serial} supprimée (${carte.client_nom || 'client sans nom'})`);
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error('Erreur supprimerCarte:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 module.exports = {
+  supprimerCarte,
   getCarteInfo,
   ajusterCarte, scanQR, getScanHistory };

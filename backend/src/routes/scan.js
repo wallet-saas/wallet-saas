@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { scanQR, getScanHistory, getCarteInfo, ajusterCarte } = require('../controllers/scanController');
+const { scanQR, getScanHistory, getCarteInfo, ajusterCarte, supprimerCarte } = require('../controllers/scanController');
 const authMiddleware = require('../middleware/authMiddleware');
+const { requireCommercant } = authMiddleware;
 const { scanRateLimiter } = require('../middleware/rateLimiter');
 const { scanValidation, handleValidationErrors } = require('../middleware/validation');
 
@@ -24,6 +25,9 @@ router.get('/carte/:serial', authMiddleware, getCarteInfo);
 
 // POST /api/scan/carte/:serial/ajuster — correction manuelle du compteur
 router.post('/carte/:serial/ajuster', authMiddleware, ajusterCarte);
+
+// DELETE /api/scan/carte/:serial — supprimer une carte (réservé au responsable)
+router.delete('/carte/:serial', authMiddleware, requireCommercant, supprimerCarte);
 
 /**
  * @route   GET /api/scan/page

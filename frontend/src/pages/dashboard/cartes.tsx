@@ -4,16 +4,14 @@ import Head from 'next/head';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { ScanCardModal } from '@/components/ScanCardModal';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { PageSpinner, Spinner } from '@/components/ui/Spinner';
-import { walletApi, commercantApi, type Carte } from '@/services/api';
+import { walletApi, commercantApi, type Carte, scanApi } from '@/services/api';
 import { formatDate, formatRelative } from '@/utils/format';
-import {
-  Plus, Search, QrCode, ExternalLink,
-  CreditCard, Star, Calendar, RefreshCw, Download, Printer
-} from 'lucide-react';
+import { Plus, Search, QrCode, ExternalLink, CreditCard, Star, Calendar, RefreshCw, Download, Printer, Trash2, Eye, User } from 'lucide-react';
 
 // QR code library — loaded client-side only (no SSR)
 const QRCode = dynamic(() => import('qrcode.react').then(m => m.QRCodeCanvas), { ssr: false });
@@ -28,6 +26,7 @@ export default function CartesPage() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [search, setSearch] = useState('');
+  const [detailSerial, setDetailSerial] = useState<string | null>(null);
   const [qrModal, setQrModal] = useState<{ open: boolean; carte?: Carte & { install_url?: string; qr_code_url?: string } }>({ open: false });
   const [installUrl, setInstallUrl] = useState('');
   const [installQrModal, setInstallQrModal] = useState(false);
@@ -88,9 +87,26 @@ export default function CartesPage() {
     }
   };
 
+  // On cherche d'abord par nom de client — c'est ce que le commerçant connaît —
+  // et le numéro de carte reste accepté pour les cas techniques.
   const filtered = search.trim()
-    ? cartes.filter(c => c.pass_serial_number.toLowerCase().includes(search.toLowerCase()))
+    ? cartes.filter(c => {
+        const q = search.toLowerCase();
+        return (c as any).client_nom?.toLowerCase().includes(q)
+          || (c as any).client_email?.toLowerCase().includes(q)
+          || c.pass_serial_number.toLowerCase().includes(q);
+      })
     : cartes;
+
+  const supprimerCarte = async (serial: string, nom?: string) => {
+    if (!window.confirm(`Supprimer la carte de ${nom || 'ce client'} ? Cette action est définitive.`)) return;
+    try {
+      await scanApi.supprimerCarte(serial);
+      setCartes(prev => prev.filter(c => c.pass_serial_number !== serial));
+    } catch (e: any) {
+      alert(e?.message || 'Suppression impossible');
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -195,7 +211,7 @@ export default function CartesPage() {
               <table className="table">
                 <thead>
                   <tr>
-                    <th>Carte</th>
+                    <th>Client</th>
                     <th>Points</th>
                     <th className="hidden sm:table-cell">Dernière visite</th>
                     <th className="hidden lg:table-cell">Date création</th>
@@ -213,10 +229,18 @@ export default function CartesPage() {
                     filtered.map((carte) => (
                       <tr key={carte.id || carte.pass_serial_number}>
                         <td>
-                          <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded whitespace-nowrap">
-                            <span className="sm:hidden">{(carte.pass_serial_number || '').slice(0, 8)}…</span>
-                            <span className="hidden sm:inline">{carte.pass_serial_number}</span>
-                          </span>
+                          <button
+                            onClick={() => setDetailSerial(carte.pass_serial_number)}
+                            className="text-left group"
+                          >
+                            <span className="flex items-center gap-1.5 text-sm font-medium text-gray-900 group-hover:text-primary-600">
+                              <User className="h-3.5 w-3.5 text-gray-300" />
+                              {(carte as any).client_nom || 'Client sans nom'}
+                            </span>
+                            <span className="font-mono text-[10px] text-gray-400 block mt-0.5">
+                              {(carte.pass_serial_number || '').slice(0, 8)}…
+                            </span>
+                          </button>
                         </td>
                         <td>
                           <div className="flex items-center gap-1.5">
@@ -250,15 +274,32 @@ export default function CartesPage() {
                               <QrCode className="h-3.5 w-3.5" />
                               QR
                             </Button>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => setDetailSerial(carte.pass_serial_number)}
+                              title="Voir et modifier la carte"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
                             <a
                               href={`${API_URL}/api/wallet/install/${carte.pass_serial_number}`}
                               target="_blank"
                               rel="noreferrer"
+                              title="Ouvrir la page d'installation"
                             >
                               <Button variant="ghost" size="sm">
                                 <ExternalLink className="h-3.5 w-3.5" />
                               </Button>
                             </a>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => supprimerCarte(carte.pass_serial_number, (carte as any).client_nom)}
+                              title="Supprimer la carte"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-gray-400 hover:text-red-500" />
+                            </Button>
                           </div>
                         </td>
                       </tr>
@@ -335,6 +376,13 @@ export default function CartesPage() {
           </div>
         )}
       </Modal>
+      {detailSerial && (
+        <ScanCardModal
+          serial={detailSerial}
+          onClose={() => setDetailSerial(null)}
+          onDone={fetchCartes}
+        />
+      )}
     </DashboardLayout>
   );
 }

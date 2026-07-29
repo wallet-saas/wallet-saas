@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { ChampNombre } from '@/components/ui/ChampNombre';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Toggle } from '@/components/ui/Toggle';
@@ -368,10 +369,10 @@ export default function NotificationsPage() {
               <Card>
                 <CardHeader><CardTitle>Limites anti-spam</CardTitle></CardHeader>
                 <CardBody className="space-y-4">
-                  <Input label="Max notifications par client par jour" type="number" min={1} max={20} value={maxPerDay} onChange={e => setMaxPerDay(Number(e.target.value))} />
+                  <ChampNombre label="Max notifications par client par jour" value={maxPerDay} onChange={setMaxPerDay} min={1} max={20} />
                   <div className="grid grid-cols-2 gap-4">
-                    <Input label="Ne pas envoyer avant (h)" type="number" min={0} max={23} value={heureDebut} onChange={e => setHeureDebut(Number(e.target.value))} />
-                    <Input label="Ne pas envoyer après (h)" type="number" min={0} max={23} value={heureFin} onChange={e => setHeureFin(Number(e.target.value))} />
+                    <ChampNombre label="Ne pas envoyer avant" value={heureDebut} onChange={setHeureDebut} min={0} max={23} suffixe="h" />
+                    <ChampNombre label="Ne pas envoyer après" value={heureFin} onChange={setHeureFin} min={0} max={23} suffixe="h" />
                   </div>
                 </CardBody>
               </Card>

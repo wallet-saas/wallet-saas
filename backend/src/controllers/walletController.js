@@ -227,7 +227,7 @@ const getCommercantCards = async (req, res) => {
 
     const { data: cartes, error, count } = await supabase
       .from('cartes')
-      .select('id, pass_serial_number, points, created_at, last_visit_at, google_wallet_url, apple_wallet_url', { count: 'exact' })
+      .select('id, pass_serial_number, points, visites, solde, statut_palier, client_nom, client_email, created_at, last_visit_at, google_wallet_url, apple_wallet_url', { count: 'exact' })
       .eq('commercant_id', commercantId)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);

@@ -528,7 +528,7 @@ export function CardEditor({ design, onChange, cardData, onCardDataChange, onIma
                 type="number"
                 min={0}
                 value={cardData.tamponsActuels}
-                onChange={(e) => !readOnly && updateData({ tamponsActuels: parseInt(e.target.value) || 0 })}
+                onChange={(e) => { if (readOnly) return; const v = e.target.value.replace(/[^\d]/g, ''); updateData({ tamponsActuels: v === '' ? 0 : parseInt(v, 10) }); }}
                 className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-800"
                 disabled={readOnly}
               />
@@ -541,7 +541,7 @@ export function CardEditor({ design, onChange, cardData, onCardDataChange, onIma
                 type="number"
                 min={1}
                 value={cardData.tamponsPalier}
-                onChange={(e) => !readOnly && updateData({ tamponsPalier: parseInt(e.target.value) || 1 })}
+                onChange={(e) => { if (readOnly) return; const v = e.target.value.replace(/[^\d]/g, ''); updateData({ tamponsPalier: v === '' ? 1 : parseInt(v, 10) }); }}
                 className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-800"
                 disabled={readOnly}
               />

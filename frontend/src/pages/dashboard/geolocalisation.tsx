@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { StatCard } from '@/components/ui/StatCard';
 import { Badge } from '@/components/ui/Badge';
 import { Toggle } from '@/components/ui/Toggle';
+import { ChampNombre } from '@/components/ui/ChampNombre';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { PageSpinner } from '@/components/ui/Spinner';
@@ -230,7 +231,7 @@ export default function GeolocalisationPage() {
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     {stats?.moduleActif
-                      ? `Rayon de détection : ${stats.rayon}m — Position ${stats.positionConfiguree ? 'configurée' : 'non configurée'}`
+                      ? `Rayon de détection : ${(stats as any).rayonMetres ?? rayon} m — Position ${stats.positionConfiguree ? 'configurée' : 'non configurée'}`
                       : 'Activez le module pour envoyer des notifications de proximité'}
                   </p>
                 </div>
@@ -242,7 +243,7 @@ export default function GeolocalisationPage() {
               </div>
 
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard label="Rayon de détection" value={`${stats?.rayon ?? rayon} m`} icon={Radio} iconBg="bg-blue-50" iconColor="text-blue-600" />
+                <StatCard label="Rayon de détection" value={`${(stats as any)?.rayonMetres ?? rayon} m`} icon={Radio} iconBg="bg-blue-50" iconColor="text-blue-600" />
                 <StatCard label="Fréquence maximum" value={frequenceJours === 1 ? '1 / jour' : `1 / ${frequenceJours} j`} icon={Bell} iconBg="bg-primary-50" iconColor="text-primary-600" />
                 <StatCard label="Adresse du commerce" value={latitude && longitude ? 'Configurée' : 'À définir'} icon={MapPin} iconBg="bg-green-50" iconColor="text-green-600" />
                 <StatCard label="Visites en boutique" value={formatNumber(stats?.totalVisitesGeoloc ?? 0)} icon={TrendingUp} iconBg="bg-purple-50" iconColor="text-purple-600" />
@@ -439,11 +440,11 @@ export default function GeolocalisationPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="label flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-gray-400" /> Heure début</label>
-                        <input type="number" min={0} max={23} value={heureDebut} onChange={(e) => setHeureDebut(Number(e.target.value))} className="input text-center text-lg font-semibold" />
+                        <ChampNombre value={heureDebut} onChange={setHeureDebut} min={0} max={23} suffixe="h" />
                       </div>
                       <div>
                         <label className="label flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-gray-400" /> Heure fin</label>
-                        <input type="number" min={0} max={23} value={heureFin} onChange={(e) => setHeureFin(Number(e.target.value))} className="input text-center text-lg font-semibold" />
+                        <ChampNombre value={heureFin} onChange={setHeureFin} min={0} max={23} suffixe="h" />
                       </div>
                     </div>
                   </div>
