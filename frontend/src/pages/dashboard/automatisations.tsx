@@ -37,13 +37,15 @@ function ApercuNotification({ titre, message, enseigne, prenomExemple = 'Marie' 
     .replace(/\{\{nom_enseigne\}\}/g, enseigne || 'Votre commerce');
 
   return (
-    <div className="rounded-xl bg-gray-900 p-4">
-      <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-2">
+    <div className="rounded-xl border border-indigo-100 bg-indigo-50/70 p-4">
+      <p className="text-[10px] uppercase tracking-wider text-indigo-500 font-semibold mb-2">
         Aperçu sur le téléphone du client
       </p>
-      <div className="rounded-lg bg-white/10 backdrop-blur px-3 py-2.5">
-        <p className="text-xs font-semibold text-white">{rendu(titre) || 'Titre de la notification'}</p>
-        <p className="text-xs text-white/70 mt-0.5">{rendu(message) || 'Contenu du message…'}</p>
+      {/* La bulle blanche imite la notification telle qu'elle apparaît, tout en
+          restant dans la palette claire du reste du tableau de bord. */}
+      <div className="rounded-lg bg-white border border-indigo-100 shadow-sm px-3 py-2.5">
+        <p className="text-xs font-semibold text-gray-900">{rendu(titre) || 'Titre de la notification'}</p>
+        <p className="text-xs text-gray-500 mt-0.5">{rendu(message) || 'Contenu du message…'}</p>
       </div>
     </div>
   );

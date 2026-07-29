@@ -406,11 +406,11 @@ export default function GeolocalisationPage() {
                       ))}
                     </div>
 
-                    <div className="rounded-xl bg-gray-900 p-4">
-                      <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-2">Aperçu sur l'écran verrouillé</p>
-                      <div className="rounded-lg bg-white/10 backdrop-blur px-3 py-2.5">
-                        <p className="text-xs font-semibold text-white">{commercant?.nom_enseigne || 'Votre commerce'}</p>
-                        <p className="text-xs text-white/70 mt-0.5">
+                    <div className="rounded-xl border border-indigo-100 bg-indigo-50/70 p-4">
+                      <p className="text-[10px] uppercase tracking-wider text-indigo-500 font-semibold mb-2">Aperçu sur l'écran verrouillé</p>
+                      <div className="rounded-lg bg-white border border-indigo-100 shadow-sm px-3 py-2.5">
+                        <p className="text-xs font-semibold text-gray-900">{commercant?.nom_enseigne || 'Votre commerce'}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">
                           {message || '🎁 Vous passez par là ? Votre carte de fidélité vous attend !'}
                         </p>
                       </div>
