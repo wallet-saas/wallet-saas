@@ -222,7 +222,8 @@ export default function AbonnementPage() {
             <div>
               <CardTitle>Mes factures</CardTitle>
               <p className="text-sm text-gray-500 mt-0.5">
-                Vos reçus de paiement, émis et archivés par Whop.
+                Vos paiements, émis et archivés par Whop. Les justificatifs officiels
+                se téléchargent depuis votre espace commandes Whop.
               </p>
             </div>
           </div>
@@ -250,10 +251,15 @@ export default function AbonnementPage() {
                         {f.montant} {f.devise === 'EUR' ? '€' : f.devise}
                       </span>
                     )}
-                    {f.recu_url && (
+                    {f.recu_url ? (
                       <a href={f.recu_url} target="_blank" rel="noreferrer"
                         className="text-sm text-primary-600 hover:underline flex items-center gap-1">
                         <Download className="h-3.5 w-3.5" /> Reçu
+                      </a>
+                    ) : (
+                      <a href="https://whop.com/orders/" target="_blank" rel="noreferrer"
+                        className="text-sm text-gray-500 hover:text-primary-600 hover:underline flex items-center gap-1">
+                        <ExternalLink className="h-3.5 w-3.5" /> Sur Whop
                       </a>
                     )}
                   </div>

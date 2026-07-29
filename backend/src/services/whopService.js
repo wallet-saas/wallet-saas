@@ -71,21 +71,53 @@ async function getMembershipsByMetadata(commercantId) {
  * @param {string} membershipId
  * @returns {Promise<Array<{id, date, montant, devise, statut, recu_url}>>}
  */
+/**
+ * Normalise une date Whop.
+ * L'API mélange les formats selon les endpoints et les versions : chaîne ISO
+ * ("2023-12-01T05:00:00.401Z"), timestamp Unix en secondes (1701406800) ou en
+ * millisecondes. Multiplier aveuglément par 1000 faisait lever un RangeError
+ * sur les chaînes ISO, ce qui cassait toute la liste des factures.
+ */
+function normaliserDateWhop(valeur) {
+  if (!valeur) return null;
+
+  if (typeof valeur === 'string') {
+    const d = new Date(valeur);
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  }
+
+  if (typeof valeur === 'number') {
+    // Moins de 10^12 : des secondes ; au-delà : des millisecondes
+    const ms = valeur < 1e12 ? valeur * 1000 : valeur;
+    const d = new Date(ms);
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  }
+
+  return null;
+}
+
 async function getPayments(membershipId) {
   if (!membershipId) return [];
 
   const data = await apiFetch(`/payments?membership_id=${encodeURIComponent(membershipId)}`);
   const lignes = data?.data || data?.payments || (Array.isArray(data) ? data : []);
 
-  return lignes.map(p => ({
-    id: p.id,
-    // Whop renvoie des timestamps en secondes
-    date: p.created_at ? new Date(p.created_at * 1000).toISOString() : (p.paid_at || null),
-    montant: p.final_amount ?? p.subtotal ?? p.amount ?? null,
-    devise: (p.currency || 'eur').toUpperCase(),
-    statut: p.status || 'paid',
-    recu_url: p.receipt_url || p.hosted_invoice_url || null,
-  })).filter(p => p.date);
+  return lignes
+    .map(p => ({
+      id: p.id,
+      date: normaliserDateWhop(p.paid_at) || normaliserDateWhop(p.created_at),
+      // Le nom du champ montant varie : on prend le premier disponible
+      montant: p.amount_after_fees ?? p.final_amount ?? p.subtotal ?? p.amount ?? null,
+      devise: (p.currency || 'eur').toUpperCase(),
+      statut: p.status || 'paid',
+      // Whop n'expose pas d'URL de reçu par paiement dans l'API : le commerçant
+      // les retrouve dans son espace commandes Whop.
+      recu_url: p.receipt_url || p.hosted_invoice_url || null,
+    }))
+    // Certains paiements en cours n'ont aucune date exploitable : on les écarte
+    // plutôt que d'afficher une ligne vide
+    .filter(p => p.date)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
 // ─── Cancel Membership ─────────────────────────────────────────────────────────
