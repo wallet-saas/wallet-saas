@@ -8,10 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { PageSpinner } from '@/components/ui/Spinner';
 import { analyticsApi, notificationsApi, type ClientDormant } from '@/services/api';
 import { formatNumber, formatPercent, formatDate } from '@/utils/format';
-import {
-  CreditCard, Users, Bell, Clock, Star, Tag,
-  TrendingUp, BarChart3, Send
-} from 'lucide-react';
+import { CreditCard, Users, Bell, Clock, Star, Tag, TrendingUp, BarChart3, Send } from 'lucide-react';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell
@@ -117,6 +114,126 @@ export default function AnalyticsPage() {
               </p>
             </div>
           ))}
+
+          {/* ── Rythme de visite ── */}
+          {commercantOverview && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <StatCard
+                label="Clients revenus"
+                value={`${commercantOverview.tauxRetention ?? 0} %`}
+                icon={Users} iconBg="bg-indigo-50" iconColor="text-indigo-600"
+              />
+              <StatCard
+                label="Visites par client"
+                value={commercantOverview.visitesParClient ?? 0}
+                icon={TrendingUp} iconBg="bg-blue-50" iconColor="text-blue-600"
+              />
+              <StatCard
+                label="Délai entre 2 visites"
+                value={commercantOverview.delaiMoyenJours != null ? `${commercantOverview.delaiMoyenJours} j` : '—'}
+                icon={Clock} iconBg="bg-orange-50" iconColor="text-orange-600"
+              />
+              <StatCard
+                label="Jour le plus fréquenté"
+                value={commercantOverview.jourPointe?.visites ? commercantOverview.jourPointe.jour : '—'}
+                icon={BarChart3} iconBg="bg-purple-50" iconColor="text-purple-600"
+              />
+            </div>
+          )}
+
+          {/* ── Heures et jours d'affluence ── */}
+          {commercantOverview?.frequentationParHeure && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Affluence par heure</CardTitle>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    {commercantOverview.heurePointe?.visites
+                      ? `Votre pic est à ${commercantOverview.heurePointe.heure}h.`
+                      : 'Les données apparaîtront après vos premiers scans.'}
+                  </p>
+                </CardHeader>
+                <CardBody>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={commercantOverview.frequentationParHeure.filter((h: any) => h.heure >= 6 && h.heure <= 23)}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="heure" tickFormatter={(h) => `${h}h`} tick={{ fontSize: 11 }} />
+                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                      <Tooltip formatter={(v: any) => [`${v} visite(s)`, '']} labelFormatter={(h) => `${h}h — ${h}h59`} />
+                      <Bar dataKey="visites" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardBody>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Affluence par jour</CardTitle>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    Utile pour caler vos offres flash sur vos jours creux.
+                  </p>
+                </CardHeader>
+                <CardBody>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={commercantOverview.frequentationParJour}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="jour" tickFormatter={(j: string) => j.slice(0, 3)} tick={{ fontSize: 11 }} />
+                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                      <Tooltip formatter={(v: any) => [`${v} visite(s)`, '']} />
+                      <Bar dataKey="visites" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardBody>
+              </Card>
+            </div>
+          )}
+
+          {/* ── Activité de l'équipe ── */}
+          {commercantOverview?.parEmploye?.length > 0 && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Activité de l'équipe</CardTitle>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  Sur les 30 derniers jours, d'après les prises de service en caisse.
+                </p>
+              </CardHeader>
+              <CardBody className="p-0">
+                <div className="divide-y divide-gray-50">
+                  {commercantOverview.parEmploye.map((e: any) => (
+                    <div key={e.id} className="px-5 py-3.5 flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-semibold">
+                          {e.prenom.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{e.prenom}</p>
+                          <p className="text-xs text-gray-500">{e.scans_total} scan(s) au total</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-6">
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-gray-900">{e.scans_30j}</p>
+                          <p className="text-[10px] text-gray-400 uppercase tracking-wider">scans / 30 j</p>
+                        </div>
+                        {!!e.ca_30j && (
+                          <>
+                            <div className="text-right hidden sm:block">
+                              <p className="text-sm font-semibold text-gray-900">{e.ca_30j} €</p>
+                              <p className="text-[10px] text-gray-400 uppercase tracking-wider">encaissés</p>
+                            </div>
+                            <div className="text-right hidden md:block">
+                              <p className="text-sm font-semibold text-gray-900">{e.panier_moyen} €</p>
+                              <p className="text-[10px] text-gray-400 uppercase tracking-wider">panier moyen</p>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardBody>
+            </Card>
+          )}
 
           {/* Charts row 1 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

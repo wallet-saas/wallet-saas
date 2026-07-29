@@ -233,6 +233,77 @@ async function getDashboard(commercantId) {
 
     // ─── Assemblage du dashboard ──────────────────────────────────────
 
+    // ---- Rythme de visite, fréquentation et équipe ----
+    // Le taux de rétention est déjà calculé plus haut ; on complète ici avec
+    // le rythme des passages, les heures/jours de pointe et l'activité par employé.
+    const { data: visitesCompletes } = await supabase
+      .from('visites')
+      .select('carte_id, created_at, employe_id, montant')
+      .eq('commercant_id', commercantId);
+
+    const lignesVisites = visitesCompletes || [];
+
+    const passagesParCarte = {};
+    for (const v of lignesVisites) {
+      (passagesParCarte[v.carte_id] = passagesParCarte[v.carte_id] || []).push(new Date(v.created_at));
+    }
+    const cartesAvecPassage = Object.keys(passagesParCarte).length;
+
+    // Délai moyen entre deux passages d'un même client (en jours)
+    let sommeEcarts = 0;
+    let nbEcarts = 0;
+    for (const dates of Object.values(passagesParCarte)) {
+      if (dates.length < 2) continue;
+      const triees = dates.sort((a, b) => a - b);
+      for (let i = 1; i < triees.length; i++) {
+        sommeEcarts += (triees[i] - triees[i - 1]) / (1000 * 60 * 60 * 24);
+        nbEcarts++;
+      }
+    }
+    const delaiMoyenJours = nbEcarts ? Math.round((sommeEcarts / nbEcarts) * 10) / 10 : null;
+    const visitesParClient = cartesAvecPassage
+      ? Math.round((lignesVisites.length / cartesAvecPassage) * 10) / 10
+      : 0;
+
+    // Fréquentation par heure et par jour de la semaine
+    const parHeure = Array.from({ length: 24 }, (_, h) => ({ heure: h, visites: 0 }));
+    const nomsJours = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+    const parJour = nomsJours.map(nom => ({ jour: nom, visites: 0 }));
+    for (const v of lignesVisites) {
+      const d = new Date(v.created_at);
+      parHeure[d.getHours()].visites++;
+      parJour[d.getDay()].visites++;
+    }
+    const parJourSemaine = [...parJour.slice(1), parJour[0]];
+    const heurePointe = parHeure.reduce((a, b) => (b.visites > a.visites ? b : a), parHeure[0]);
+    const jourPointe = parJourSemaine.reduce((a, b) => (b.visites > a.visites ? b : a), parJourSemaine[0]);
+
+    // Activité par employé (vide tant qu'aucune équipe n'est créée)
+    let parEmploye = [];
+    try {
+      const { data: equipe } = await supabase
+        .from('employes')
+        .select('id, prenom')
+        .eq('commercant_id', commercantId);
+
+      const il30jRef = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      parEmploye = (equipe || []).map(e => {
+        const siennes = lignesVisites.filter(v => v.employe_id === e.id);
+        const recentes = siennes.filter(v => new Date(v.created_at) >= il30jRef);
+        const ca = recentes.reduce((sum, v) => sum + (parseFloat(v.montant) || 0), 0);
+        return {
+          id: e.id,
+          prenom: e.prenom,
+          scans_total: siennes.length,
+          scans_30j: recentes.length,
+          ca_30j: Math.round(ca * 100) / 100,
+          panier_moyen: recentes.length ? Math.round((ca / recentes.length) * 100) / 100 : 0,
+        };
+      }).sort((a, b) => b.scans_30j - a.scans_30j);
+    } catch (_) {
+      parEmploye = []; // table employes absente : section simplement masquée
+    }
+
     // ---- Indicateurs financiers réels (basés sur les montants saisis en caisse) ----
     // Ils n'existent que pour les programmes qui demandent le montant de l'achat
     // (points, cashback, remise, carte cadeau). En carte à tampons, aucun montant
@@ -283,6 +354,15 @@ async function getDashboard(commercantId) {
       meilleursClients,
       carteFormat: commercant.carte_type || commercant.type_fidelite || 'tampons',
       suitLesMontants,
+      tauxRetention,
+      cartesAvecPassage,
+      delaiMoyenJours,
+      visitesParClient,
+      frequentationParHeure: parHeure,
+      frequentationParJour: parJourSemaine,
+      heurePointe,
+      jourPointe,
+      parEmploye,
       chiffreAffairesBrut,
       chiffreAffaires30j,
       panierMoyen,
