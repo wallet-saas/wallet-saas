@@ -35,6 +35,10 @@ export default function EmployesPage() {
   const [formOuvert, setFormOuvert] = useState(false);
   const [enregistrement, setEnregistrement] = useState(false);
   const [edition, setEdition] = useState<Employe | null>(null);
+  const [codeEquipe, setCodeEquipe] = useState('');
+  const [codeEdition, setCodeEdition] = useState(false);
+  const [nouveauCode, setNouveauCode] = useState('');
+  const [codeChargement, setCodeChargement] = useState(false);
 
   const [prenom, setPrenom] = useState('');
   const [pin, setPin] = useState('');
@@ -53,6 +57,32 @@ export default function EmployesPage() {
   }, [toast]);
 
   useEffect(() => { charger(); }, [charger]);
+
+  useEffect(() => {
+    employesApi.codeEquipe()
+      .then(d => setCodeEquipe(d.code_equipe))
+      .catch(() => setCodeEquipe(''));
+  }, []);
+
+  const enregistrerCode = async (regenerer: boolean) => {
+    setCodeChargement(true);
+    try {
+      const d = await employesApi.regenererCode(regenerer ? undefined : nouveauCode.trim().toUpperCase());
+      setCodeEquipe(d.code_equipe);
+      setCodeEdition(false);
+      setNouveauCode('');
+      toast(
+        regenerer
+          ? 'Nouveau code généré — communiquez-le à votre équipe.'
+          : 'Code mis à jour — communiquez-le à votre équipe.',
+        'success'
+      );
+    } catch (e: any) {
+      toast(e?.message || 'Modification impossible', 'error');
+    } finally {
+      setCodeChargement(false);
+    }
+  };
 
   const reinitialiser = () => {
     setPrenom(''); setPin(''); setPermissions(['scan']);
@@ -141,12 +171,74 @@ export default function EmployesPage() {
         )}
       </div>
 
+      {/* Code d'accès de l'équipe */}
+      <Card className="mb-6">
+        <CardHeader>
+          <div className="flex items-center gap-2.5">
+            <KeyRound className="h-4 w-4 text-indigo-500" />
+            <div>
+              <CardTitle>Code d'accès de votre commerce</CardTitle>
+              <p className="text-sm text-gray-500 mt-0.5">
+                Vos employés en ont besoin pour se connecter, avec leur code PIN.
+                Il est indépendant de votre mot de passe.
+              </p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardBody>
+          {codeEdition ? (
+            <div className="space-y-3">
+              <Input
+                label="Nouveau code (6 à 20 caractères)"
+                value={nouveauCode}
+                onChange={e => setNouveauCode(e.target.value.toUpperCase())}
+                placeholder="STAMP-8F3K"
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={() => enregistrerCode(false)} loading={codeChargement} disabled={nouveauCode.trim().length < 6}>
+                  Enregistrer ce code
+                </Button>
+                <Button variant="secondary" onClick={() => enregistrerCode(true)} loading={codeChargement}>
+                  Générer un code au hasard
+                </Button>
+                <Button variant="secondary" onClick={() => { setCodeEdition(false); setNouveauCode(''); }}>
+                  Annuler
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="font-mono text-2xl font-bold tracking-wider text-gray-900 bg-gray-50 border border-gray-200 rounded-xl px-5 py-3">
+                {codeEquipe || '—'}
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant="secondary"
+                  onClick={() => { navigator.clipboard?.writeText(codeEquipe); toast('Code copié', 'success'); }}
+                  disabled={!codeEquipe}
+                >
+                  Copier
+                </Button>
+                <Button variant="secondary" onClick={() => { setCodeEdition(true); setNouveauCode(codeEquipe); }}>
+                  Modifier
+                </Button>
+              </div>
+            </div>
+          )}
+          <p className="text-xs text-gray-500 mt-3">
+            Changez-le dès qu'un salarié quitte l'entreprise : les employés devront
+            le ressaisir à leur prochaine connexion.
+          </p>
+        </CardBody>
+      </Card>
+
       <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 mb-6 flex gap-2.5">
         <ShieldCheck className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-blue-800">
-          En caisse, l'employé saisit son PIN une fois en début de service depuis la page Scan QR.
-          Ses passages lui sont attribués et il ne voit que les modules cochés ici.
-          Vous reprenez la main à tout moment avec le bouton « Changer d'employé ».
+          Vos employés se connectent seuls sur <strong>stamply.fr/employe</strong> avec le code
+          ci-dessus et leur PIN, depuis n'importe quel téléphone. Leurs passages leur sont
+          attribués et ils ne voient que les modules cochés ici. Sur la tablette de caisse,
+          le PIN seul suffit pour changer d'employé entre deux services.
         </p>
       </div>
 

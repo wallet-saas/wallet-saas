@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
+const { requireCommercant } = authMiddleware;
 const { checkout, portal, cancel, status, sync, factures } = require('../controllers/subscriptionController');
 
 // GET  /api/subscription/checkout  — browser redirect (token in query param)
@@ -8,10 +9,10 @@ const { checkout, portal, cancel, status, sync, factures } = require('../control
 router.get('/checkout', checkout);
 
 // POST /api/subscription/portal   — returns Whop customer portal URL
-router.post('/portal', authMiddleware, portal);
+router.post('/portal', authMiddleware, requireCommercant, portal);
 
 // POST /api/subscription/cancel   — cancel at period end
-router.post('/cancel', authMiddleware, cancel);
+router.post('/cancel', authMiddleware, requireCommercant, cancel);
 
 // GET  /api/subscription/status
 router.get('/status', authMiddleware, status);
@@ -20,6 +21,6 @@ router.get('/status', authMiddleware, status);
 router.get('/factures', authMiddleware, factures);
 
 // POST /api/subscription/sync — force-sync Whop → Supabase (dev fallback)
-router.post('/sync', authMiddleware, sync);
+router.post('/sync', authMiddleware, requireCommercant, sync);
 
 module.exports = router;

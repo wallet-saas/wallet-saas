@@ -33,11 +33,19 @@ const authMiddleware = (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log('[AUTH] ✓ Token valide — id:', decoded.id, '| email:', decoded.email, '| exp:', new Date(decoded.exp * 1000).toISOString());
 
-    // Ajouter les infos du commerçant à la requête
-    req.commercant = {
-      id: decoded.id,
-      email: decoded.email
-    };
+    if (decoded.type === 'employe') {
+      // Jeton employé : il agit dans le commerce de son employeur, mais
+      // uniquement sur les modules qui lui ont été accordés.
+      req.commercant = { id: decoded.commercant_id, email: null };
+      req.employe = {
+        id: decoded.id,
+        prenom: decoded.prenom,
+        permissions: Array.isArray(decoded.permissions) ? decoded.permissions : [],
+      };
+    } else {
+      req.commercant = { id: decoded.id, email: decoded.email };
+      req.employe = null;
+    }
 
     next();
   } catch (error) {
@@ -64,4 +72,35 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
+/**
+ * Réserve une route au commerçant lui-même.
+ * À poser sur tout ce qu'un employé ne doit jamais toucher : paramètres du
+ * commerce, abonnement, gestion de l'équipe, design de la carte.
+ */
+const requireCommercant = (req, res, next) => {
+  if (req.employe) {
+    return res.status(403).json({
+      success: false,
+      error: "Cette action est réservée au responsable du commerce.",
+    });
+  }
+  next();
+};
+
+/**
+ * Exige une permission précise pour un employé.
+ * Le commerçant passe toujours ; l'employé doit avoir le module coché.
+ * C'est la vérification qui compte : masquer un menu ne protège rien.
+ */
+const requirePermission = (module) => (req, res, next) => {
+  if (!req.employe) return next();
+  if (req.employe.permissions.includes(module)) return next();
+  return res.status(403).json({
+    success: false,
+    error: `Vous n'avez pas accès au module « ${module} ».`,
+  });
+};
+
 module.exports = authMiddleware;
+module.exports.requireCommercant = requireCommercant;
+module.exports.requirePermission = requirePermission;

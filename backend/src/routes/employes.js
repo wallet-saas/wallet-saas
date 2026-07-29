@@ -13,7 +13,48 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const router = express.Router();
 const { supabase } = require('../config/supabase');
+const jwt = require('jsonwebtoken');
 const authMiddleware = require('../middleware/authMiddleware');
+const { requireCommercant } = authMiddleware;
+
+// ─── Anti-force brute ─────────────────────────────────────────────────────────
+// Un PIN à 4 chiffres ne fait que 10 000 combinaisons : sans blocage, un ancien
+// employé qui connaît le code d'équipe pourrait les essayer en quelques minutes.
+const tentatives = new Map();
+const MAX_TENTATIVES = 5;
+const BLOCAGE_MS = 15 * 60 * 1000;
+
+function verrouActif(cle) {
+  const t = tentatives.get(cle);
+  if (!t) return 0;
+  if (t.jusqua && Date.now() < t.jusqua) return Math.ceil((t.jusqua - Date.now()) / 60000);
+  if (t.jusqua && Date.now() >= t.jusqua) tentatives.delete(cle);
+  return 0;
+}
+
+function echecTentative(cle) {
+  const t = tentatives.get(cle) || { nb: 0, jusqua: null };
+  t.nb++;
+  if (t.nb >= MAX_TENTATIVES) {
+    t.jusqua = Date.now() + BLOCAGE_MS;
+    t.nb = 0;
+  }
+  tentatives.set(cle, t);
+}
+
+function succesTentative(cle) {
+  tentatives.delete(cle);
+}
+
+/** Code d'équipe lisible, sans caractères ambigus (0/O, 1/I). */
+function genererCodeEquipe() {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let suite = '';
+  for (let i = 0; i < 6; i++) {
+    suite += alphabet[Math.floor(Math.random() * alphabet.length)];
+  }
+  return `STAMP-${suite}`;
+}
 
 // Modules qu'un employé peut se voir accorder
 const MODULES_DISPONIBLES = [
@@ -42,7 +83,7 @@ function versReponse(employe) {
 // ─── GET /api/employes ────────────────────────────────────────────────────────
 // Liste de l'équipe, avec l'activité de chacun.
 
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', authMiddleware, requireCommercant, async (req, res) => {
   try {
     const commercantId = req.commercant.id;
 
@@ -91,7 +132,7 @@ router.get('/', authMiddleware, async (req, res) => {
 
 // ─── POST /api/employes ───────────────────────────────────────────────────────
 
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', authMiddleware, requireCommercant, async (req, res) => {
   try {
     const commercantId = req.commercant.id;
     const { prenom, pin, permissions } = req.body;
@@ -139,7 +180,7 @@ router.post('/', authMiddleware, async (req, res) => {
 
 // ─── PUT /api/employes/:id ────────────────────────────────────────────────────
 
-router.put('/:id', authMiddleware, async (req, res) => {
+router.put('/:id', authMiddleware, requireCommercant, async (req, res) => {
   try {
     const commercantId = req.commercant.id;
     const { id } = req.params;
@@ -187,7 +228,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 
 // ─── DELETE /api/employes/:id ─────────────────────────────────────────────────
 
-router.delete('/:id', authMiddleware, async (req, res) => {
+router.delete('/:id', authMiddleware, requireCommercant, async (req, res) => {
   try {
     const commercantId = req.commercant.id;
     const { id } = req.params;
@@ -252,6 +293,172 @@ router.post('/pin', authMiddleware, async (req, res) => {
     console.error('[Employes] PIN:', err);
     return res.status(500).json({ success: false, error: err.message });
   }
+});
+
+// ─── GET /api/employes/code-equipe ────────────────────────────────────────────
+// Le code d'équipe est commun à tout le commerce. Il ne remplace pas le mot de
+// passe du commerçant : c'est une clé d'accès distincte, qu'il peut changer
+// à tout moment (départ d'un salarié, doute sur une fuite…).
+
+router.get('/code-equipe', authMiddleware, requireCommercant, async (req, res) => {
+  try {
+    const { data } = await supabase
+      .from('commercants')
+      .select('code_equipe')
+      .eq('id', req.commercant.id)
+      .single();
+
+    let code = data?.code_equipe;
+    if (!code) {
+      code = genererCodeEquipe();
+      await supabase.from('commercants').update({ code_equipe: code }).eq('id', req.commercant.id);
+    }
+
+    return res.json({ success: true, data: { code_equipe: code } });
+  } catch (err) {
+    console.error('[Employes] Code équipe:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── POST /api/employes/code-equipe ───────────────────────────────────────────
+// Régénérer le code (ou en imposer un). Les employés devront le ressaisir.
+
+router.post('/code-equipe', authMiddleware, requireCommercant, async (req, res) => {
+  try {
+    const souhaite = (req.body?.code || '').trim().toUpperCase();
+
+    if (souhaite && !/^[A-Z0-9-]{6,20}$/.test(souhaite)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Le code doit contenir 6 à 20 caractères (lettres, chiffres ou tirets).',
+      });
+    }
+
+    // Deux commerces ne peuvent pas partager le même code
+    const code = souhaite || genererCodeEquipe();
+    const { data: conflit } = await supabase
+      .from('commercants')
+      .select('id')
+      .eq('code_equipe', code)
+      .neq('id', req.commercant.id)
+      .maybeSingle();
+
+    if (conflit) {
+      return res.status(409).json({ success: false, error: 'Ce code est déjà utilisé. Choisissez-en un autre.' });
+    }
+
+    const { error } = await supabase
+      .from('commercants')
+      .update({ code_equipe: code })
+      .eq('id', req.commercant.id);
+    if (error) throw error;
+
+    console.log(`[Employes] Code d'équipe renouvelé pour ${req.commercant.id}`);
+    return res.json({ success: true, data: { code_equipe: code } });
+  } catch (err) {
+    console.error('[Employes] Régénération code:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── POST /api/employes/login ─────────────────────────────────────────────────
+// Connexion autonome d'un employé : code d'équipe + son PIN, depuis n'importe
+// quel appareil. Aucune session du commerçant n'est nécessaire.
+
+router.post('/login', async (req, res) => {
+  try {
+    const code = (req.body?.code_equipe || '').trim().toUpperCase();
+    const pin = String(req.body?.pin || '').trim();
+
+    if (!code || !pinValide(pin)) {
+      return res.status(400).json({ success: false, error: 'Code du commerce et PIN requis.' });
+    }
+
+    // Le verrou porte sur le code d'équipe : il protège tout le commerce
+    const minutes = verrouActif(code);
+    if (minutes) {
+      return res.status(429).json({
+        success: false,
+        error: `Trop de tentatives. Réessayez dans ${minutes} minute${minutes > 1 ? 's' : ''}.`,
+      });
+    }
+
+    const { data: commercant } = await supabase
+      .from('commercants')
+      .select('id, nom_enseigne, code_equipe')
+      .eq('code_equipe', code)
+      .maybeSingle();
+
+    if (!commercant) {
+      echecTentative(code);
+      return res.status(401).json({ success: false, error: 'Code du commerce ou PIN incorrect.' });
+    }
+
+    const { data: employes } = await supabase
+      .from('employes')
+      .select('id, prenom, permissions, actif, pin_hash')
+      .eq('commercant_id', commercant.id)
+      .eq('actif', true);
+
+    for (const e of employes || []) {
+      if (e.pin_hash && await bcrypt.compare(pin, e.pin_hash)) {
+        succesTentative(code);
+
+        await supabase
+          .from('employes')
+          .update({ derniere_activite_at: new Date().toISOString() })
+          .eq('id', e.id);
+
+        const permissions = nettoyerPermissions(e.permissions);
+        const token = jwt.sign(
+          {
+            type: 'employe',
+            id: e.id,
+            prenom: e.prenom,
+            commercant_id: commercant.id,
+            permissions,
+          },
+          process.env.JWT_SECRET,
+          { expiresIn: '30d' }
+        );
+
+        return res.json({
+          success: true,
+          data: {
+            token,
+            employe: { id: e.id, prenom: e.prenom, permissions },
+            commerce: { id: commercant.id, nom_enseigne: commercant.nom_enseigne },
+          },
+        });
+      }
+    }
+
+    echecTentative(code);
+    return res.status(401).json({ success: false, error: 'Code du commerce ou PIN incorrect.' });
+  } catch (err) {
+    console.error('[Employes] Login:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── GET /api/employes/moi ────────────────────────────────────────────────────
+// Profil de l'employé connecté (pour recharger son contexte au démarrage).
+
+router.get('/moi', authMiddleware, async (req, res) => {
+  if (!req.employe) {
+    return res.status(400).json({ success: false, error: 'Session employé requise.' });
+  }
+  const { data: commercant } = await supabase
+    .from('commercants')
+    .select('nom_enseigne, carte_logo_url, carte_type')
+    .eq('id', req.commercant.id)
+    .single();
+
+  return res.json({
+    success: true,
+    data: { employe: req.employe, commerce: commercant || null },
+  });
 });
 
 module.exports = router;

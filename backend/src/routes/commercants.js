@@ -3,6 +3,7 @@ const router = express.Router();
 const commercantsController = require('../controllers/commercantsController');
 const searchController = require('../controllers/commercantsSearchController');
 const authMiddleware = require('../middleware/authMiddleware');
+const { requireCommercant } = authMiddleware;
 const { supabase } = require('../config/supabase');
 
 // Public — recherche et listing (AVANT /:id pour éviter le wildcard)
@@ -12,8 +13,8 @@ router.get('/', commercantsController.getAllCommercants);
 router.post('/', commercantsController.createCommercant);
 
 // Protected — must be before /:id to avoid wildcard match
-router.put('/update', authMiddleware, commercantsController.updateCommercant);
-router.put('/me', authMiddleware, commercantsController.updateMe);
+router.put('/update', authMiddleware, requireCommercant, commercantsController.updateCommercant);
+router.put('/me', authMiddleware, requireCommercant, commercantsController.updateMe);
 router.get('/me', authMiddleware, commercantsController.getMe);
 router.get('/qr-code', authMiddleware, commercantsController.getQrCode);
 
@@ -21,7 +22,7 @@ router.get('/qr-code', authMiddleware, commercantsController.getQrCode);
 // Change le type de programme de fidélité. Comme les compteurs ne sont pas
 // convertibles d'un type à l'autre (10 tampons ≠ 10 points ≠ 10 €), toutes les
 // cartes du commerçant sont remises à zéro. Action volontaire et confirmée côté UI.
-router.post('/change-carte-type', authMiddleware, async (req, res) => {
+router.post('/change-carte-type', authMiddleware, requireCommercant, async (req, res) => {
   try {
     const commercantId = req.commercant.id;
     const { carte_type, carte_type_config } = req.body;

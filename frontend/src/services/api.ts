@@ -254,7 +254,22 @@ export const facturesApi = {
   list: () => request<{ factures: Array<{ id: string; date: string; montant: number | null; devise: string; statut: string; recu_url: string | null }>; raison?: string }>('/api/subscription/factures'),
 };
 
+export const employeAuthApi = {
+  login: (code_equipe: string, pin: string) =>
+    request<{
+      token: string;
+      employe: { id: string; prenom: string; permissions: string[] };
+      commerce: { id: string; nom_enseigne: string };
+    }>('/api/employes/login', { method: 'POST', body: JSON.stringify({ code_equipe, pin }) }),
+  moi: () => request<{ employe: any; commerce: any }>('/api/employes/moi'),
+};
+
 export const employesApi = {
+  codeEquipe: () => request<{ code_equipe: string }>('/api/employes/code-equipe'),
+  regenererCode: (code?: string) =>
+    request<{ code_equipe: string }>('/api/employes/code-equipe', {
+      method: 'POST', body: JSON.stringify(code ? { code } : {}),
+    }),
   list: () => request<{ employes: Employe[]; modules: string[] }>('/api/employes'),
   create: (data: { prenom: string; pin: string; permissions: string[] }) =>
     request<Employe>('/api/employes', { method: 'POST', body: JSON.stringify(data) }),
