@@ -307,7 +307,7 @@ export default function App() {
               Connexion
             </a>
             <a
-              href="mailto:contact@stamply.fr"
+              href="/demo"
               className="bg-primary text-black px-6 lg:px-8 py-3 lg:py-4 rounded-full text-base lg:text-lg font-bold hover:scale-105 transition-all shadow-md shadow-primary/20"
             >
               Démo gratuite
@@ -377,7 +377,7 @@ export default function App() {
               Connexion
             </a>
             <a
-              href="mailto:contact@stamply.fr"
+              href="/demo"
               onClick={() => setIsMenuOpen(false)}
               className="bg-primary text-black px-6 py-4 rounded-xl font-bold shadow-md w-full text-center text-xl"
             >
@@ -440,7 +440,7 @@ export default function App() {
                   Commencer maintenant <ArrowRight size={18} className="sm:w-5 sm:h-5" />
                 </a>
                 <a
-                  href="mailto:contact@stamply.fr"
+                  href="/demo"
                   className="px-6 sm:px-8 py-3 sm:py-4 rounded-full font-bold bg-white/50 backdrop-blur-md border border-white shadow-sm hover:bg-white transition-all flex items-center justify-center gap-2 text-foreground text-base sm:text-lg"
                 >
                   Voir la démo
@@ -743,7 +743,7 @@ export default function App() {
                     gratuit.
                   </p>
                   <a
-                  href="mailto:contact@stamply.fr"
+                  href="/demo"
                   className="font-bold text-primary flex items-center gap-2 hover:gap-4 transition-all"
                 >
                   Découvrir les campagnes automatisées{" "}
@@ -1071,7 +1071,37 @@ export default function App() {
         </section>
 
         {/* ROI CALCULATOR */}
-        <section
+                {/* ── Barre d'action permanente (mobile) ── */}
+        <div className="md:hidden fixed bottom-0 inset-x-0 z-40 px-4 pb-4 pt-3 bg-gradient-to-t from-white via-white to-transparent">
+          <a
+            href="/register"
+            className="block w-full text-center bg-primary text-black py-3.5 rounded-full font-bold shadow-lg shadow-primary/25"
+          >
+            Créer ma carte — 49 €/mois
+          </a>
+        </div>
+
+        {/* ── Appel à l'action intermédiaire ── */}
+        <div className="px-4 sm:px-6 py-12">
+          <div className="max-w-4xl mx-auto rounded-3xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-10 text-center text-white shadow-xl">
+            <h3 className="text-2xl sm:text-3xl font-extrabold mb-3">
+              Vos clients ont déjà leur téléphone en main.
+            </h3>
+            <p className="text-white/80 mb-7 max-w-xl mx-auto">
+              Il ne leur manque que votre carte. Composez-la en 5 minutes et distribuez-la dès aujourd'hui.
+            </p>
+            <div className="flex flex-wrap justify-center gap-3">
+              <a href="/register" className="bg-white text-indigo-700 px-7 py-3.5 rounded-full font-bold hover:scale-105 transition-all">
+                Créer ma carte
+              </a>
+              <a href="/demo" className="border border-white/40 px-7 py-3.5 rounded-full font-bold hover:bg-white/10 transition-all">
+                Essayer la démo
+              </a>
+            </div>
+          </div>
+        </div>
+
+<section
           id="roi"
           className="py-16 sm:py-24 md:py-32 px-4 sm:px-6 relative overflow-hidden bg-background"
         >
@@ -1192,6 +1222,18 @@ export default function App() {
         </section>
 
         {/* PRICING */}
+        {/* ── Rappel avant les tarifs ── */}
+        <div className="px-4 sm:px-6 py-8">
+          <div className="max-w-3xl mx-auto text-center">
+            <p className="text-lg sm:text-xl font-bold text-foreground mb-4">
+              Convaincu&nbsp;? Il ne reste qu'à choisir votre programme.
+            </p>
+            <a href="/demo" className="inline-flex items-center gap-2 text-primary font-bold hover:underline">
+              Tester les 7 programmes dans la démo →
+            </a>
+          </div>
+        </div>
+
         <section id="tarifs" className="py-16 sm:py-24 md:py-32 px-4 sm:px-6 relative">
           <div className="max-w-4xl mx-auto">
             <SectionHeading

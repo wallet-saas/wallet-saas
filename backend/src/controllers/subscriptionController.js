@@ -179,4 +179,40 @@ const sync = async (req, res) => {
   }
 };
 
-module.exports = { checkout, portal, cancel, status, sync };
+/**
+ * GET /api/subscription/factures
+ * Liste les paiements Whop du commerçant. Whop reste l'émetteur officiel des
+ * factures : on affiche la liste et on renvoie vers ses reçus.
+ */
+const factures = async (req, res) => {
+  try {
+    const { data: commercant } = await supabase
+      .from('commercants')
+      .select('whop_subscription_id')
+      .eq('id', req.commercant.id)
+      .single();
+
+    if (!commercant?.whop_subscription_id) {
+      return res.json({ success: true, data: { factures: [], raison: 'aucun_abonnement' } });
+    }
+
+    try {
+      const paiements = await whopService.getPayments(commercant.whop_subscription_id);
+      return res.json({ success: true, data: { factures: paiements } });
+    } catch (err) {
+      // L'API Whop peut être indisponible ou l'endpoint restreint selon le plan :
+      // on le dit clairement plutôt que d'afficher une liste vide trompeuse.
+      console.error('[subscription] factures Whop:', err.message);
+      return res.json({
+        success: true,
+        data: { factures: [], raison: 'whop_indisponible', detail: err.message },
+      });
+    }
+  } catch (error) {
+    console.error('[subscription] factures error:', error.message);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+module.exports = {
+  factures, checkout, portal, cancel, status, sync };

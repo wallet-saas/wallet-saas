@@ -61,6 +61,33 @@ async function getMembershipsByMetadata(commercantId) {
   return data.data || [];
 }
 
+// ─── Factures / reçus de paiement ─────────────────────────────────────────────
+
+/**
+ * Récupère les paiements Whop d'un commerçant. Whop émet et archive déjà les
+ * factures : on ne les regénère pas, on rapatrie simplement la liste et le
+ * lien du reçu pour que le commerçant les retrouve depuis son dashboard.
+ *
+ * @param {string} membershipId
+ * @returns {Promise<Array<{id, date, montant, devise, statut, recu_url}>>}
+ */
+async function getPayments(membershipId) {
+  if (!membershipId) return [];
+
+  const data = await apiFetch(`/payments?membership_id=${encodeURIComponent(membershipId)}`);
+  const lignes = data?.data || data?.payments || (Array.isArray(data) ? data : []);
+
+  return lignes.map(p => ({
+    id: p.id,
+    // Whop renvoie des timestamps en secondes
+    date: p.created_at ? new Date(p.created_at * 1000).toISOString() : (p.paid_at || null),
+    montant: p.final_amount ?? p.subtotal ?? p.amount ?? null,
+    devise: (p.currency || 'eur').toUpperCase(),
+    statut: p.status || 'paid',
+    recu_url: p.receipt_url || p.hosted_invoice_url || null,
+  })).filter(p => p.date);
+}
+
 // ─── Cancel Membership ─────────────────────────────────────────────────────────
 
 async function cancelMembership(membershipId) {
@@ -142,6 +169,7 @@ async function updateCommercantFromMembership(membership) {
 }
 
 module.exports = {
+  getPayments,
   getCheckoutUrl,
   getMembership,
   getMembershipsByMetadata,

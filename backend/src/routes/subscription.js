@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
-const { checkout, portal, cancel, status, sync } = require('../controllers/subscriptionController');
+const { checkout, portal, cancel, status, sync, factures } = require('../controllers/subscriptionController');
 
 // GET  /api/subscription/checkout  — browser redirect (token in query param)
 // No authMiddleware here — checkout controller handles token extraction from query
@@ -15,6 +15,9 @@ router.post('/cancel', authMiddleware, cancel);
 
 // GET  /api/subscription/status
 router.get('/status', authMiddleware, status);
+
+// GET /api/subscription/factures — historique de paiement (émis par Whop)
+router.get('/factures', authMiddleware, factures);
 
 // POST /api/subscription/sync — force-sync Whop → Supabase (dev fallback)
 router.post('/sync', authMiddleware, sync);

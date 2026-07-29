@@ -250,6 +250,10 @@ export interface Employe {
   ca_30j?: number;
 }
 
+export const facturesApi = {
+  list: () => request<{ factures: Array<{ id: string; date: string; montant: number | null; devise: string; statut: string; recu_url: string | null }>; raison?: string }>('/api/subscription/factures'),
+};
+
 export const employesApi = {
   list: () => request<{ employes: Employe[]; modules: string[] }>('/api/employes'),
   create: (data: { prenom: string; pin: string; permissions: string[] }) =>

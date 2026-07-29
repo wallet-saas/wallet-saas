@@ -7,9 +7,10 @@ import { Badge } from '@/components/ui/Badge';
 import { PageSpinner } from '@/components/ui/Spinner';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDate } from '@/utils/format';
+import { facturesApi } from '@/services/api';
 import {
   CreditCard, CheckCircle, XCircle, AlertTriangle,
-  ExternalLink, Shield, Zap
+  ExternalLink, Shield, Zap, FileText, Download, Loader2
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -42,6 +43,17 @@ export default function AbonnementPage() {
   const { commercant } = useAuth();
   const [cancelling, setCancelling] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [factures, setFactures] = useState<any[]>([]);
+  const [facturesRaison, setFacturesRaison] = useState('');
+  const [facturesChargement, setFacturesChargement] = useState(true);
+
+  // Whop émet les factures : on rapatrie simplement l'historique de paiement
+  useEffect(() => {
+    facturesApi.list()
+      .then(d => { setFactures(d.factures || []); setFacturesRaison(d.raison || ''); })
+      .catch(() => setFacturesRaison('whop_indisponible'))
+      .finally(() => setFacturesChargement(false));
+  }, []);
 
   const statusConfig = getStatusConfig(commercant?.statut_abonnement);
   const StatusIcon = statusConfig.icon;
@@ -202,7 +214,72 @@ export default function AbonnementPage() {
               ))}
             </ul>
 
-            <div className="mt-6 p-4 bg-primary-50 rounded-xl border border-primary-100">
+                  {/* ── Historique de facturation ── */}
+      <Card className="mb-6">
+        <CardHeader>
+          <div className="flex items-center gap-2.5">
+            <FileText className="h-4 w-4 text-gray-500" />
+            <div>
+              <CardTitle>Mes factures</CardTitle>
+              <p className="text-sm text-gray-500 mt-0.5">
+                Vos reçus de paiement, émis et archivés par Whop.
+              </p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardBody className="p-0">
+          {facturesChargement ? (
+            <div className="py-10 text-center">
+              <Loader2 className="h-5 w-5 animate-spin text-indigo-500 mx-auto" />
+            </div>
+          ) : factures.length > 0 ? (
+            <div className="divide-y divide-gray-50">
+              {factures.map((f) => (
+                <div key={f.id} className="px-5 py-3.5 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {new Date(f.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {f.statut === 'paid' || f.statut === 'succeeded' ? 'Payée' : f.statut}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    {f.montant != null && (
+                      <span className="text-sm font-semibold text-gray-900">
+                        {f.montant} {f.devise === 'EUR' ? '€' : f.devise}
+                      </span>
+                    )}
+                    {f.recu_url && (
+                      <a href={f.recu_url} target="_blank" rel="noreferrer"
+                        className="text-sm text-primary-600 hover:underline flex items-center gap-1">
+                        <Download className="h-3.5 w-3.5" /> Reçu
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-10 px-6 text-center">
+              <FileText className="h-8 w-8 text-gray-200 mx-auto mb-3" />
+              <p className="text-sm text-gray-500">
+                {facturesRaison === 'aucun_abonnement'
+                  ? "Vos factures apparaîtront ici dès votre premier paiement."
+                  : facturesRaison === 'whop_indisponible'
+                    ? "L'historique n'a pas pu être récupéré pour le moment."
+                    : 'Aucune facture pour l\'instant.'}
+              </p>
+              <a href="https://whop.com/orders/" target="_blank" rel="noreferrer"
+                className="text-xs text-primary-600 hover:underline mt-2 inline-flex items-center gap-1">
+                Voir mes commandes sur Whop <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          )}
+        </CardBody>
+      </Card>
+
+<div className="mt-6 p-4 bg-primary-50 rounded-xl border border-primary-100">
               <p className="text-sm font-semibold text-primary-800 mb-1">Sans engagement</p>
               <p className="text-xs text-primary-700">
                 Abonnement mensuel résiliable à tout moment, en 1 clic.
