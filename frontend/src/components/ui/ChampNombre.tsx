@@ -176,3 +176,48 @@ export function ChampTexte({
     </div>
   );
 }
+
+
+/**
+ * ZoneTexte — équivalent multi-lignes de ChampTexte.
+ * Même principe : on peut tout effacer, rien ne se réinjecte, et la zone
+ * signale en rouge si elle reste vide alors qu'elle est obligatoire.
+ */
+export function ZoneTexte({
+  label, value, onChange, obligatoire = false, placeholder, aide, rows = 3,
+  className = '', messageVide = 'Veuillez renseigner une valeur.',
+}: {
+  label?: string; value: string; onChange: (v: string) => void;
+  obligatoire?: boolean; placeholder?: string; aide?: string; rows?: number;
+  className?: string; messageVide?: string;
+}) {
+  const [touche, setTouche] = useState(false);
+  const id = useId();
+  const enErreur = obligatoire && touche && value.trim() === '';
+
+  return (
+    <div className={className}>
+      {label && (
+        <label htmlFor={id} className="block text-sm text-gray-700 mb-1">{label}</label>
+      )}
+      <textarea
+        id={id}
+        rows={rows}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setTouche(false)}
+        onBlur={() => setTouche(true)}
+        placeholder={placeholder}
+        aria-invalid={enErreur}
+        className={`w-full rounded-lg border p-2 outline-none transition-colors resize-y ${
+          enErreur ? 'border-red-400 bg-red-50 focus:border-red-500' : 'border-gray-300 focus:border-indigo-500'
+        }`}
+      />
+      {enErreur ? (
+        <p className="text-xs text-red-600 mt-1">{messageVide}</p>
+      ) : aide ? (
+        <p className="text-xs text-gray-400 mt-1">{aide}</p>
+      ) : null}
+    </div>
+  );
+}

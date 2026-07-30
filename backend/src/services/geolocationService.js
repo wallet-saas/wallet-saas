@@ -28,7 +28,7 @@ async function sendProximityNotification(carteId, commercantId) {
   // Récupérer les infos du commerçant
   const { data: commercant, error: commError } = await supabase
     .from('commercants')
-    .select('nom_enseigne, module_geolocalisation, rayon_geoloc_metres, geoloc_message')
+    .select('nom_enseigne, module_geolocalisation, rayon_geoloc_metres, geoloc_message, geoloc_heure_debut, geoloc_heure_fin')
     .eq('id', commercantId)
     .single();
 
@@ -125,6 +125,24 @@ async function checkProximityAndNotify(carteId, latitude, longitude) {
 
   if (distance > rayon) {
     return { triggered: false, distance: Math.round(distance), rayon };
+  }
+
+  // Plage horaire choisie par le commerçant : hors de ces heures, aucune
+  // notification ne part, même si le client passe devant la boutique.
+  // Le réglage existait en base mais n'était appliqué nulle part.
+  const heureDebut = commercant.geoloc_heure_debut ?? 8;
+  const heureFin = commercant.geoloc_heure_fin ?? 22;
+  const heureActuelle = new Date().getHours();
+  const dansLaPlage = heureDebut <= heureFin
+    ? heureActuelle >= heureDebut && heureActuelle < heureFin
+    : heureActuelle >= heureDebut || heureActuelle < heureFin; // plage à cheval sur minuit
+
+  if (!dansLaPlage) {
+    return {
+      triggered: false,
+      reason: 'hors_plage_horaire',
+      plage: `${heureDebut}h-${heureFin}h`,
+    };
   }
 
   // Fréquence anti-spam configurée par le commerçant

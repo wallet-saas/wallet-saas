@@ -13,7 +13,7 @@ import Head from 'next/head';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Input, Textarea } from '@/components/ui/Input';
-import { ChampNombre } from '@/components/ui/ChampNombre';
+import { ChampNombre, ChampTexte, ZoneTexte } from '@/components/ui/ChampNombre';
 import { Toggle } from '@/components/ui/Toggle';
 import { useAutoSave, SaveIndicator } from '@/hooks/useAutoSave';
 import { useAuth } from '@/hooks/useAuth';
@@ -195,19 +195,22 @@ export default function AutomatisationsPage() {
               />
             </div>
 
-            <Input
+            <ChampTexte
               label="Titre de la notification"
               value={relanceTitre}
-              onChange={e => setRelanceTitre(e.target.value)}
+              onChange={setRelanceTitre}
+              obligatoire={relanceAuto}
               placeholder="{{nom_enseigne}} vous attend !"
+              messageVide="Veuillez renseigner une valeur."
             />
 
             <div>
-              <Textarea
+              <ZoneTexte
                 label="Message"
                 rows={3}
                 value={relanceMessage}
-                onChange={e => setRelanceMessage(e.target.value)}
+                onChange={setRelanceMessage}
+                obligatoire={relanceAuto}
                 placeholder="Revenez nous voir ! Profitez de vos tampons et offres spéciales."
               />
               <div className="mt-2">
@@ -245,19 +248,22 @@ export default function AutomatisationsPage() {
             </div>
           </CardHeader>
           <CardBody className="space-y-4">
-            <Input
+            <ChampTexte
               label="Titre de la notification"
               value={annivTitre}
-              onChange={e => setAnnivTitre(e.target.value)}
+              onChange={setAnnivTitre}
+              obligatoire={annivAuto}
               placeholder="🎂 Joyeux anniversaire {{nom}} !"
+              messageVide="Veuillez renseigner une valeur."
             />
 
             <div>
-              <Textarea
+              <ZoneTexte
                 label="Message"
                 rows={3}
                 value={annivMessage}
-                onChange={e => setAnnivMessage(e.target.value)}
+                onChange={setAnnivMessage}
+                obligatoire={annivAuto}
                 placeholder="Joyeux anniversaire de la part de {{nom_enseigne}} !"
               />
               <div className="mt-2">
@@ -266,13 +272,6 @@ export default function AutomatisationsPage() {
             </div>
 
             <ApercuNotification titre={annivTitre} message={annivMessage} enseigne={enseigne} />
-
-            <Button
-              variant="secondary" size="sm" loading={testAnniv}
-              onClick={() => lancerTest('/api/relance/anniversaire', setTestAnniv, 'Anniversaires envoyés')}
-            >
-              <Send className="h-3.5 w-3.5" /> Envoyer les anniversaires du jour
-            </Button>
 
             <p className="text-xs text-gray-500">
               Pensez à annoncer une offre concrète (une part de gâteau, une réduction…) :

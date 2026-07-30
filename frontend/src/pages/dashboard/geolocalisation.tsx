@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { StatCard } from '@/components/ui/StatCard';
 import { Badge } from '@/components/ui/Badge';
 import { Toggle } from '@/components/ui/Toggle';
-import { ChampNombre } from '@/components/ui/ChampNombre';
+import { ChampNombre, ZoneTexte } from '@/components/ui/ChampNombre';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { PageSpinner } from '@/components/ui/Spinner';
@@ -231,7 +231,7 @@ export default function GeolocalisationPage() {
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     {stats?.moduleActif
-                      ? `Rayon de détection : ${(stats as any).rayonMetres ?? rayon} m — Position ${stats.positionConfiguree ? 'configurée' : 'non configurée'}`
+                      ? `Rayon de détection : ${rayon} m — Position ${latitude && longitude ? 'configurée' : 'non configurée'}`
                       : 'Activez le module pour envoyer des notifications de proximité'}
                   </p>
                 </div>
@@ -243,7 +243,7 @@ export default function GeolocalisationPage() {
               </div>
 
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard label="Rayon de détection" value={`${(stats as any)?.rayonMetres ?? rayon} m`} icon={Radio} iconBg="bg-blue-50" iconColor="text-blue-600" />
+                <StatCard label="Rayon de détection" value={`${rayon} m`} icon={Radio} iconBg="bg-blue-50" iconColor="text-blue-600" />
                 <StatCard label="Fréquence maximum" value={frequenceJours === 1 ? '1 / jour' : `1 / ${frequenceJours} j`} icon={Bell} iconBg="bg-primary-50" iconColor="text-primary-600" />
                 <StatCard label="Adresse du commerce" value={latitude && longitude ? 'Configurée' : 'À définir'} icon={MapPin} iconBg="bg-green-50" iconColor="text-green-600" />
                 <StatCard label="Visites en boutique" value={formatNumber(stats?.totalVisitesGeoloc ?? 0)} icon={TrendingUp} iconBg="bg-purple-50" iconColor="text-purple-600" />
@@ -387,7 +387,14 @@ export default function GeolocalisationPage() {
                 <CardHeader><CardTitle className="flex items-center gap-2"><MessageSquare className="h-4 w-4 text-primary-600" /> Message & Horaires</CardTitle></CardHeader>
                 <CardBody>
                   <div className="space-y-5">
-                    <Input label="Message de notification personnalisé" placeholder="Ex: 🎉 Bonjour ! Passez nous voir, vous pouvez gagner des points !" value={message} onChange={(e) => setMessage(e.target.value)} maxLength={90} />
+                    <ZoneTexte
+                      label="Message de notification personnalisé"
+                      placeholder="🎁 Vous passez par là ? Votre carte de fidélité vous attend !"
+                      value={message}
+                      onChange={setMessage}
+                      obligatoire={moduleActive}
+                      rows={2}
+                    />
 
                     <div className="flex flex-wrap gap-2">
                       {[

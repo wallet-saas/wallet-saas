@@ -35,7 +35,7 @@ async function relanceDormants(commercantId) {
     const relanceJours = commercant.relance_jours || 30;
     const messageBrut = commercant.relance_message
     || 'Revenez nous voir ! Profitez de vos tampons et offres spéciales.';
-  const message = messageBrut.replace('{{nom_enseigne}}', commercant.nom_enseigne || '');
+  const message = messageBrut; // personnalisé carte par carte plus bas
 
     // 2️⃣ Trouver les cartes dormantes
     const dateSeuil = new Date();
@@ -102,14 +102,20 @@ async function relanceDormants(commercantId) {
           continue;
         }
 
-        // Envoyer la notification via walletNotificationService
-        const titre = (commercant.relance_titre?.trim() || `{{nom_enseigne}} vous attend !`)
-          .replace('{{nom_enseigne}}', commercant.nom_enseigne || '');
+        // Les deux variables sont remplacées, dans le titre comme dans le
+        // message : {{nom}} n'était traité que pour les anniversaires et
+        // s'affichait tel quel dans les relances.
+        const personnaliser = (texte) => (texte || '')
+          .replace(/\{\{nom\}\}/g, carte.client_nom || 'cher client')
+          .replace(/\{\{nom_enseigne\}\}/g, commercant.nom_enseigne || '');
+
+        const titre = personnaliser(commercant.relance_titre?.trim() || `{{nom_enseigne}} vous attend !`);
+        const messagePersonnalise = personnaliser(message);
 
         await walletNotificationService.sendToWalletCard(
           carte.id,
           titre,
-          message
+          messagePersonnalise
         );
 
         // Enregistrer la relance

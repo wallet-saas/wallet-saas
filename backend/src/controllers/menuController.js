@@ -292,7 +292,7 @@ const pushSelection = async (req, res) => {
     await supabase.from('notifications').insert([{
       commercant_id: commercantId,
       titre: notifTitre,
-      message: `${platsList}\n\n${result.simulation ? '(mode simulation)' : `${result.totalEnvoyes} client(s) notifié(s)`}`,
+      message: `${platsList}`,
       type: 'push',
       cible: 'tous',
       total_envoyes: result?.totalEnvoyes ?? 0,
@@ -300,16 +300,20 @@ const pushSelection = async (req, res) => {
       envoyee: true,
     }]);
 
-    const msgSimulation = result?.simulation
-      ? `🍽️ Notification simulée pour ${menus.length} plat(s)${nomGroupe ? ` (groupe "${nomGroupe}")` : ''}. Connectez FCM/APNS pour l'envoi réel.`
-      : `🍽️ Notification envoyée pour ${menus.length} plat(s) à ${result.totalEnvoyes} client(s)${nomGroupe ? ` (groupe "${nomGroupe}")` : ''}.`;
+    // Le canal réel, ce sont les cartes Wallet : c'est ce chiffre qu'on annonce.
+    // L'ancien message parlait de FCM/APNS, qui ne sont plus utilisés.
+    const total = walletResult.total || 0;
+    const messageFinal = total > 0
+      ? `🍽️ Notification envoyée à ${total} carte${total > 1 ? 's' : ''}${nomGroupe ? ` (groupe "${nomGroupe}")` : ''}.`
+      : `Aucune carte joignable pour l'instant : vos clients doivent d'abord installer leur carte de fidélité.`;
 
     return res.status(200).json({
       success: true,
-      simulation: result?.simulation ?? true,
-      totalEnvoyes: result?.totalEnvoyes ?? 0,
-      message: msgSimulation,
-      data: { menus, totalEnvoyes: result?.totalEnvoyes ?? 0, message: msgSimulation }
+      totalEnvoyes: total,
+      google: walletResult.google || 0,
+      apple: walletResult.apple || 0,
+      message: messageFinal,
+      data: { menus, totalEnvoyes: total, message: messageFinal }
     });
 
   } catch (error) {

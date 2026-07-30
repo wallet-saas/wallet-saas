@@ -3,6 +3,7 @@ import Head from 'next/head';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { ChampTexte } from '@/components/ui/ChampNombre';
 import { Input } from '@/components/ui/Input';
 import { PageSpinner } from '@/components/ui/Spinner';
 import { commercantApi, carteTypeApi } from '@/services/api';
@@ -236,15 +237,45 @@ export default function ParametresPage() {
           </CardHeader>
           <CardBody>
             <div className="space-y-4">
-              <Input label="Nom de l'enseigne" value={nomEnseigne} onChange={e => setNomEnseigne(e.target.value)} />
+              <ChampTexte
+                  label="Nom de l'enseigne"
+                  value={nomEnseigne}
+                  onChange={setNomEnseigne}
+                  obligatoire
+                  messageVide="Veuillez renseigner une valeur."
+                />
               <div className="grid grid-cols-2 gap-4">
-                <Input label="Téléphone" value={telephone} onChange={e => setTelephone(e.target.value)} />
+                <ChampTexte
+                  label="Téléphone"
+                  value={telephone}
+                  onChange={setTelephone}
+                  obligatoire
+                  messageVide="Veuillez renseigner une valeur."
+                />
                 <Input label="Email" value={email} disabled />
               </div>
-              <Input label="Adresse" value={adresse} onChange={e => setAdresse(e.target.value)} />
+              <ChampTexte
+                  label="Adresse"
+                  value={adresse}
+                  onChange={setAdresse}
+                  obligatoire
+                  messageVide="Veuillez renseigner une valeur."
+                />
               <div className="grid grid-cols-2 gap-4">
-                <Input label="Ville" value={ville} onChange={e => setVille(e.target.value)} />
-                <Input label="Code postal" value={codePostal} onChange={e => setCodePostal(e.target.value)} />
+                <ChampTexte
+                  label="Ville"
+                  value={ville}
+                  onChange={setVille}
+                  obligatoire
+                  messageVide="Veuillez renseigner une valeur."
+                />
+                <ChampTexte
+                  label="Code postal"
+                  value={codePostal}
+                  onChange={setCodePostal}
+                  obligatoire
+                  messageVide="Veuillez renseigner une valeur."
+                />
               </div>
               <div className="pt-4 border-t border-gray-100">
                 <label className="label">Logo du commerce</label>

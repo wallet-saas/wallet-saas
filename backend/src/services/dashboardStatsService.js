@@ -30,6 +30,16 @@ async function getOverview(commercantId) {
   const ilSemaine = new Date(maintenant - 7 * 24 * 60 * 60 * 1000).toISOString();
   const ilMois = new Date(maintenant - 30 * 24 * 60 * 60 * 1000).toISOString();
 
+  // Le seuil de dormance dépend du métier : un client de pharmacie qui n'est
+  // pas venu depuis 30 jours n'est pas « perdu ». Le commerçant le règle
+  // lui-même dans Automatisations.
+  const { data: reglages } = await supabase
+    .from('commercants')
+    .select('relance_jours')
+    .eq('id', commercantId)
+    .single();
+  const seuilDormanceJours = reglages?.relance_jours || 30;
+
   const [cartes, visites, notifications] = await Promise.all([
     supabase.from('cartes')
       .select('id, created_at, last_visit_at')
@@ -46,9 +56,8 @@ async function getOverview(commercantId) {
   const lignesVisites = visites.data || [];
   const lignesNotifs = notifications.data || [];
 
-  // Dormant : aucune visite depuis plus de 30 jours (ou jamais venu depuis
-  // l'installation de sa carte il y a plus de 30 jours)
-  const seuil = new Date(maintenant - 30 * 24 * 60 * 60 * 1000);
+  // Dormant : aucune visite depuis le seuil choisi par le commerçant
+  const seuil = new Date(maintenant - seuilDormanceJours * 24 * 60 * 60 * 1000);
   const clientsDormants = lignesCartes.filter(c => {
     const reference = c.last_visit_at || c.created_at;
     return reference && new Date(reference) < seuil;
@@ -61,6 +70,7 @@ async function getOverview(commercantId) {
     clientsDormants,
     cartesInstalleesCetteSemaine: lignesCartes.filter(c => c.created_at >= ilSemaine).length,
     visitesLastMonth: lignesVisites.filter(v => v.created_at >= ilMois).length,
+    seuilDormanceJours,
   };
 }
 
@@ -140,8 +150,14 @@ async function getNotificationsStats(commercantId) {
 }
 
 /** Clients sans visite depuis plus de N jours, les plus anciens d'abord. */
-async function getClientsDormants(commercantId, jours = 30) {
-  const seuil = new Date(Date.now() - jours * 24 * 60 * 60 * 1000);
+async function getClientsDormants(commercantId, jours = null) {
+  const { data: reglages } = await supabase
+    .from('commercants')
+    .select('relance_jours')
+    .eq('id', commercantId)
+    .single();
+  const seuilJours = jours || reglages?.relance_jours || 30;
+  const seuil = new Date(Date.now() - seuilJours * 24 * 60 * 60 * 1000);
 
   const { data } = await supabase
     .from('cartes')

@@ -11,10 +11,8 @@
 import { useState } from 'react';
 import { KeyRound, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { authApi } from '@/services/api';
-import { useAuth } from '@/hooks/useAuth';
 
 export function NouveauMotDePasseModal() {
-  const { refreshUser } = useAuth();
   const [motDePasse, setMotDePasse] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [visible, setVisible] = useState(false);
@@ -36,10 +34,12 @@ export function NouveauMotDePasseModal() {
     setChargement(true);
     try {
       await authApi.definirMotDePasse(motDePasse);
-      await refreshUser();
+      // Rechargement complet plutôt qu'un simple refreshUser : l'état
+      // d'authentification n'est pas partagé entre les composants, donc
+      // rafraîchir ici ne fermerait pas la fenêtre affichée par le layout.
+      window.location.href = '/dashboard';
     } catch (e: any) {
       setErreur(e?.message || 'Enregistrement impossible. Réessayez.');
-    } finally {
       setChargement(false);
     }
   };

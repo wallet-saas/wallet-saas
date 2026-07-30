@@ -10,6 +10,7 @@ import { StatCard } from '@/components/ui/StatCard';
 import { PageSpinner } from '@/components/ui/Spinner';
 import { avisApi, autoReviewApi, commercantApi, type Avis, type AvisTemplate, type AvisTemplatesFilled } from '@/services/api';
 import { Toggle } from '@/components/ui/Toggle';
+import { ChampTexte, ZoneTexte } from '@/components/ui/ChampNombre';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/Toast';
 import { useAutoSave, SaveIndicator } from '@/hooks/useAutoSave';
@@ -260,11 +261,13 @@ export default function AvisPage() {
                     <Toggle checked={moduleEnabled} onChange={setModuleEnabled} />
                   </div>
 
-                  <Input
+                  <ChampTexte
                     label="URL de votre fiche Google"
                     placeholder="https://g.page/votre-commerce"
                     value={googlePlaceUrl}
-                    onChange={e => setGooglePlaceUrl(e.target.value)}
+                    onChange={setGooglePlaceUrl}
+                    obligatoire={moduleEnabled}
+                    messageVide="Sans cette adresse, les clients satisfaits ne peuvent pas être envoyés sur Google."
                   />
                   <p className="text-xs text-gray-500 -mt-2">
                     Dans Google Maps : votre fiche → Partager → copiez le lien. C'est là que sont envoyés les clients satisfaits.
@@ -312,12 +315,13 @@ export default function AvisPage() {
                     </p>
                   </CardHeader>
                   <CardBody className="space-y-4">
-                    <Textarea
+                    <ZoneTexte
                       label="Texte de la notification"
                       placeholder="Merci pour votre visite ! Votre avis compte beaucoup pour nous."
                       rows={3}
                       value={autoMessage}
-                      onChange={e => setAutoMessage(e.target.value)}
+                      onChange={setAutoMessage}
+                      obligatoire={moduleEnabled}
                     />
                     <p className="text-xs text-gray-500">
                       Laissé vide, un message par défaut mentionnant votre enseigne est utilisé.
