@@ -23,20 +23,30 @@ async function webhookHandler(req, res) {
     }
 
     const event = req.body;
-    const eventType = event.type || event.event;
+    // Whop transmet le nom de l'événement dans « action » (cf. docs Whop) ;
+    // « type » et « event » sont acceptés en secours selon les versions.
+    const eventType = event.action || event.type || event.event;
     const membership = event.data || event.membership;
 
     console.log(`[Whop webhook] Reçu: ${eventType}`, membership?.id ? `(membership: ${membership.id})` : '');
 
     switch (eventType) {
-      case 'membership.created':
+      // ── L'abonnement devient valide ──
+      case 'membership.went_valid':
       case 'membership.activated':
+      case 'membership.created':
       case 'membership.updated':
+      case 'membership.metadata_updated':
         if (membership) {
           await whopService.updateCommercantFromMembership(membership);
         }
         break;
 
+      // ── L'abonnement cesse d'être valide ──
+      // Whop regroupe ici l'échec de paiement, la résiliation et l'expiration.
+      // Sans ces cas, un commerçant qui ne paie plus gardait son accès.
+      case 'membership.went_invalid':
+      case 'membership.deactivated':
       case 'membership.cancelled':
       case 'membership.expired':
         if (membership) {
@@ -44,6 +54,21 @@ async function webhookHandler(req, res) {
             ...membership,
             status: 'cancelled',
           });
+          console.log(`[Whop webhook] Accès retiré (${eventType})`);
+        }
+        break;
+
+      // ── Paiement échoué : on ne coupe pas tout de suite ──
+      // Whop réessaie plusieurs fois avant d'invalider l'abonnement ; couper
+      // au premier échec pénaliserait un commerçant dont la carte a juste
+      // expiré. On trace, et c'est membership.went_invalid qui coupera.
+      case 'payment.failed':
+        console.warn(`[Whop webhook] Paiement échoué pour ${membership?.id || 'inconnu'} — accès maintenu jusqu'à invalidation par Whop`);
+        break;
+
+      case 'payment.succeeded':
+        if (membership) {
+          await whopService.updateCommercantFromMembership(membership);
         }
         break;
 
