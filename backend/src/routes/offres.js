@@ -8,6 +8,7 @@ const {
   markOffreUsed
 } = require('../controllers/offresController');
 const authMiddleware = require('../middleware/authMiddleware');
+const { requireAbonnementActif } = authMiddleware;
 const { offreValidation, handleValidationErrors } = require('../middleware/validation');
 
 /** POST /api/offres — Créer une offre flash */
@@ -23,7 +24,7 @@ router.get('/', authMiddleware, listOffres);
 router.get('/list', authMiddleware, listOffres);
 
 /** POST /api/offres/:id/send — Envoyer l'offre par notif push (?cible=tous|actifs|dormants) */
-router.post('/:id/send', authMiddleware, sendOffre);
+router.post('/:id/send', authMiddleware, requireAbonnementActif, sendOffre);
 
 /** GET /api/offres/:id/stats — Stats utilisation de l'offre */
 router.get('/:id/stats', authMiddleware, getOffreStats);

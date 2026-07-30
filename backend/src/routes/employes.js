@@ -268,6 +268,21 @@ router.post('/pin', authMiddleware, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Code PIN invalide.' });
     }
 
+    if (process.env.REQUIRE_SUBSCRIPTION === 'true') {
+      const { data: c } = await supabase
+        .from('commercants')
+        .select('abonnement_statut')
+        .eq('id', commercantId)
+        .single();
+      if (!['actif', 'trialing'].includes(c?.abonnement_statut)) {
+        return res.status(402).json({
+          success: false,
+          error: "L'abonnement de ce commerce est suspendu.",
+          abonnement_requis: true,
+        });
+      }
+    }
+
     const { data: employes } = await supabase
       .from('employes')
       .select('id, prenom, permissions, actif, pin_hash')
@@ -386,13 +401,27 @@ router.post('/login', async (req, res) => {
 
     const { data: commercant } = await supabase
       .from('commercants')
-      .select('id, nom_enseigne, code_equipe')
+      .select('id, nom_enseigne, code_equipe, abonnement_statut')
       .eq('code_equipe', code)
       .maybeSingle();
 
     if (!commercant) {
       echecTentative(code);
       return res.status(401).json({ success: false, error: 'Code du commerce ou PIN incorrect.' });
+    }
+
+    // Abonnement arrêté : personne ne rentre, sinon il suffirait de créer un
+    // compte employé pour continuer à utiliser Stamply sans payer.
+    // Ce n'est pas une erreur d'identifiants : on le dit clairement.
+    if (
+      process.env.REQUIRE_SUBSCRIPTION === 'true' &&
+      !['actif', 'trialing'].includes(commercant.abonnement_statut)
+    ) {
+      return res.status(402).json({
+        success: false,
+        error: "L'abonnement de ce commerce est suspendu. Contactez votre responsable.",
+        abonnement_requis: true,
+      });
     }
 
     const { data: employes } = await supabase

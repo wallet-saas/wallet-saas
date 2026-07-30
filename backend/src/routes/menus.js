@@ -11,6 +11,7 @@ const {
   saveGroupes
 } = require('../controllers/menuController');
 const authMiddleware = require('../middleware/authMiddleware');
+const { requireAbonnementActif } = authMiddleware;
 
 /** POST /api/menus — Créer un plat/produit */
 router.post('/', authMiddleware, createMenu);
@@ -34,7 +35,7 @@ router.delete('/:id', authMiddleware, deleteMenu);
 router.patch('/:id/toggle', authMiddleware, toggleDisponibilite);
 
 /** POST /api/menus/push-selection — Pousser une sélection de plats */
-router.post('/push-selection', authMiddleware, pushSelection);
+router.post('/push-selection', authMiddleware, requireAbonnementActif, pushSelection);
 
 /** GET /api/menus/groupes — Lister les menus groupés */
 router.get('/groupes', authMiddleware, listGroupes);

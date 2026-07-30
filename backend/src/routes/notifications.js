@@ -7,6 +7,7 @@ const {
   trackOpen
 } = require('../controllers/notificationController');
 const authMiddleware = require('../middleware/authMiddleware');
+const { requireAbonnementActif } = authMiddleware;
 const { notificationRateLimiter } = require('../middleware/rateLimiter');
 const { notificationValidation, handleValidationErrors } = require('../middleware/validation');
 
@@ -16,7 +17,7 @@ const { notificationValidation, handleValidationErrors } = require('../middlewar
  * @body    { titre, message, cible: 'tous'|'actifs'|'dormants', planifiee_pour? }
  * @access  Private (JWT commerçant requis)
  */
-router.post('/send', authMiddleware, notificationRateLimiter, notificationValidation, handleValidationErrors, sendNotification);
+router.post('/send', authMiddleware, requireAbonnementActif, notificationRateLimiter, notificationValidation, handleValidationErrors, sendNotification);
 
 /**
  * @route   GET /api/notifications/history
