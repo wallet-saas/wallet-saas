@@ -18,7 +18,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/Toast';
 import { useAutoSave, SaveIndicator } from '@/hooks/useAutoSave';
 import { formatDate } from '@/utils/format';
-import { Plus, Send, Tag, Percent, Euro, Calendar, BarChart2, Settings, Bell, Zap } from 'lucide-react';
+import { Plus, Send, Tag, Percent, Euro, Calendar, BarChart2, Settings, Bell, Zap, Trash2 } from 'lucide-react';
 
 const schema = z.object({
   titre: z.string().min(1, 'Titre requis'),
@@ -44,6 +44,17 @@ export default function OffresPage() {
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<{ open: boolean }>({ open: false });
   const [sendModal, setSendModal] = useState<{ open: boolean; offre?: Offre }>({ open: false });
+  const supprimerOffre = async (id: string, titre: string) => {
+    if (!window.confirm(`Supprimer l'offre « ${titre} » ? Cette action est définitive.`)) return;
+    try {
+      await offresApi.remove(id);
+      setOffres(prev => prev.filter((o: any) => o.id !== id));
+      toast('Offre supprimée', 'success');
+    } catch (e: any) {
+      toast(e?.message || 'Suppression impossible', 'error');
+    }
+  };
+
   const [statsModal, setStatsModal] = useState<{ open: boolean; offre?: Offre; stats?: any }>({ open: false });
   const [sendCible, setSendCible] = useState('tous');
   const [sending, setSending] = useState(false);
@@ -178,7 +189,7 @@ export default function OffresPage() {
                   <div>
                     <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Offres actives</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {actives.map(o => <OffreCard key={o.id} offre={o} onSend={() => setSendModal({ open: true, offre: o })} onStats={() => handleStats(o)} />)}
+                      {actives.map(o => <OffreCard key={o.id} offre={o} onSend={() => setSendModal({ open: true, offre: o })} onStats={() => handleStats(o)} onDelete={() => supprimerOffre(o.id, o.titre)} />)}
                     </div>
                   </div>
                 )}
@@ -186,7 +197,7 @@ export default function OffresPage() {
                   <div>
                     <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">Expirées</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 opacity-60">
-                      {expirees.map(o => <OffreCard key={o.id} offre={o} onStats={() => handleStats(o)} />)}
+                      {expirees.map(o => <OffreCard key={o.id} offre={o} onStats={() => handleStats(o)} onDelete={() => supprimerOffre(o.id, o.titre)} />)}
                     </div>
                   </div>
                 )}
@@ -274,7 +285,11 @@ export default function OffresPage() {
           <div className="space-y-4">
             <p className="text-sm font-semibold text-gray-900">{statsModal.offre.titre}</p>
             <div className="grid grid-cols-3 gap-2 sm:gap-3">
-              {[{ label: 'Envoyés', value: statsModal.stats.total_envoyes }, { label: 'Utilisés', value: statsModal.stats.total_utilises }, { label: 'Taux', value: `${statsModal.stats.taux_utilisation}%` }].map(s => (
+              {[
+                { label: 'Cartes touchées', value: statsModal.stats.total_envoyes ?? 0 },
+                { label: 'Offres utilisées', value: statsModal.stats.total_utilises ?? 0 },
+                { label: 'Taux d\'utilisation', value: `${statsModal.stats.taux_utilisation ?? 0}%` },
+              ].map(s => (
                 <div key={s.label} className="bg-gray-50 rounded-xl p-3 text-center">
                   <p className="text-xl font-bold text-gray-900">{s.value}</p>
                   <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
@@ -288,7 +303,7 @@ export default function OffresPage() {
   );
 }
 
-function OffreCard({ offre, onSend, onStats }: { offre: Offre; onSend?: () => void; onStats: () => void }) {
+function OffreCard({ offre, onSend, onStats, onDelete }: { offre: Offre; onSend?: () => void; onStats: () => void; onDelete?: () => void }) {
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardBody>
@@ -303,9 +318,15 @@ function OffreCard({ offre, onSend, onStats }: { offre: Offre; onSend?: () => vo
           {offre.date_fin && <span className="flex items-center gap-1 text-xs text-gray-400"><Calendar className="h-3 w-3" />Fin: {formatDate(offre.date_fin)}</span>}
         </div>
         <div className="flex items-center justify-between text-xs text-gray-400 border-t border-gray-50 pt-3">
-          <span>{offre.total_envoyes} envoyés · {offre.total_utilises} utilisés</span>
+          <span>{offre.total_envoyes} carte(s) touchée(s) · {offre.total_utilises} utilisée(s)</span>
+
           <div className="flex gap-1.5">
             <Button variant="ghost" size="sm" onClick={onStats}><BarChart2 className="h-3.5 w-3.5" /></Button>
+            {onDelete && (
+              <Button variant="ghost" size="sm" onClick={onDelete} title="Supprimer cette offre">
+                <Trash2 className="h-3.5 w-3.5 text-gray-400 hover:text-red-500" />
+              </Button>
+            )}
             {onSend && !offre.expiree && <Button variant="secondary" size="sm" onClick={onSend}><Send className="h-3.5 w-3.5" /> Envoyer</Button>}
           </div>
         </div>

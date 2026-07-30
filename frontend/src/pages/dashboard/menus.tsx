@@ -196,15 +196,41 @@ export default function MenusPage() {
   };
 
   const clearSelection = () => setSelectedIds(new Set());
+  const [apercuPlat, setApercuPlat] = useState<any>(null);
+  const [apercuTitre, setApercuTitre] = useState('');
+  const [apercuMessage, setApercuMessage] = useState('');
 
   // ── Push notifications ──────────────────────────────────────────────────────
-  const handlePushSelection = async () => {
-    if (selectedIds.size === 0) { toast('Sélectionnez au moins un plat', 'error'); return; }
+  // Un seul plat par notification : on ouvre l'aperçu, le commerçant relit
+  // et corrige le texte avant l'envoi. L'annonce est mémorisée sur le plat.
+  const ouvrirApercu = () => {
+    if (selectedIds.size === 0) { toast('Sélectionnez un plat', 'error'); return; }
+    if (selectedIds.size > 1) {
+      toast("Un seul plat à la fois : vos clients recevraient autant de notifications que de plats.", 'error');
+      return;
+    }
+    const plat = Object.values(parCategorie).flat().find((m: Menu) => m.id === Array.from(selectedIds)[0]);
+    if (!plat) return;
+    setApercuPlat(plat);
+    setApercuTitre(`🍽️ ${plat.titre}`);
+    setApercuMessage(
+      (plat as any).annonce
+      || `• ${plat.titre}${plat.prix ? ` — ${plat.prix}€` : ''}${plat.description ? `\n${plat.description}` : ''}\n\nPassez nous voir !`
+    );
+  };
+
+  const envoyerApercu = async () => {
+    if (!apercuPlat) return;
+    if (!apercuMessage.trim()) { toast('Le message ne peut pas être vide.', 'error'); return; }
     setPushingMenu(true);
     setPushResult(null);
     try {
-      const res = await menusApi.pushSelection(Array.from(selectedIds));
+      const res = await menusApi.pushSelection([apercuPlat.id], undefined, {
+        titre: apercuTitre.trim(),
+        message: apercuMessage.trim(),
+      });
       setPushResult({ success: true, message: res.message || res.data?.message });
+      setApercuPlat(null);
       clearSelection();
     } catch (e: any) {
       setPushResult({ success: false, message: e?.message || 'Erreur' });
@@ -297,14 +323,14 @@ export default function MenusPage() {
           <div className="flex-1">
             <p className="text-sm font-medium text-gray-900">
               {selectedCount === 0
-                ? 'Cochez les plats à pousser en notification'
+                ? 'Sélectionnez le plat à annoncer à vos clients'
                 : `${selectedCount} plat${selectedCount !== 1 ? 's' : ''} sélectionné${selectedCount !== 1 ? 's' : ''}`}
             </p>
           </div>
           <div className="flex gap-2 items-center">
             {selectedCount > 0 && (
               <>
-                <Button onClick={handlePushSelection} disabled={pushingMenu} variant="primary" size="sm">
+                <Button onClick={ouvrirApercu} disabled={pushingMenu} variant="primary" size="sm">
                   <Bell className="h-4 w-4" /> Notifier mes clients
                 </Button>
                 <Button onClick={clearSelection} variant="ghost" size="sm">
@@ -312,13 +338,7 @@ export default function MenusPage() {
                 </Button>
               </>
             )}
-            {selectedCount === 0 && (
-              <>
-                <Button onClick={selectAllVisible} variant="ghost" size="sm">
-                  <CheckSquare className="h-4 w-4" /> Tout sélectionner
-                </Button>
-              </>
-            )}
+
           </div>
         </div>
       )}
@@ -546,6 +566,69 @@ export default function MenusPage() {
           </div>
         </form>
       </Modal>
+      {/* Aperçu avant envoi — le commerçant relit ce que recevront ses clients */}
+      {apercuPlat && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
+          <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h3 className="font-semibold text-gray-900">Aperçu de la notification</h3>
+              <button onClick={() => setApercuPlat(null)} className="text-gray-400 hover:text-gray-600 p-1">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="rounded-xl border border-indigo-100 bg-indigo-50/70 p-4">
+                <p className="text-[10px] uppercase tracking-wider text-indigo-500 font-semibold mb-2">
+                  Ce que verront vos clients
+                </p>
+                <div className="rounded-lg bg-white border border-indigo-100 shadow-sm px-3 py-2.5">
+                  <p className="text-xs font-semibold text-gray-900">{apercuTitre || 'Titre'}</p>
+                  <p className="text-xs text-gray-500 mt-0.5 whitespace-pre-line">
+                    {apercuMessage || 'Contenu du message…'}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-700 mb-1">Titre</label>
+                <input
+                  value={apercuTitre}
+                  onChange={e => setApercuTitre(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 p-2 focus:border-indigo-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-700 mb-1">Message</label>
+                <textarea
+                  rows={4}
+                  value={apercuMessage}
+                  onChange={e => setApercuMessage(e.target.value)}
+                  className={`w-full rounded-lg border p-2 outline-none resize-y ${
+                    apercuMessage.trim() === ''
+                      ? 'border-red-400 bg-red-50 focus:border-red-500'
+                      : 'border-gray-300 focus:border-indigo-500'
+                  }`}
+                />
+                {apercuMessage.trim() === '' && (
+                  <p className="text-xs text-red-600 mt-1">Veuillez renseigner une valeur.</p>
+                )}
+                <p className="text-xs text-gray-400 mt-1">
+                  Ce texte est enregistré sur le plat : vous le retrouverez au prochain envoi.
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <Button onClick={envoyerApercu} loading={pushingMenu} className="flex-1">
+                  <Bell className="h-4 w-4" /> Envoyer maintenant
+                </Button>
+                <Button variant="secondary" onClick={() => setApercuPlat(null)}>Annuler</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

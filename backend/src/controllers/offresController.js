@@ -300,7 +300,41 @@ const markOffreUsed = async (req, res) => {
   }
 };
 
+
+/**
+ * DELETE /api/offres/:id
+ * Supprimer une offre. L'historique des notifications déjà envoyées est
+ * conservé : seule l'offre disparaît de la liste du commerçant.
+ */
+const deleteOffre = async (req, res) => {
+  try {
+    const commercantId = req.commercant.id;
+    const { id } = req.params;
+
+    const { data: offre } = await supabase
+      .from('offres')
+      .select('id, commercant_id, titre')
+      .eq('id', id)
+      .single();
+
+    if (!offre) return res.status(404).json({ success: false, error: 'Offre introuvable.' });
+    if (offre.commercant_id !== commercantId) {
+      return res.status(403).json({ success: false, error: 'Cette offre appartient à un autre commerce.' });
+    }
+
+    const { error } = await supabase.from('offres').delete().eq('id', id);
+    if (error) throw error;
+
+    console.log(`[Offres] « ${offre.titre} » supprimée`);
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error('Erreur deleteOffre:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 module.exports = {
+  deleteOffre,
   createOffre,
   listOffres,
   sendOffre,

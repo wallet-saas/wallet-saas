@@ -209,10 +209,10 @@ export const menusApi = {
     request<{ success: boolean }>(`/api/menus/${id}`, { method: 'DELETE' }),
   toggle: (id: string) =>
     request<{ menu: Menu }>(`/api/menus/${id}/toggle`, { method: 'PATCH' }),
-  pushSelection: (menuIds: string[], groupeId?: string) =>
+  pushSelection: (menuIds: string[], groupeId?: string, texte?: { titre?: string; message?: string }) =>
     request<{ success: boolean; simulation: boolean; totalEnvoyes: number; message: string; data: { menus: any[]; totalEnvoyes: number; message: string } }>(
       '/api/menus/push-selection',
-      { method: 'POST', body: JSON.stringify({ menu_ids: menuIds, groupe_id: groupeId }) }
+      { method: 'POST', body: JSON.stringify({ menu_ids: menuIds, groupe_id: groupeId, ...(texte || {}) }) }
     ),
   listGroupes: () =>
     request<{ groupes: MenuGroupe[] }>('/api/menus/groupes'),
@@ -225,6 +225,7 @@ export const menusApi = {
 
 // ─── Offres ───────────────────────────────────────────────────────────────────
 export const offresApi = {
+  remove: (id: string) => request<void>(`/api/offres/${id}`, { method: 'DELETE' }),
   list: () => request<{ offres: Offre[] }>('/api/offres/list'),
   create: (data: Omit<Offre, 'id' | 'commercant_id' | 'created_at' | 'expiree'>) =>
     request<{ offre: Offre }>('/api/offres/create', { method: 'POST', body: JSON.stringify(data) }),

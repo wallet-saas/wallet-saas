@@ -1,12 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const {
-  createOffre,
-  listOffres,
-  sendOffre,
-  getOffreStats,
-  markOffreUsed
-} = require('../controllers/offresController');
+const { createOffre, listOffres, sendOffre, getOffreStats, markOffreUsed, deleteOffre } = require('../controllers/offresController');
 const authMiddleware = require('../middleware/authMiddleware');
 const { requireAbonnementActif } = authMiddleware;
 const { offreValidation, handleValidationErrors } = require('../middleware/validation');
@@ -28,6 +22,9 @@ router.post('/:id/send', authMiddleware, requireAbonnementActif, sendOffre);
 
 /** GET /api/offres/:id/stats — Stats utilisation de l'offre */
 router.get('/:id/stats', authMiddleware, getOffreStats);
+
+// DELETE /api/offres/:id — supprimer une offre
+router.delete('/:id', authMiddleware, requireCommercant, deleteOffre);
 
 /** POST /api/offres/:id/use — Marquer une offre comme utilisée (PUBLIC — appelé côté client) */
 router.post('/:id/use', markOffreUsed);

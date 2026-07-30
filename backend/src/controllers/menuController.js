@@ -226,10 +226,19 @@ const pushSelection = async (req, res) => {
       return res.status(400).json({ success: false, error: 'menu_ids requis (tableau non vide).' });
     }
 
+    // Un plat par notification : envoyer une notification par plat noierait
+    // le client sous les messages et brûlerait le quota Google (3/24h).
+    if (menu_ids.length > 1) {
+      return res.status(400).json({
+        success: false,
+        error: "Un seul plat à la fois : vos clients recevraient autant de notifications que de plats sélectionnés.",
+      });
+    }
+
     // Récupérer les plats depuis Supabase pour avoir les titres/prix
     const { data: menus, error: fetchErr } = await supabase
       .from('menus')
-      .select('id, titre, prix, description')
+      .select('id, titre, prix, description, annonce')
       .in('id', menu_ids)
       .eq('commercant_id', commercantId)
       .eq('disponible', true);
@@ -244,13 +253,22 @@ const pushSelection = async (req, res) => {
 
     const platsList = menus.map(m => `• ${m.titre}${m.prix ? ` — ${m.prix}€` : ''}`).join('\n');
 
-    let titre;
-    if (groupe_id) {
-      titre = `🍽️ Menu du jour`;
-    } else {
-      titre = `🍽️ Aujourd'hui chez nous`;
+    const titre = (req.body.titre || '').trim() || `🍽️ ${menus[0].titre}`;
+    // Priorité : le texte validé dans l'aperçu, puis l'annonce enregistrée sur
+    // le plat, puis un texte par défaut construit à partir du plat.
+    const plat = menus[0];
+    const message = (req.body.message || '').trim()
+      || (plat.annonce || '').trim()
+      || `${platsList}${plat.description ? `\n${plat.description}` : ''}\n\nPassez nous voir !`;
+
+    // On mémorise l'annonce sur le plat pour la retrouver au prochain envoi
+    if ((req.body.message || '').trim()) {
+      await supabase
+        .from('menus')
+        .update({ annonce: req.body.message.trim() })
+        .eq('id', plat.id)
+        .eq('commercant_id', commercantId);
     }
-    const message = `${platsList}\n\nPassez nous voir !`;
 
     // Envoyer via le service de notifications existant
     const { sendPushNotification } = require('../services/notificationService');
