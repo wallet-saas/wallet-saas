@@ -315,6 +315,68 @@ router.put('/commercants/:id', adminAuth, async (req, res) => {
   }
 });
 
+// ─── POST /api/admin/commercants/:id/reset-password ───────────────────────────
+// Un commerçant appelle parce qu'il ne peut plus se connecter : on génère un
+// mot de passe temporaire, communiqué oralement, et son compte est marqué comme
+// devant en choisir un nouveau à la prochaine connexion.
+// Le mot de passe en clair n'est renvoyé qu'ici, une seule fois.
+
+router.post('/commercants/:id/reset-password', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data: commercant } = await supabase
+      .from('commercants')
+      .select('id, nom_enseigne, email')
+      .eq('id', id)
+      .single();
+
+    if (!commercant) {
+      return res.status(404).json({ success: false, error: 'Commerçant introuvable.' });
+    }
+
+    // Mot de passe lisible au téléphone : pas de caractères ambigus (0/O, 1/l/I)
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let aleatoire = '';
+    for (let i = 0; i < 6; i++) {
+      aleatoire += alphabet[Math.floor(Math.random() * alphabet.length)];
+    }
+    const motDePasseTemporaire = `Stamply-${aleatoire}`;
+    const hash = await bcrypt.hash(motDePasseTemporaire, 10);
+
+    const { error } = await supabase
+      .from('commercants')
+      .update({
+        password: hash,
+        must_change_password: true,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+
+    if (error) throw error;
+
+    await supabase.from('admin_logs').insert({
+      action: 'reset_mot_de_passe',
+      target_id: id,
+      details: JSON.stringify({ enseigne: commercant.nom_enseigne, email: commercant.email }),
+    });
+
+    console.log(`[Admin] Mot de passe réinitialisé pour ${commercant.nom_enseigne} (${id})`);
+
+    return res.json({
+      success: true,
+      data: {
+        mot_de_passe_temporaire: motDePasseTemporaire,
+        email: commercant.email,
+        enseigne: commercant.nom_enseigne,
+      },
+    });
+  } catch (err) {
+    console.error('[Admin] Reset mot de passe:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ─── POST /api/admin/commercants/:id/abonnement ────────────────────────────────
 // Activer ou retirer manuellement l'abonnement d'un commerçant, sans passer
 // par Whop (geste commercial, période d'essai, client qui paie autrement…).

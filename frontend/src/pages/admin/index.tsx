@@ -12,10 +12,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import {
-  Shield, Users, CreditCard, TrendingUp, Search, CheckCircle, XCircle,
-  Loader2, ScrollText, RefreshCw, ArrowLeft, Bell, Star,
-} from 'lucide-react';
+import { Shield, Users, CreditCard, TrendingUp, Search, CheckCircle, XCircle, Loader2, ScrollText, RefreshCw, ArrowLeft, Bell, Star, KeyRound } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -138,6 +135,7 @@ function FicheCommercant({ id, onRetour, onMaj }: { id: string; onRetour: () => 
   const [chargement, setChargement] = useState(true);
   const [action, setAction] = useState(false);
   const [message, setMessage] = useState('');
+  const [motDePasseTemporaire, setMotDePasseTemporaire] = useState('');
 
   const charger = useCallback(() => {
     setChargement(true);
@@ -162,6 +160,24 @@ function FicheCommercant({ id, onRetour, onMaj }: { id: string; onRetour: () => 
       setMessage(actif ? 'Abonnement activé.' : 'Abonnement retiré.');
       charger();
       onMaj();
+    } catch (e: any) {
+      setMessage(e.message);
+    } finally {
+      setAction(false);
+    }
+  };
+
+  const reinitialiserMotDePasse = async () => {
+    if (!window.confirm(
+      `Réinitialiser le mot de passe de ${fiche?.nom_enseigne} ?\n\n` +
+      `Son mot de passe actuel cessera immédiatement de fonctionner. ` +
+      `Un mot de passe temporaire s'affichera : communiquez-le-lui, il devra en choisir un nouveau à sa connexion.`
+    )) return;
+    setAction(true);
+    setMessage('');
+    try {
+      const res = await adminFetch(`/commercants/${id}/reset-password`, { method: 'POST' });
+      setMotDePasseTemporaire(res.mot_de_passe_temporaire);
     } catch (e: any) {
       setMessage(e.message);
     } finally {
@@ -219,6 +235,43 @@ function FicheCommercant({ id, onRetour, onMaj }: { id: string; onRetour: () => 
         {message && (
           <p className="mt-3 text-sm text-indigo-600 bg-indigo-50 rounded-lg px-3 py-2">{message}</p>
         )}
+
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <button
+            onClick={reinitialiserMotDePasse}
+            disabled={action}
+            className="text-sm text-gray-600 hover:text-indigo-600 flex items-center gap-2 disabled:opacity-50"
+          >
+            <KeyRound className="h-4 w-4" />
+            Réinitialiser son mot de passe
+          </button>
+          <p className="text-xs text-gray-400 mt-1">
+            À utiliser quand le commerçant vous appelle parce qu'il ne peut plus se connecter.
+          </p>
+
+          {motDePasseTemporaire && (
+            <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <p className="text-xs font-semibold text-amber-900 uppercase tracking-wider mb-2">
+                Mot de passe temporaire — à lui communiquer maintenant
+              </p>
+              <div className="flex items-center gap-3 flex-wrap">
+                <code className="text-xl font-bold font-mono text-amber-900 bg-white border border-amber-200 rounded-lg px-4 py-2">
+                  {motDePasseTemporaire}
+                </code>
+                <button
+                  onClick={() => { navigator.clipboard?.writeText(motDePasseTemporaire); }}
+                  className="text-sm text-amber-800 hover:underline"
+                >
+                  Copier
+                </button>
+              </div>
+              <p className="text-xs text-amber-800 mt-2">
+                Il ne s'affichera plus après fermeture de cette page. À sa prochaine connexion,
+                il devra choisir un nouveau mot de passe.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

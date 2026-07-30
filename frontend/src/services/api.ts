@@ -51,6 +51,10 @@ export const authApi = {
       body: JSON.stringify(data),
     }),
   me: () => request<{ commercant: Commercant }>('/api/auth/me'),
+  definirMotDePasse: (nouveau_password: string) =>
+    request<void>('/api/auth/definir-mot-de-passe', {
+      method: 'PUT', body: JSON.stringify({ nouveau_password }),
+    }),
   changePassword: (ancien_password: string, nouveau_password: string) =>
     request<{ message: string }>('/api/auth/change-password', {
       method: 'PUT',
@@ -383,6 +387,7 @@ export interface Commercant {
   style_texte?: string;
   // Subscription — backend column name
   abonnement_statut?: string;
+  must_change_password?: boolean;
   statut_abonnement?: string;
   abonnement_debut?: string;
   abonnement_fin?: string;

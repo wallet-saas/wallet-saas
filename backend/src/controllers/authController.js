@@ -324,7 +324,7 @@ const changePassword = async (req, res) => {
 
     const { error: updateError } = await supabase
       .from('commercants')
-      .update({ password: hashedNew })
+      .update({ password: hashedNew, must_change_password: false })
       .eq('id', commercant.id);
 
     if (updateError) {
@@ -338,7 +338,56 @@ const changePassword = async (req, res) => {
   }
 };
 
+/**
+ * PUT /api/auth/definir-mot-de-passe
+ * Utilisé après une réinitialisation par l'administrateur : le commerçant se
+ * connecte avec le mot de passe temporaire, puis en choisit un définitif.
+ * On ne redemande pas l'ancien, il vient de s'en servir pour se connecter.
+ */
+const definirMotDePasse = async (req, res) => {
+  try {
+    const { nouveau_password } = req.body;
+
+    if (!nouveau_password || nouveau_password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: 'Le mot de passe doit contenir au moins 6 caractères.',
+      });
+    }
+
+    const { data: commercant } = await supabase
+      .from('commercants')
+      .select('id, must_change_password')
+      .eq('id', req.commercant.id)
+      .single();
+
+    // Réservé au cas d'une réinitialisation en cours : sinon on passe par
+    // change-password, qui exige l'ancien mot de passe.
+    if (!commercant?.must_change_password) {
+      return res.status(403).json({
+        success: false,
+        error: 'Aucune réinitialisation en cours. Utilisez le changement de mot de passe habituel.',
+      });
+    }
+
+    const hash = await bcrypt.hash(nouveau_password, 10);
+    const { error } = await supabase
+      .from('commercants')
+      .update({ password: hash, must_change_password: false })
+      .eq('id', req.commercant.id);
+
+    if (error) throw error;
+
+    console.log(`[Auth] Nouveau mot de passe défini après réinitialisation (${req.commercant.id})`);
+    return res.status(200).json({ success: true, message: 'Mot de passe enregistré.' });
+  } catch (error) {
+    console.error('Erreur definirMotDePasse:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 module.exports = {
+  definirMotDePasse,
   register,
   login,
   getMe,

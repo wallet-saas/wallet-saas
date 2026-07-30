@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, getMe, changePassword } = require('../controllers/authController');
+const { register, login, getMe, changePassword, definirMotDePasse } = require('../controllers/authController');
 const authMiddleware = require('../middleware/authMiddleware');
 const { loginRateLimiter, registerRateLimiter } = require('../middleware/rateLimiter');
 const { registerValidation, loginValidation, handleValidationErrors } = require('../middleware/validation');
@@ -32,5 +32,8 @@ router.get('/me', authMiddleware, getMe);
  * @access  Private
  */
 router.put('/change-password', authMiddleware, changePassword);
+
+// PUT /api/auth/definir-mot-de-passe — après réinitialisation par l'administrateur
+router.put('/definir-mot-de-passe', authMiddleware, definirMotDePasse);
 
 module.exports = router;

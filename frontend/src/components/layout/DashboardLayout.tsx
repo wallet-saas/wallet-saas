@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useEmployeSession } from '@/hooks/useEmployeSession';
+import { NouveauMotDePasseModal } from '@/components/NouveauMotDePasseModal';
 import { Spinner } from '@/components/ui/Spinner';
 import { LayoutDashboard, CreditCard, QrCode, Bell, Star, UtensilsCrossed, Tag, MapPin, BarChart3, Settings, CreditCard as CardIcon, LogOut, ChevronLeft, Menu, X, MessageSquare, Zap, Users } from 'lucide-react';
 import { cn } from '@/utils/cn';
@@ -84,6 +85,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   if (!isAuthenticated) return null;
+
+  // Mot de passe réinitialisé par l'administrateur : on impose d'en choisir un
+  // nouveau avant tout accès au tableau de bord.
+  if ((commercant as any)?.must_change_password) {
+    return <NouveauMotDePasseModal />;
+  }
   // Allow access for actif, trialing, inactif, or undefined (new users)
   const currentPath = router.pathname;
   const isOnAbonnement = currentPath === '/dashboard/abonnement' || currentPath === '/abonnement';
