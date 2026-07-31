@@ -308,14 +308,22 @@ exports.getQrCode = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Commerçant introuvable.' });
     }
 
+    // L'URL est TOUJOURS reconstruite à partir du domaine courant.
+    // Elle était figée en base à la première génération : après un changement
+    // de domaine Vercel, les QR déjà imprimés — et ceux régénérés — pointaient
+    // vers l'ancienne adresse et affichaient un 404 aux clients en boutique.
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
-    const installUrl = data.qr_code_install_url || `${frontendUrl}/install/${data.id}`;
+    const installUrl = `${frontendUrl}/install/${data.id}`;
 
-    if (!data.qr_code_install_url) {
+    if (data.qr_code_install_url !== installUrl) {
       await supabase
         .from('commercants')
         .update({ qr_code_install_url: installUrl })
         .eq('id', data.id);
+
+      if (data.qr_code_install_url) {
+        console.log(`[QR] URL d'installation corrigée pour ${data.nom_enseigne} : ${data.qr_code_install_url} -> ${installUrl}`);
+      }
     }
 
     res.json({

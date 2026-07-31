@@ -22,9 +22,18 @@ export function lireSession(): EmployeSession | null {
   try {
     const brut = localStorage.getItem(CLE);
     if (!brut) return null;
+
+    // Sans jeton d'authentification, une session employé résiduelle n'a plus
+    // de sens : on la purge plutôt que de brider l'interface à tort.
+    if (!localStorage.getItem('stamply_token')) {
+      localStorage.removeItem(CLE);
+      return null;
+    }
+
     const s = JSON.parse(brut) as EmployeSession;
     return s?.id ? s : null;
   } catch {
+    localStorage.removeItem(CLE);
     return null;
   }
 }

@@ -60,6 +60,12 @@ export function useAuth() {
   const login = async (email: string, password: string) => {
     const { token, commercant } = await authApi.login(email, password);
     localStorage.setItem('stamply_token', token);
+    // Fermer une éventuelle session employé : sans ça, le commerçant reste
+    // coincé dans l'interface réduite de l'employé précédent.
+    localStorage.removeItem('stamply_employe_session');
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('stamply-employe-change'));
+    }
     const normalized = normalizeCommercant(commercant);
     setState({ commercant: normalized, token, loading: false });
     return normalized;
@@ -68,6 +74,7 @@ export function useAuth() {
   const register = async (data: Parameters<typeof authApi.register>[0]) => {
     const { token, commercant } = await authApi.register(data);
     localStorage.setItem('stamply_token', token);
+    localStorage.removeItem('stamply_employe_session');
     const normalized = normalizeCommercant(commercant);
     setState({ commercant: normalized, token, loading: false });
     return normalized;
@@ -75,6 +82,10 @@ export function useAuth() {
 
   const logout = () => {
     localStorage.removeItem('stamply_token');
+    localStorage.removeItem('stamply_employe_session');
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('stamply-employe-change'));
+    }
     setState({ commercant: null, token: null, loading: false });
   };
 
