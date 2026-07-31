@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { ApercuNotification } from '@/components/ApercuNotification';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ChampNombre } from '@/components/ui/ChampNombre';
@@ -268,9 +269,11 @@ export default function OffresPage() {
       <Modal open={sendModal.open} onClose={() => setSendModal({ open: false })} title="Envoyer l'offre par notification" size="sm">
         {sendModal.offre && (
           <div className="space-y-4">
-            <div className="bg-gray-50 rounded-xl p-4">
-              <p className="text-sm font-semibold text-gray-900">{sendModal.offre.titre}</p>
-            </div>
+            <ApercuNotification
+              legende="Ce que recevront vos clients"
+              titre={`🔥 ${sendModal.offre.titre}`}
+              message={sendModal.offre.description || sendModal.offre.titre}
+            />
             <Select label="Destinataires" options={cibleOptions} value={sendCible} onChange={e => setSendCible(e.target.value)} />
             <div className="flex gap-2">
               <Button variant="secondary" className="flex-1" onClick={() => setSendModal({ open: false })}>Annuler</Button>

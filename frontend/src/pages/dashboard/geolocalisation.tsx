@@ -6,6 +6,7 @@ import { StatCard } from '@/components/ui/StatCard';
 import { Badge } from '@/components/ui/Badge';
 import { Toggle } from '@/components/ui/Toggle';
 import { ChampNombre, ZoneTexte } from '@/components/ui/ChampNombre';
+import { ApercuNotification } from '@/components/ApercuNotification';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { PageSpinner } from '@/components/ui/Spinner';
@@ -414,15 +415,11 @@ export default function GeolocalisationPage() {
                       ))}
                     </div>
 
-                    <div className="rounded-xl border border-indigo-100 bg-indigo-50/70 p-4">
-                      <p className="text-[10px] uppercase tracking-wider text-indigo-500 font-semibold mb-2">Aperçu sur l'écran verrouillé</p>
-                      <div className="rounded-lg bg-white border border-indigo-100 shadow-sm px-3 py-2.5">
-                        <p className="text-xs font-semibold text-gray-900">{commercant?.nom_enseigne || 'Votre commerce'}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          {message || '🎁 Vous passez par là ? Votre carte de fidélité vous attend !'}
-                        </p>
-                      </div>
-                    </div>
+                    <ApercuNotification
+                      legende="Aperçu sur l'écran verrouillé"
+                      titre={commercant?.nom_enseigne}
+                      message={message || '🎁 Vous passez par là ? Votre carte de fidélité vous attend !'}
+                    />
                     <div>
                       <label className="label flex items-center gap-1.5">
                         <Bell className="h-3.5 w-3.5 text-gray-400" /> Fréquence maximum par client

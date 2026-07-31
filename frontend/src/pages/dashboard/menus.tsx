@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { ApercuNotification } from '@/components/ApercuNotification';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input, Textarea, Select } from '@/components/ui/Input';
@@ -578,17 +579,11 @@ export default function MenusPage() {
             </div>
 
             <div className="p-5 space-y-4">
-              <div className="rounded-xl border border-indigo-100 bg-indigo-50/70 p-4">
-                <p className="text-[10px] uppercase tracking-wider text-indigo-500 font-semibold mb-2">
-                  Ce que verront vos clients
-                </p>
-                <div className="rounded-lg bg-white border border-indigo-100 shadow-sm px-3 py-2.5">
-                  <p className="text-xs font-semibold text-gray-900">{apercuTitre || 'Titre'}</p>
-                  <p className="text-xs text-gray-500 mt-0.5 whitespace-pre-line">
-                    {apercuMessage || 'Contenu du message…'}
-                  </p>
-                </div>
-              </div>
+              <ApercuNotification
+                legende="Ce que verront vos clients"
+                titre={apercuTitre}
+                message={apercuMessage}
+              />
 
               <div>
                 <label className="block text-sm text-gray-700 mb-1">Titre</label>

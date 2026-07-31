@@ -10,6 +10,7 @@ import { StatCard } from '@/components/ui/StatCard';
 import { PageSpinner } from '@/components/ui/Spinner';
 import { avisApi, autoReviewApi, commercantApi, type Avis, type AvisTemplate, type AvisTemplatesFilled } from '@/services/api';
 import { Toggle } from '@/components/ui/Toggle';
+import { ApercuNotification } from '@/components/ApercuNotification';
 import { ChampTexte, ZoneTexte } from '@/components/ui/ChampNombre';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/Toast';
@@ -326,6 +327,12 @@ export default function AvisPage() {
                     <p className="text-xs text-gray-500">
                       Laissé vide, un message par défaut mentionnant votre enseigne est utilisé.
                     </p>
+
+                    <ApercuNotification
+                      legende="Aperçu de la demande d'avis"
+                      titre="Comment s'est passée votre visite ?"
+                      message={autoMessage}
+                    />
                     <p className="text-xs text-gray-500">
                       Les avis négatifs n'apparaissent jamais publiquement : retrouvez-les dans
                       l'onglet « Feedback interne », qui affiche un compteur dès qu'un nouveau message arrive.

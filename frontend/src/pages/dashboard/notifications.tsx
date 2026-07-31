@@ -16,6 +16,7 @@ import { notificationsApi, type Notification, type NotifStats } from '@/services
 import { commercantApi } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/Toast';
+import { ApercuNotification } from '@/components/ApercuNotification';
 import { useAutoSave, SaveIndicator } from '@/hooks/useAutoSave';
 import { formatDateTime, formatPercent, formatNumber } from '@/utils/format';
 import { Bell, Send, Users, Eye, TrendingUp, CheckCircle, AlertCircle, Settings, Zap, Gift, Clock, Plus, Calendar } from 'lucide-react';
@@ -282,6 +283,14 @@ export default function NotificationsPage() {
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                       <Input label="Titre" placeholder="Offre spéciale ce weekend !" error={errors.titre?.message} {...register('titre')} />
                       <Textarea label="Message" placeholder="Profitez de -20% sur toute la carte…" rows={4} error={errors.message?.message} {...register('message')} />
+
+                      {/* Aperçu en direct : le commerçant relit son message
+                          tel qu'il arrivera sur le téléphone du client */}
+                      <ApercuNotification
+                        legende="Aperçu en direct"
+                        titre={watch('titre')}
+                        message={watch('message')}
+                      />
                       <div className="grid grid-cols-2 gap-4">
                         <Select label="Destinataires" options={cibleOptions} {...register('cible')} />
                         {templateDefaut && (

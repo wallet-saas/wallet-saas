@@ -16,6 +16,7 @@ import { Input, Textarea } from '@/components/ui/Input';
 import { ChampNombre, ChampTexte, ZoneTexte } from '@/components/ui/ChampNombre';
 import { Toggle } from '@/components/ui/Toggle';
 import { useAutoSave, SaveIndicator } from '@/hooks/useAutoSave';
+import { ApercuNotification } from '@/components/ApercuNotification';
 import { useAuth } from '@/hooks/useAuth';
 import { commercantApi } from '@/services/api';
 import { Button } from '@/components/ui/Button';
@@ -28,29 +29,6 @@ const VARIABLES = [
   { cle: '{{nom}}', desc: 'prénom du client' },
   { cle: '{{nom_enseigne}}', desc: 'nom de votre commerce' },
 ];
-
-/** Aperçu de la notification telle qu'elle arrive sur la carte du client. */
-function ApercuNotification({ titre, message, enseigne, prenomExemple = 'Marie' }: {
-  titre: string; message: string; enseigne: string; prenomExemple?: string;
-}) {
-  const rendu = (txt: string) => (txt || '')
-    .replace(/\{\{nom\}\}/g, prenomExemple)
-    .replace(/\{\{nom_enseigne\}\}/g, enseigne || 'Votre commerce');
-
-  return (
-    <div className="rounded-xl border border-indigo-100 bg-indigo-50/70 p-4">
-      <p className="text-[10px] uppercase tracking-wider text-indigo-500 font-semibold mb-2">
-        Aperçu sur le téléphone du client
-      </p>
-      {/* La bulle blanche imite la notification telle qu'elle apparaît, tout en
-          restant dans la palette claire du reste du tableau de bord. */}
-      <div className="rounded-lg bg-white border border-indigo-100 shadow-sm px-3 py-2.5">
-        <p className="text-xs font-semibold text-gray-900">{rendu(titre) || 'Titre de la notification'}</p>
-        <p className="text-xs text-gray-500 mt-0.5">{rendu(message) || 'Contenu du message…'}</p>
-      </div>
-    </div>
-  );
-}
 
 /** Boutons d'insertion des variables dans un champ. */
 function BoutonsVariables({ onInsert }: { onInsert: (v: string) => void }) {
@@ -218,7 +196,7 @@ export default function AutomatisationsPage() {
               </div>
             </div>
 
-            <ApercuNotification titre={relanceTitre} message={relanceMessage} enseigne={enseigne} />
+            <ApercuNotification titre={relanceTitre} message={relanceMessage} />
 
             <Button
               variant="secondary" size="sm" loading={testRelance}
@@ -271,7 +249,7 @@ export default function AutomatisationsPage() {
               </div>
             </div>
 
-            <ApercuNotification titre={annivTitre} message={annivMessage} enseigne={enseigne} />
+            <ApercuNotification titre={annivTitre} message={annivMessage} />
 
             <p className="text-xs text-gray-500">
               Pensez à annoncer une offre concrète (une part de gâteau, une réduction…) :
