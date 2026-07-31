@@ -45,6 +45,17 @@ const PROGRAMME_LABELS: Record<string, string> = {
   coupon: 'Coupon rabais',
 };
 
+// Libellés affichés par défaut sur la carte, par programme
+const LIBELLES_DEFAUT: Record<string, [string, string]> = {
+  tampons: ['VOS TAMPONS', "JUSQU'À LA RÉCOMPENSE"],
+  points: ['POINTS', 'PROCHAIN CADEAU À'],
+  cashback: ['CAGNOTTE', 'CASHBACK'],
+  remise: ['STATUT', 'REMISE ACTUELLE'],
+  carte_cadeau: ['SOLDE', 'CARTE CADEAU'],
+  membre: ['STATUT', 'MEMBRE'],
+  coupon: ['COUPON', 'OFFRE'],
+};
+
 // Types dont le compteur repose sur points/palier (les autres sont pilotés par le solde ou le statut)
 const COMPTEUR_TYPES = ['tampons', 'points'];
 
@@ -476,10 +487,15 @@ export function CardEditor({ design, onChange, cardData, onCardDataChange, onIma
 
         {/* Données de la carte — modifiables */}
         <div className="bg-white rounded-xl p-4 border border-gray-200">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-            Données affichées sur la carte
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+            Textes affichés sur la carte
           </p>
-          <div className="grid grid-cols-2 gap-3">
+          <p className="text-xs text-gray-400 mb-3">
+            Ces libellés s'adaptent au programme « {PROGRAMME_LABELS[cardData.carteType || 'tampons']} ».
+            Vous pouvez les réécrire comme vous voulez.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-gray-500 mb-1">Nom du commerce</label>
               <input
@@ -500,18 +516,41 @@ export function CardEditor({ design, onChange, cardData, onCardDataChange, onIma
                 disabled={readOnly}
               />
             </div>
+
+            {/* Les deux libellés du compteur — ils changent selon le programme */}
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Nom du client (exemple)</label>
+              <label className="block text-xs text-gray-500 mb-1">
+                Libellé principal
+              </label>
               <input
                 type="text"
-                value={cardData.clientNom}
-                onChange={(e) => !readOnly && updateData({ clientNom: e.target.value })}
+                value={(cardData.typeConfig?.label_principal) ?? ''}
+                placeholder={LIBELLES_DEFAUT[cardData.carteType || 'tampons']?.[0]}
+                onChange={(e) => !readOnly && updateData({
+                  typeConfig: { ...(cardData.typeConfig || {}), label_principal: e.target.value },
+                } as any)}
                 className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-800"
                 disabled={readOnly}
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Récompense</label>
+              <label className="block text-xs text-gray-500 mb-1">
+                Libellé secondaire
+              </label>
+              <input
+                type="text"
+                value={(cardData.typeConfig?.label_secondaire) ?? ''}
+                placeholder={LIBELLES_DEFAUT[cardData.carteType || 'tampons']?.[1]}
+                onChange={(e) => !readOnly && updateData({
+                  typeConfig: { ...(cardData.typeConfig || {}), label_secondaire: e.target.value },
+                } as any)}
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-800"
+                disabled={readOnly}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Récompense annoncée</label>
               <input
                 type="text"
                 value={cardData.recompense}
@@ -520,33 +559,23 @@ export function CardEditor({ design, onChange, cardData, onCardDataChange, onIma
                 disabled={readOnly}
               />
             </div>
-            <div className={COMPTEUR_TYPES.includes(cardData.carteType || 'tampons') ? '' : 'hidden'}>
-              <label className="block text-xs text-gray-500 mb-1">
-                {(cardData.carteType || 'tampons') === 'points' ? 'Points actuels (exemple)' : 'Tampons actuels (exemple)'}
-              </label>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Prénom du client (aperçu)</label>
               <input
-                type="number"
-                min={0}
-                value={cardData.tamponsActuels}
-                onChange={(e) => { if (readOnly) return; const v = e.target.value.replace(/[^\d]/g, ''); updateData({ tamponsActuels: v === '' ? 0 : parseInt(v, 10) }); }}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-800"
-                disabled={readOnly}
-              />
-            </div>
-            <div className={COMPTEUR_TYPES.includes(cardData.carteType || 'tampons') ? '' : 'hidden'}>
-              <label className="block text-xs text-gray-500 mb-1">
-                {(cardData.carteType || 'tampons') === 'points' ? 'Points pour la récompense' : 'Palier (tampons requis)'}
-              </label>
-              <input
-                type="number"
-                min={1}
-                value={cardData.tamponsPalier}
-                onChange={(e) => { if (readOnly) return; const v = e.target.value.replace(/[^\d]/g, ''); updateData({ tamponsPalier: v === '' ? 1 : parseInt(v, 10) }); }}
+                type="text"
+                value={cardData.clientNom}
+                onChange={(e) => !readOnly && updateData({ clientNom: e.target.value })}
                 className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-800"
                 disabled={readOnly}
               />
             </div>
           </div>
+
+          <p className="text-xs text-gray-400 mt-3">
+            Les valeurs (points, tampons, solde…) se remplissent automatiquement
+            selon le compteur de chaque client. Le nombre de tampons ou le seuil de
+            récompense se règlent dans « Programme de fidélité ».
+          </p>
         </div>
       </div>
     </div>

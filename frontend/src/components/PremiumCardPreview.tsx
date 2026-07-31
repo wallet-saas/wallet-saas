@@ -74,6 +74,8 @@ function layoutFor(data: CardData): TypeLayout {
   const type = data.carteType || 'tampons';
   const cfg = data.typeConfig || {};
   const prenom = (data.clientNom || 'Jean Dupont').split(' ')[0];
+  // Libellés réécrits par le commerçant, sinon ceux du programme
+  const perso = (defaut: string, cle: string) => (cfg[cle] || '').trim() || defaut;
 
   switch (type) {
     case 'points': {
@@ -81,48 +83,48 @@ function layoutFor(data: CardData): TypeLayout {
       const actuels = data.tamponsActuels ?? 0;
       return {
         stamps: false,
-        headerLabel: 'POINTS', headerValue: String(actuels),
+        headerLabel: perso('POINTS', 'label_principal'), headerValue: String(actuels),
         leftLabel: 'PRENOM', leftValue: prenom,
-        rightLabel: 'POUR CADEAU SUIVANT', rightValue: String(Math.max(seuil - actuels, 0)),
+        rightLabel: perso('POUR CADEAU SUIVANT', 'label_secondaire'), rightValue: String(Math.max(seuil - actuels, 0)),
       };
     }
     case 'cashback':
       return {
         stamps: false,
-        headerLabel: 'CAGNOTTE', headerValue: '23,50 EUR',
+        headerLabel: perso('CAGNOTTE', 'label_principal'), headerValue: '23,50 EUR',
         leftLabel: 'PRENOM', leftValue: prenom,
-        rightLabel: 'CASHBACK', rightValue: (cfg.cashback_pourcent ?? 5) + ' %',
+        rightLabel: perso('CASHBACK', 'label_secondaire'), rightValue: (cfg.cashback_pourcent ?? 5) + ' %',
       };
     case 'remise': {
       const paliers = cfg.paliers ?? [{ nom: 'Bronze', remise: 0 }, { nom: 'Argent', remise: 5 }];
       const courant = paliers[Math.min(1, paliers.length - 1)] || paliers[0];
       return {
         stamps: false,
-        headerLabel: 'STATUT', headerValue: courant.nom,
+        headerLabel: perso('STATUT', 'label_principal'), headerValue: courant.nom,
         leftLabel: 'PRENOM', leftValue: prenom,
-        rightLabel: 'REMISE ACTUELLE', rightValue: '-' + courant.remise + ' %',
+        rightLabel: perso('REMISE ACTUELLE', 'label_secondaire'), rightValue: '-' + courant.remise + ' %',
       };
     }
     case 'carte_cadeau':
       return {
         stamps: false,
-        headerLabel: 'SOLDE', headerValue: '50,00 EUR',
+        headerLabel: perso('SOLDE', 'label_principal'), headerValue: '50,00 EUR',
         leftLabel: 'PRENOM', leftValue: prenom,
-        rightLabel: 'CARTE CADEAU', rightValue: data.commercantNom,
+        rightLabel: perso('CARTE CADEAU', 'label_secondaire'), rightValue: data.commercantNom,
       };
     case 'membre':
       return {
         stamps: false,
-        headerLabel: 'STATUT', headerValue: cfg.statut_defaut || 'Membre',
+        headerLabel: perso('STATUT', 'label_principal'), headerValue: cfg.statut_defaut || 'Membre',
         leftLabel: 'PRENOM', leftValue: prenom,
-        rightLabel: 'MEMBRE', rightValue: 'Actif',
+        rightLabel: perso('MEMBRE', 'label_secondaire'), rightValue: 'Actif',
       };
     case 'coupon':
       return {
         stamps: false,
-        headerLabel: 'COUPON', headerValue: '1',
+        headerLabel: perso('COUPON', 'label_principal'), headerValue: '1',
         leftLabel: 'PRENOM', leftValue: prenom,
-        rightLabel: 'VALABLE', rightValue: 'Une seule fois',
+        rightLabel: perso('VALABLE', 'label_secondaire'), rightValue: 'Une seule fois',
         offre: cfg.offre || '-10% sur votre premiere commande',
       };
     default: {
@@ -131,9 +133,9 @@ function layoutFor(data: CardData): TypeLayout {
       return {
         stamps: true,
         headerLabel: '', headerValue: '',
-        leftLabel: 'TAMPONS JUSQU\u2019A LA RECOMPENSE',
+        leftLabel: perso('TAMPONS JUSQU\u2019A LA RECOMPENSE', 'label_secondaire'),
         leftValue: Math.max(requis - actuels, 0) + ' tampons',
-        rightLabel: 'RECOMPENSES DISPONIBLES',
+        rightLabel: perso('RECOMPENSES DISPONIBLES', 'label_secondaire'),
         rightValue: String(Math.floor((data.tamponsActuels ?? 0) / requis)),
       };
     }

@@ -214,12 +214,17 @@ function displayFields({ type: carteType, config, carte, commercant }) {
   const type = typeEffectif(carteType, config, carte);
   const points = carte?.points || 0;
 
+  // Le commerçant peut réécrire les deux libellés affichés sur sa carte
+  // (« TAMPONS », « PROCHAIN CADEAU À »…). S'il ne saisit rien, on garde
+  // le libellé par défaut du programme choisi.
+  const perso = (defaut, cle) => (config?.[cle] || '').trim() || defaut;
+
   switch (type) {
     case 'points':
       return {
-        header_label: 'POINTS', header_value: String(points),
+        header_label: perso('POINTS', 'label_principal'), header_value: String(points),
         header_change: 'Vous avez %@ points !',
-        second_label: 'PROCHAIN CADEAU À', second_value: `${config.points_recompense} points`,
+        second_label: perso('PROCHAIN CADEAU À', 'label_secondaire'), second_value: `${config.points_recompense} points`,
         programme: `Cumulez ${config.points_par_euro} point${config.points_par_euro > 1 ? 's' : ''} par euro dépensé. ${config.points_recompense} points = ${config.recompense_desc}.`,
       };
     case 'tampons': {
@@ -233,18 +238,18 @@ function displayFields({ type: carteType, config, carte, commercant }) {
         : `${points}/${requis}`;
       const restants = Math.max(requis - points, 0);
       return {
-        header_label: 'VOS TAMPONS', header_value: rangee,
+        header_label: perso('VOS TAMPONS', 'label_principal'), header_value: rangee,
         header_change: 'Vos tampons : %@',
-        second_label: 'JUSQU\'À LA RÉCOMPENSE',
+        second_label: perso('JUSQU\'À LA RÉCOMPENSE', 'label_secondaire'),
         second_value: restants > 0 ? `${restants} tampon${restants > 1 ? 's' : ''}` : 'Récompense disponible 🎉',
         programme: `1 visite = 1 tampon ${emoji}. ${requis} tampons = ${config.recompense_desc}.`,
       };
     }
     case 'cashback':
       return {
-        header_label: 'CAGNOTTE', header_value: `${(carte?.solde || 0).toFixed(2)} €`,
+        header_label: perso('CAGNOTTE', 'label_principal'), header_value: `${(carte?.solde || 0).toFixed(2)} €`,
         header_change: 'Cagnotte : %@',
-        second_label: 'CASHBACK', second_value: `${config.cashback_pourcent}% sur vos achats`,
+        second_label: perso('CASHBACK', 'label_secondaire'), second_value: `${config.cashback_pourcent}% sur vos achats`,
         programme: `${config.cashback_pourcent}% de chaque achat est crédité sur votre cagnotte, utilisable en caisse.`,
       };
     case 'remise': {
@@ -252,38 +257,38 @@ function displayFields({ type: carteType, config, carte, commercant }) {
       const prochains = (config.paliers || []).filter(p => p.seuil > (carte?.total_depense || 0)).sort((a, b) => a.seuil - b.seuil);
       const prochain = prochains[0];
       return {
-        header_label: 'STATUT', header_value: carte?.statut_palier || palier.nom,
+        header_label: perso('STATUT', 'label_principal'), header_value: carte?.statut_palier || palier.nom,
         header_change: 'Votre statut : %@',
-        second_label: 'REMISE ACTUELLE', second_value: `-${palier.remise}%`,
+        second_label: perso('REMISE ACTUELLE', 'label_secondaire'), second_value: `-${palier.remise}%`,
         programme: `Votre remise augmente avec vos achats cumulés : ${(config.paliers || []).map(p => `${p.nom} (-${p.remise}%) dès ${p.seuil}€`).join(', ')}.${prochain ? ` Prochain palier : ${prochain.nom} à ${prochain.seuil}€.` : ''}`,
       };
     }
     case 'carte_cadeau':
       return {
-        header_label: 'SOLDE', header_value: `${(carte?.solde || 0).toFixed(2)} €`,
+        header_label: perso('SOLDE', 'label_principal'), header_value: `${(carte?.solde || 0).toFixed(2)} €`,
         header_change: 'Solde : %@',
-        second_label: 'CARTE CADEAU', second_value: commercant?.nom_enseigne || '',
+        second_label: perso('CARTE CADEAU', 'label_secondaire'), second_value: commercant?.nom_enseigne || '',
         programme: `Carte cadeau utilisable en caisse chez ${commercant?.nom_enseigne || 'votre commerce'}, en une ou plusieurs fois.`,
       };
     case 'membre':
       return {
-        header_label: 'STATUT', header_value: config.statut_defaut || 'Membre',
+        header_label: perso('STATUT', 'label_principal'), header_value: config.statut_defaut || 'Membre',
         header_change: 'Votre statut : %@',
-        second_label: 'MEMBRE', second_value: 'Actif',
+        second_label: perso('MEMBRE', 'label_secondaire'), second_value: 'Actif',
         programme: `Carte de membre ${commercant?.nom_enseigne || ''} — présentez-la à chaque visite.`,
       };
     case 'coupon':
       return {
-        header_label: 'COUPON', header_value: 'À utiliser',
+        header_label: perso('COUPON', 'label_principal'), header_value: 'À utiliser',
         header_change: '%@',
-        second_label: 'OFFRE', second_value: config.offre,
+        second_label: perso('OFFRE', 'label_secondaire'), second_value: config.offre,
         programme: `Présentez ce coupon en caisse pour profiter de l'offre : ${config.offre}. Après utilisation, il devient votre carte de fidélité.`,
       };
     default:
       return {
-        header_label: 'POINTS', header_value: String(points),
+        header_label: perso('POINTS', 'label_principal'), header_value: String(points),
         header_change: 'Vous avez %@ points !',
-        second_label: 'FIDÉLITÉ', second_value: '',
+        second_label: perso('FIDÉLITÉ', 'label_secondaire'), second_value: '',
         programme: '',
       };
   }

@@ -40,7 +40,7 @@ export default function NotificationsPage() {
   const [stats, setStats] = useState<NotifStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [sendResult, setSendResult] = useState<{ success?: boolean; message?: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'send' | 'history' | 'settings'>('send');
+  const [activeTab, setActiveTab] = useState<'send' | 'history'>('send');
 
   const { register, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -235,7 +235,6 @@ export default function NotificationsPage() {
             {([
               { id: 'send', label: 'Envoyer', icon: Send },
               { id: 'history', label: 'Historique', icon: Eye },
-              { id: 'settings', label: 'Paramètres', icon: Settings },
             ] as const).map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:text-gray-700'}`}>
@@ -364,69 +363,7 @@ export default function NotificationsPage() {
             </Card>
           )}
 
-          {activeTab === 'settings' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader><CardTitle>Limites anti-spam</CardTitle></CardHeader>
-                <CardBody className="space-y-4">
-                  <ChampNombre label="Max notifications par client par jour" value={maxPerDay} onChange={setMaxPerDay} min={1} max={20} />
-                  <div className="grid grid-cols-2 gap-4">
-                    <ChampNombre label="Ne pas envoyer avant" value={heureDebut} onChange={setHeureDebut} min={0} max={23} suffixe="h" />
-                    <ChampNombre label="Ne pas envoyer après" value={heureFin} onChange={setHeureFin} min={0} max={23} suffixe="h" />
-                  </div>
-                </CardBody>
-              </Card>
 
-              <Card>
-                <CardHeader><CardTitle>Template par défaut</CardTitle></CardHeader>
-                <CardBody className="space-y-4">
-                  <Textarea label="Message pré-rempli" placeholder="Bonjour ! Nouvelle offre spéciale…" rows={6} value={templateDefaut} onChange={e => setTemplateDefaut(e.target.value)} />
-                </CardBody>
-              </Card>
-
-              <Card>
-                <CardHeader><CardTitle>Mode simulation</CardTitle></CardHeader>
-                <CardBody className="space-y-4">
-                  <div className="flex items-start justify-between p-3 rounded-lg border border-gray-100">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Activer le mode simulation</p>
-                      <p className="text-xs text-gray-500 mt-0.5">Les notifications ne seront pas réellement envoyées — utile pour tester</p>
-                    </div>
-                    <Toggle checked={modeSimulation} onChange={setModeSimulation} />
-                  </div>
-                </CardBody>
-              </Card>
-
-              {/* ─── Renvoi vers le module Automatisations ─── */}
-              <Card className="lg:col-span-2">
-                <CardBody>
-                  <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <div className="flex items-start gap-3">
-                      <div className="h-9 w-9 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
-                        <Zap className="h-4 w-4 text-indigo-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Relances et anniversaires</p>
-                        <p className="text-xs text-gray-500 mt-0.5 max-w-xl">
-                          Ces envois automatiques ont leur propre module : titre, message, variables
-                          personnalisables et aperçu du rendu sur la carte du client.
-                        </p>
-                      </div>
-                    </div>
-                    <a href="/dashboard/automatisations">
-                      <Button variant="secondary">Ouvrir les automatisations</Button>
-                    </a>
-                  </div>
-                </CardBody>
-              </Card>
-
-              <div className="lg:col-span-2">
-                <div className="flex items-center">
-                  <SaveIndicator status={saveStatusSettings} />
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </DashboardLayout>

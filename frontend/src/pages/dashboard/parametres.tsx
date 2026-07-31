@@ -395,7 +395,11 @@ export default function ParametresPage() {
                 design={cardDesign}
                 onChange={setCardDesign}
                 cardData={{ ...cardData, carteType, typeConfig } as any}
-                onCardDataChange={setCardData}
+                onCardDataChange={(d: any) => {
+                  // Les libellés de la carte vivent dans la config du programme
+                  if (d.typeConfig) setTypeConfig(d.typeConfig);
+                  setCardData(d);
+                }}
                 onImageUpload={handleImageUpload}
                 isUploading={isUploading}
               />
