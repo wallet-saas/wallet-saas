@@ -79,6 +79,23 @@ router.get('/', async (req, res) => {
  * Diagnostic détaillé — pour le dashboard admin
  * Public (pas de JWT — à protéger en prod avec IP whitelist)
  */
+// ─── GET /api/health/urls ─────────────────────────────────────────────────────
+// Diagnostic rapide : quelle adresse est réellement utilisée pour construire
+// les liens d'installation et les QR codes. Aucun secret exposé.
+
+router.get('/urls', (req, res) => {
+  const frontendUrl = process.env.FRONTEND_URL || '(non défini — repli sur localhost)';
+  const apiUrl = process.env.API_URL || '(non défini)';
+
+  res.json({
+    success: true,
+    frontend_url: frontendUrl,
+    api_url: apiUrl,
+    exemple_lien_installation: `${frontendUrl}/install/<id-du-commercant>`,
+    remarque: "Le QR d'installation encode exactement cette adresse. Si elle ne correspond pas à votre site en ligne, corrigez FRONTEND_URL sur Render.",
+  });
+});
+
 router.get('/diagnostics', async (req, res) => {
   const diagnostics = {
     timestamp: new Date().toISOString(),
