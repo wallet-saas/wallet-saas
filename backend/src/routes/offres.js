@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { createOffre, listOffres, sendOffre, getOffreStats, markOffreUsed, deleteOffre } = require('../controllers/offresController');
 const authMiddleware = require('../middleware/authMiddleware');
-const { requireAbonnementActif } = authMiddleware;
+const { requireAbonnementActif, requireCommercant } = authMiddleware;
 const { offreValidation, handleValidationErrors } = require('../middleware/validation');
 
 /** POST /api/offres — Créer une offre flash */
