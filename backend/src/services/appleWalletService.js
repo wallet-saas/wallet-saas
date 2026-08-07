@@ -120,7 +120,7 @@ async function servePkpass(req, res) {
   try {
     const { data: carte, error: carteErr } = await supabase
       .from('cartes')
-      .select('pass_serial_number, points, commercant_id, apple_auth_token')
+      .select('*')  // tolérant : une colonne absente ne doit pas empêcher la carte de se générer
       .eq('pass_serial_number', serialNumber)
       .single();
 
@@ -131,7 +131,7 @@ async function servePkpass(req, res) {
 
     const { data: commercant, error: commErr } = await supabase
       .from('commercants')
-      .select('nom_enseigne, carte_couleur_primaire, carte_couleur_secondaire, points_recompense, adresse, ville, latitude, longitude, carte_logo_url, carte_background_image_url, carte_type, carte_type_config, module_avis_google, module_geolocalisation, rayon_geoloc_metres, geoloc_message')
+      .select('*')  // idem : le pass se génère avec ce qui est disponible
       .eq('id', carte.commercant_id)
       .single();
 
@@ -338,7 +338,7 @@ async function telechargerImage(url) {
   if (enCache && Date.now() - enCache.at < CACHE_TTL_MS) return enCache.buffer;
 
   try {
-    const reponse = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    const reponse = await fetch(url, { signal: AbortSignal.timeout(3500) });
     if (!reponse.ok) return null;
     const buffer = Buffer.from(await reponse.arrayBuffer());
     CACHE_IMAGES.set(url, { buffer, at: Date.now() });
@@ -363,8 +363,13 @@ async function preparerImagesCommercant(tmpDir, commercant) {
     return; // sans sharp, on conserve les images du template
   }
 
-  // Logo (affiché en haut de la carte et dans les notifications)
-  const logoBuffer = await telechargerImage(commercant.carte_logo_url);
+  // Les deux images sont récupérées en parallèle : le pass ne doit jamais
+  // attendre deux téléchargements l'un après l'autre.
+  const [logoBuffer, fondBufferParallele] = await Promise.all([
+    telechargerImage(commercant.carte_logo_url),
+    telechargerImage(commercant.carte_background_image_url),
+  ]);
+
   if (logoBuffer) {
     try {
       await sharp(logoBuffer).resize(160, 50, { fit: 'inside', withoutEnlargement: false })
@@ -382,7 +387,7 @@ async function preparerImagesCommercant(tmpDir, commercant) {
   }
 
   // Image de fond → bandeau "strip" du storeCard
-  const fondBuffer = await telechargerImage(commercant.carte_background_image_url);
+  const fondBuffer = fondBufferParallele;
   if (fondBuffer) {
     try {
       await sharp(fondBuffer).resize(375, 123, { fit: 'cover' })
@@ -435,7 +440,7 @@ async function generatePkpassBuffer(carte, commercant) {
     try {
       const { data: carteDb } = await supabase
         .from('cartes')
-        .select('id, last_notif_message, apple_auth_token, points, visites, solde, total_depense, statut_palier, coupon_utilise')
+        .select('*')
         .eq('pass_serial_number', serialNumber)
         .single();
       if (carteDb) {
