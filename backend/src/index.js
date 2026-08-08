@@ -25,7 +25,18 @@ const corsOptions = {
 };
 
 // Middlewares de sécurité et logging
-app.use(helmet());
+// helmet impose par défaut « Cross-Origin-Resource-Policy: same-origin ».
+// Le bouton « Ajouter à Apple Wallet » vit sur le domaine Vercel et le fichier
+// .pkpass est servi depuis Render : Safari applique strictement cette règle et
+// refuse le téléchargement (« Safari ne peut pas télécharger ce fichier »).
+// Cette API est publique par nature — pages d'installation, QR codes, passes —
+// et sa protection repose sur l'authentification, pas sur cet en-tête.
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  // La politique de contenu par défaut ne s'applique qu'à des pages HTML ;
+  // ici elle gêne les pages servies au client (formulaire d'avis, installation).
+  contentSecurityPolicy: false,
+}));
 app.use(morgan('dev'));
 app.use(cors(corsOptions));
 app.use(express.json());

@@ -150,6 +150,10 @@ async function servePkpass(req, res) {
     // le flux d'ajout sur certains iOS (constaté en réel).
     res.setHeader('Content-Type', 'application/vnd.apple.pkpass');
     res.setHeader('Content-Length', pkpassBuffer.length);
+    // Le pass est téléchargé depuis un autre domaine que celui de la page :
+    // sans cet en-tête, Safari bloque la ressource.
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Access-Control-Allow-Origin', '*');
     return res.send(pkpassBuffer);
   } catch (error) {
     console.error('[AppleWallet] servePkpass error:', error.message);
