@@ -124,6 +124,32 @@ router.get('/diag/:serial', async (req, res) => {
     if (buffer) {
       ajouter('Archive ZIP valide', buffer.slice(0, 2).toString() === 'PK',
               buffer.slice(0, 2).toString());
+
+      // 9. Contenu du pass — c'est ici que se voient les images manquantes.
+      // iOS refuse un pass sans icon.png et affiche « Safari ne peut pas
+      // télécharger ce fichier », alors que le fichier est pourtant produit.
+      try {
+        // Parcours des en-têtes locaux du ZIP : signature PK\x03\x04, puis la
+        // longueur du nom à l'octet 26 et le nom lui-même à l'octet 30.
+        const noms = [];
+        for (let i = 0; i < buffer.length - 30; i++) {
+          if (buffer[i] === 0x50 && buffer[i + 1] === 0x4b &&
+              buffer[i + 2] === 0x03 && buffer[i + 3] === 0x04) {
+            const longueur = buffer.readUInt16LE(i + 26);
+            if (longueur > 0 && longueur < 64) {
+              const nom = buffer.slice(i + 30, i + 30 + longueur).toString('utf8');
+              if (/^[\w@.\-]+$/.test(nom) && !noms.includes(nom)) noms.push(nom);
+            }
+          }
+        }
+        const requis = ['icon.png', 'icon@2x.png', 'pass.json', 'manifest.json', 'signature'];
+        const manquants = requis.filter(f => !noms.some(n => n.startsWith(f.split('.')[0])));
+        ajouter('Fichiers présents dans le pass', manquants.length === 0,
+                `contient : ${noms.join(', ') || '(illisible)'}` +
+                (manquants.length ? ` — MANQUENT : ${manquants.join(', ')}` : ''));
+      } catch (e) {
+        ajouter('Fichiers présents dans le pass', false, e.message);
+      }
     }
 
     const tout = etapes.every(e => e.ok);

@@ -30,7 +30,26 @@ const APNS_TEAM_ID = process.env.APPLE_TEAM_ID || '4YVDLJ57J7';
 const APNS_KEY_ID = process.env.APNS_KEY_ID || null;
 const APNS_TOPIC = process.env.APPLE_PASS_TYPE_ID || 'pass.com.stamply.4YVDLJ57J7';
 
-const TEMPLATE_DIR = path.join(process.cwd(), APPLE_CERT_PATH, 'StamplyLoyalty.pass');
+// Le dossier du gabarit est résolu à partir de l'emplacement de CE fichier,
+// pas du répertoire de travail : selon la façon dont le serveur est lancé
+// (depuis la racine du dépôt ou depuis backend/), process.cwd() change et le
+// gabarit devient introuvable. Le pass part alors SANS icon.png ni logo.png,
+// et Safari refuse un pass dépourvu d'icône avec « ne peut pas télécharger ».
+const CHEMINS_GABARIT = [
+  path.join(__dirname, '..', '..', 'config', 'apple-certs', 'StamplyLoyalty.pass'),
+  path.join(process.cwd(), APPLE_CERT_PATH, 'StamplyLoyalty.pass'),
+  path.join(process.cwd(), 'backend', 'config', 'apple-certs', 'StamplyLoyalty.pass'),
+];
+const TEMPLATE_DIR = CHEMINS_GABARIT.find(c => {
+  try { return fs.existsSync(path.join(c, 'pass.json')); } catch { return false; }
+}) || CHEMINS_GABARIT[0];
+
+console.log(`[AppleWallet] Gabarit du pass : ${TEMPLATE_DIR}`);
+for (const image of ['icon.png', 'icon@2x.png', 'logo.png', 'logo@2x.png']) {
+  if (!fs.existsSync(path.join(TEMPLATE_DIR, image))) {
+    console.error(`[AppleWallet] ⚠️  ${image} INTROUVABLE — iOS refusera le pass (« Safari ne peut pas télécharger ce fichier »).`);
+  }
+}
 const CERTS_DIR = path.join(process.cwd(), APPLE_CERT_PATH);
 
 /**
