@@ -168,12 +168,18 @@ async function servePkpass(req, res) {
     // via le Content-Type seul. 'attachment' ET 'inline' cassent tous deux
     // le flux d'ajout sur certains iOS (constaté en réel).
     res.setHeader('Content-Type', 'application/vnd.apple.pkpass');
-    res.setHeader('Content-Length', pkpassBuffer.length);
     // Le pass est téléchargé depuis un autre domaine que celui de la page :
     // sans cet en-tête, Safari bloque la ressource.
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     res.setHeader('Access-Control-Allow-Origin', '*');
-    return res.send(pkpassBuffer);
+    // Un pkpass est déjà une archive compressée. Si un intermédiaire (le proxy
+    // de Render) la recompresse, le Content-Length annoncé ne correspond plus
+    // au corps réel et Safari interrompt le téléchargement. On interdit donc
+    // toute transformation, et on laisse Express calculer la longueur.
+    res.setHeader('Content-Encoding', 'identity');
+    res.setHeader('Cache-Control', 'no-store, no-transform');
+    res.setHeader('Content-Transfer-Encoding', 'binary');
+    return res.end(pkpassBuffer);
   } catch (error) {
     console.error('[AppleWallet] servePkpass error:', error.message);
     return res.status(500).json({ error: 'Erreur serveur' });

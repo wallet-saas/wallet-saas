@@ -234,6 +234,45 @@ router.get('/diag/:serial', async (req, res) => {
       }
     }
 
+    // 10. Le transport lui-même : on interroge notre propre route comme le
+    // ferait Safari, et on rapporte les en-têtes reçus. C'est la seule étape
+    // qui teste la chaîne complète, proxy de l'hébergeur inclus.
+    try {
+      const base = process.env.API_URL || `http://127.0.0.1:${process.env.PORT || 3000}`;
+      const url = `${base}/api/wallet/pkpass/${encodeURIComponent(serial)}.pkpass`;
+      const reponse = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile Safari/604.1',
+          'Accept': '*/*',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Referer': (process.env.FRONTEND_URL || '') + '/',
+        },
+        redirect: 'manual',
+      });
+      const corps = Buffer.from(await reponse.arrayBuffer());
+      const entetes = {
+        statut: reponse.status,
+        'content-type': reponse.headers.get('content-type'),
+        'content-length': reponse.headers.get('content-length'),
+        'content-encoding': reponse.headers.get('content-encoding'),
+        'cross-origin-resource-policy': reponse.headers.get('cross-origin-resource-policy'),
+        'octets_recus': corps.length,
+        'debut': corps.slice(0, 2).toString(),
+      };
+      const transportOk = reponse.status === 200
+        && reponse.headers.get('content-type') === 'application/vnd.apple.pkpass'
+        && corps.slice(0, 2).toString() === 'PK'
+        && corps.length > 1000;
+      ajouter('Téléchargement via HTTP (comme Safari)', transportOk, entetes);
+    } catch (e) {
+      ajouter('Téléchargement via HTTP (comme Safari)', false, e.message);
+    }
+
+    // 11. L'adresse vers laquelle pointe réellement le bouton
+    ajouter("Lien du bouton « Ajouter à Apple Wallet »",
+            !!carte.apple_wallet_url && carte.apple_wallet_url.includes('/api/wallet/pkpass/'),
+            carte.apple_wallet_url || 'AUCUNE URL ENREGISTRÉE');
+
     const tout = etapes.every(e => e.ok);
     return res.json({
       success: tout,
