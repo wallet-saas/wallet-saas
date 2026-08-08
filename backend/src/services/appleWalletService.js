@@ -439,7 +439,10 @@ async function generatePkpassBuffer(carte, commercant) {
     fs.mkdirSync(tmpDir, { recursive: true });
 
     // Copier les images du template
-    const images = ['icon.png', 'icon@2x.png', 'logo.png', 'logo@2x.png'];
+    // Toutes les résolutions du gabarit sont copiées. Apple exige au minimum
+    // icon.png en 29x29 et icon@2x.png en 58x58 : un pass dont l'icône n'a pas
+    // les dimensions attendues est rejeté par iOS.
+    const images = ['icon.png', 'icon@2x.png', 'icon@3x.png', 'logo.png', 'logo@2x.png', 'logo@3x.png'];
     for (const img of images) {
       const src = path.join(TEMPLATE_DIR, img);
       if (fs.existsSync(src)) {
@@ -527,6 +530,14 @@ async function generatePkpassBuffer(carte, commercant) {
     // Géolocalisation Apple native : le pass s'affiche sur l'écran verrouillé
     // quand l'iPhone entre dans le rayon. maxDistance = rayon configuré par le
     // commerçant, relevantText = son message personnalisé.
+    // Sans coordonnées, ces deux clés doivent DISPARAÎTRE du pass : Apple
+    // rejette « locations: [] » (tableau vide) et « maxDistance » sans
+    // locations. Le gabarit les déclare vides par défaut — il faut les retirer,
+    // sinon tout commerçant sans géolocalisation obtient un pass invalide, que
+    // iOS refuse avec « Safari ne peut pas télécharger ce fichier ».
+    delete passData.locations;
+    delete passData.maxDistance;
+
     if (commercant.module_geolocalisation !== false && commercant.latitude && commercant.longitude) {
       const rayon = parseInt(commercant.rayon_geoloc_metres) || 200;
       passData.locations = [{

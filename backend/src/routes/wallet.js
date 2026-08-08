@@ -234,6 +234,103 @@ router.get('/diag/:serial', async (req, res) => {
       }
     }
 
+    // 9 bis. Dimensions des images et contenu de pass.json — c'est ce qu'iOS
+    // examine pour accepter ou refuser. Une icône aux mauvaises dimensions ou
+    // un champ invalide suffit à faire rejeter un pass parfaitement signé.
+    if (buffer) {
+      try {
+        const AdmZip = require('adm-zip');
+        const zip = new AdmZip(buffer);
+        const entrees = zip.getEntries();
+
+        // Dimensions des PNG : Apple impose 29x29 pour icon.png et 58x58 pour
+        // icon@2x.png. Un pass dont l'icône est hors format est rejeté par iOS.
+        const dimensions = {};
+        const attendu = { 'icon.png': [29, 29], 'icon@2x.png': [58, 58], 'icon@3x.png': [87, 87] };
+        let iconesOk = true;
+        for (const e of entrees.filter(x => x.entryName.endsWith('.png'))) {
+          const png = e.getData();
+          if (png.length > 24 && png.slice(1, 4).toString() === 'PNG') {
+            const l = png.readUInt32BE(16);
+            const h = png.readUInt32BE(20);
+            dimensions[e.entryName] = `${l}x${h}`;
+            if (attendu[e.entryName] && (l !== attendu[e.entryName][0] || h !== attendu[e.entryName][1])) {
+              dimensions[e.entryName] += ` ⚠️ attendu ${attendu[e.entryName][0]}x${attendu[e.entryName][1]}`;
+              iconesOk = false;
+            }
+          } else {
+            dimensions[e.entryName] = 'PNG INVALIDE';
+            iconesOk = false;
+          }
+        }
+        ajouter('Dimensions des images', iconesOk, dimensions);
+
+        // Contenu de pass.json : c'est ce qu'iOS valide en premier.
+        const entreePass = entrees.find(e => e.entryName === 'pass.json');
+        if (entreePass) {
+          const contenu = JSON.parse(entreePass.getData().toString('utf8'));
+          const typeDeCarte = Object.keys(contenu).find(k =>
+            ['storeCard', 'coupon', 'eventTicket', 'boardingPass', 'generic'].includes(k));
+
+          const problemes = [];
+          if (contenu.formatVersion !== 1) problemes.push('formatVersion doit valoir 1');
+          if (!contenu.serialNumber) problemes.push('serialNumber manquant');
+          if (!contenu.organizationName) problemes.push('organizationName manquant');
+          if (!contenu.description) problemes.push('description manquante');
+          if (!contenu.passTypeIdentifier) problemes.push('passTypeIdentifier manquant');
+          if (!contenu.teamIdentifier) problemes.push('teamIdentifier manquant');
+          if (!typeDeCarte) problemes.push('aucun type de carte (storeCard, coupon…)');
+          if (contenu.webServiceURL && !contenu.authenticationToken) problemes.push('webServiceURL sans authenticationToken');
+          if (contenu.webServiceURL && !/^https:\/\//.test(contenu.webServiceURL)) problemes.push('webServiceURL doit être en HTTPS');
+          if (contenu.authenticationToken && contenu.authenticationToken.length < 16) problemes.push('authenticationToken trop court');
+          if (contenu.maxDistance !== undefined && (!contenu.locations || !contenu.locations.length)) problemes.push('maxDistance sans locations');
+          if (Array.isArray(contenu.locations) && contenu.locations.length === 0) problemes.push('locations est un tableau vide — le retirer');
+          if (contenu.relevantDate && isNaN(Date.parse(contenu.relevantDate))) problemes.push('relevantDate mal formée');
+
+          // Les champs vides ou non textuels sont une cause fréquente de rejet
+          const champs = typeDeCarte ? (contenu[typeDeCarte] || {}) : {};
+          for (const zone of ['headerFields', 'primaryFields', 'secondaryFields', 'auxiliaryFields', 'backFields']) {
+            for (const champ of (champs[zone] || [])) {
+              if (champ.value === undefined || champ.value === null) {
+                problemes.push(`${zone}/${champ.key} : valeur absente`);
+              }
+              if (champ.changeMessage && !String(champ.changeMessage).includes('%@')) {
+                problemes.push(`${zone}/${champ.key} : changeMessage sans %@`);
+              }
+            }
+          }
+
+          ajouter('Structure de pass.json', problemes.length === 0,
+                  problemes.length ? { problemes } : {
+                    type: typeDeCarte,
+                    passTypeIdentifier: contenu.passTypeIdentifier,
+                    teamIdentifier: contenu.teamIdentifier,
+                    webServiceURL: contenu.webServiceURL || '(aucun)',
+                    locations: Array.isArray(contenu.locations) ? contenu.locations.length : 'absent',
+                    maxDistance: contenu.maxDistance ?? '(aucun)',
+                  });
+        } else {
+          ajouter('Structure de pass.json', false, 'pass.json absent de l\'archive');
+        }
+
+        // Le manifeste doit décrire exactement les fichiers présents
+        const entreeManifest = entrees.find(e => e.entryName === 'manifest.json');
+        if (entreeManifest) {
+          const manifest = JSON.parse(entreeManifest.getData().toString('utf8'));
+          const dansArchive = entrees.map(e => e.entryName)
+            .filter(n => n !== 'manifest.json' && n !== 'signature');
+          const manquants = Object.keys(manifest).filter(f => !dansArchive.includes(f));
+          const nonListes = dansArchive.filter(f => !(f in manifest));
+          ajouter('Manifeste cohérent', manquants.length === 0 && nonListes.length === 0,
+                  manquants.length || nonListes.length
+                    ? { annonces_absents: manquants, presents_non_annonces: nonListes }
+                    : `${Object.keys(manifest).length} fichiers correctement référencés`);
+        }
+      } catch (e) {
+        ajouter('Analyse du contenu du pass', false, e.message);
+      }
+    }
+
     // 10. Le transport lui-même : on interroge notre propre route comme le
     // ferait Safari, et on rapporte les en-têtes reçus. C'est la seule étape
     // qui teste la chaîne complète, proxy de l'hébergeur inclus.
