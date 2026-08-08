@@ -68,13 +68,95 @@ router.get('/diag/:serial', async (req, res) => {
     const { supabase } = require('../config/supabase');
     const serial = (req.params.serial || '').replace(/\.pkpass$/, '');
 
-    // 1. Certificats
+    // 1. Certificats : présence ET validité réelle. C'est le maillon que le
+    // diagnostic ne vérifiait pas — un pass parfaitement formé mais mal signé
+    // est refusé par iOS avec le même message que s'il ne se téléchargeait pas.
+    const forge = require('node-forge');
     const certs = {
       signer: !!process.env.APPLE_SIGNER_CERT_BASE64,
       cle: !!process.env.APPLE_SIGNER_KEY_BASE64,
       wwdr: !!process.env.APPLE_WWDR_BASE64,
     };
-    ajouter('Certificats Apple présents', certs.signer && certs.cle && certs.wwdr, certs);
+    ajouter('Certificats fournis', certs.signer && certs.cle && certs.wwdr, certs);
+
+    const enPem = (variable) => {
+      const brut = process.env[variable];
+      if (!brut) return null;
+      const texte = brut.includes('BEGIN')
+        ? brut
+        : Buffer.from(brut, 'base64').toString('utf8');
+      return texte.includes('BEGIN') ? texte : null;
+    };
+
+    let certSigner = null;
+    try {
+      const pem = enPem('APPLE_SIGNER_CERT_BASE64');
+      certSigner = pem ? forge.pki.certificateFromPem(pem) : null;
+      ajouter('Certificat de signature lisible', !!certSigner,
+              certSigner ? 'format PEM valide' : 'illisible ou format inattendu');
+    } catch (e) {
+      ajouter('Certificat de signature lisible', false, e.message);
+    }
+
+    if (certSigner) {
+      // a. Le Pass Type ID du certificat doit correspondre à celui du pass
+      const sujet = certSigner.subject.attributes
+        .map(a => `${a.shortName || a.name}=${a.value}`).join(', ');
+      const uid = certSigner.subject.getField('UID')?.value
+        || (sujet.match(/pass\.[\w.]+/) || [])[0] || null;
+      const passTypeAttendu = process.env.APPLE_PASS_TYPE_ID || 'pass.com.stamply.4YVDLJ57J7';
+      ajouter('Pass Type ID du certificat', uid === passTypeAttendu,
+              `certificat : ${uid || 'introuvable'} | attendu : ${passTypeAttendu}`);
+
+      // b. Le Team ID
+      const ou = certSigner.subject.getField('OU')?.value || null;
+      const teamAttendu = process.env.APPLE_TEAM_ID || '4YVDLJ57J7';
+      ajouter('Team ID du certificat', ou === teamAttendu,
+              `certificat : ${ou || 'introuvable'} | attendu : ${teamAttendu}`);
+
+      // c. Validité dans le temps
+      const maintenant = new Date();
+      const debut = certSigner.validity.notBefore;
+      const fin = certSigner.validity.notAfter;
+      const valide = maintenant >= debut && maintenant <= fin;
+      ajouter('Certificat non expiré', valide,
+              `valable du ${debut.toISOString().slice(0,10)} au ${fin.toISOString().slice(0,10)}`);
+
+      // d. Émis par Apple
+      const emetteur = certSigner.issuer.attributes
+        .map(a => a.value).join(' ');
+      ajouter('Émis par Apple', /Apple/i.test(emetteur), emetteur);
+
+      // e. La clé privée correspond-elle au certificat ?
+      try {
+        const pemCle = enPem('APPLE_SIGNER_KEY_BASE64');
+        const cle = forge.pki.privateKeyFromPem(pemCle);
+        const correspond = cle.n && certSigner.publicKey.n &&
+                           cle.n.toString(16) === certSigner.publicKey.n.toString(16);
+        ajouter('Clé privée associée au certificat', !!correspond,
+                correspond ? 'la paire correspond' : 'LA CLÉ NE CORRESPOND PAS AU CERTIFICAT');
+      } catch (e) {
+        ajouter('Clé privée associée au certificat', false, e.message);
+      }
+    }
+
+    // f. Le certificat WWDR d'Apple
+    try {
+      const pemWwdr = enPem('APPLE_WWDR_BASE64');
+      const wwdr = pemWwdr ? forge.pki.certificateFromPem(pemWwdr) : null;
+      if (wwdr) {
+        const finWwdr = wwdr.validity.notAfter;
+        const valideWwdr = new Date() <= finWwdr;
+        const nomWwdr = wwdr.subject.getField('CN')?.value || '';
+        ajouter('Certificat WWDR valide', valideWwdr,
+                `${nomWwdr} — expire le ${finWwdr.toISOString().slice(0,10)}` +
+                (valideWwdr ? '' : ' ⚠️ EXPIRÉ : télécharger le WWDR G4 sur le site Apple'));
+      } else {
+        ajouter('Certificat WWDR valide', false, 'illisible');
+      }
+    } catch (e) {
+      ajouter('Certificat WWDR valide', false, e.message);
+    }
 
     // 2. La carte existe
     const { data: carte, error: errCarte } = await supabase
